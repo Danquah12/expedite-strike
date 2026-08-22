@@ -1,0 +1,1912 @@
+{
+  "timestamp": "2026-08-16T18:30:22.505338",
+  "name": "baseline_20260816_183022",
+  "findings": [
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.139",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.140",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.137",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.128",
+      "severity": "Low",
+      "host": "192.168.195.128",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.146",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.254",
+      "severity": "Low",
+      "host": "192.168.195.254",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.1",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.137",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.139",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.140",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:21 (ftp)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "vsftpd Backdoor: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:22 (ssh)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:23 (telnet)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Telnet Cleartext: 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:25 (smtp)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:53 (domain)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.139:80",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:111 (rpcbind)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:445 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:512 (exec)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:513 (login)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:514 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:1099 (java-rmi)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:1524 (bindshell)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:2049 (rpcbind)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:2121 (ccproxy-ftp)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:3306 (mysql)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "MySQL Exposed: 192.168.195.139:3306",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:3632 (distccd)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:5432 (postgresql)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "PostgreSQL Exposed: 192.168.195.139:5432",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:5900 (vnc)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6000 (X11)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6667 (irc)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6697 (irc)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8009 (ajp13)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8180 (http)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8787 (drb)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:22 (ssh)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:80",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:143 (imap)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:443 (https)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:443",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:445 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.140",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:5001 (java-object)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:8080 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:8080",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:8081 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: http-cross-domain-policy on 192.168.195.140:80",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: http-vuln-cve2011-3192 on 192.168.195.140:80",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: ssl-ccs-injection on 192.168.195.140:443",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: ssl-poodle on 192.168.195.140:443",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: ssl-dh-params on 192.168.195.140:443",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "NSE Vulnerability: http-slowloris-check on 192.168.195.140:8080",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.137:5040 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.137:5357 (http)",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:135 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:445 (microsoft-ds)",
+      "severity": "Medium",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.146",
+      "severity": "Critical",
+      "host": "192.168.195.146",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:5985 (http)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:80",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:135 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:443 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:443",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:445 (microsoft-ds)",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.1",
+      "severity": "Critical",
+      "host": "192.168.195.1",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:902 (vmware-auth)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:912 (vmware-auth)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5040 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5357 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5432 (postgresql)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "PostgreSQL Exposed: 192.168.195.1:5432",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5433 (pyrrho)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:7680 (pando-pub)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8000 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8080 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:8080",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8089 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9011 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9390 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9392 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "vsftpd 2.3.4 Backdoor RCE \u2192 Root Shell: 192.168.195.139:21",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "FTP Anonymous Login + Data Exfiltration: 192.168.195.139:21",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "FTP Credential Access: msfadmin:msfadmin: 192.168.195.139:21",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SSH User Shell: msfadmin:msfadmin: 192.168.195.139:22",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SQL Injection \u2192 Data Extraction: 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "phpMyAdmin No-Auth Access: 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (12 endpoints): 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "NFS World-Readable Exports: 192.168.195.139:111",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.139:139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.139:445",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Java RMI Registry Exploit: 192.168.195.139:1099",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Ingreslock Root Shell (port 1524): 192.168.195.139:1524",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "rsh Remote Command Execution: 192.168.195.139:1524",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "NFS World-Readable Exports: 192.168.195.139:2049",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "DistCC Command Execution: 192.168.195.139:3632",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PostgreSQL Access: postgres:postgres: 192.168.195.139:5432",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "X11 Unauthenticated Display Access: 192.168.195.139:6000",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1113"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (7 endpoints): 192.168.195.139:8180",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Tomcat Manager RCE: tomcat:tomcat: 192.168.195.139:8180",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: suid_privesc: 192.168.195.139:22",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1548.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: suid_privesc: 192.168.195.139:22",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1548.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: kernel_exploit: 192.168.195.139:22",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SQL Injection \u2192 Data Extraction: 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "phpMyAdmin No-Auth Access: 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (11 endpoints): 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.140:139",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 143: 192.168.195.140:143",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.140:445",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 5001: 192.168.195.140:5001",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.140:8080",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.140:8081",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.146:139",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.146:445",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 912: 192.168.195.1:912",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (1 endpoints): 192.168.195.1:8000",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.1:8080",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.1:9011",
+      "severity": "Critical",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 9392: 192.168.195.1:9392",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A01: 1 Access Control Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 2 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A04: 2 Design Flaws",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 4 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A06: 6 Vulnerable Components",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A07: 2 Auth Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 1 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A01: 1 Access Control Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 1 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 15 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 2 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 4 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A06: 3 Vulnerable Components",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A07: 1 Auth Failures",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 1 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 2 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Info Disclosure: 192.168.195.139:80/phpinfo.php",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1082"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "NFS Exports: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Outdated Apache: 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Outdated Apache: 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    }
+  ],
+  "stats": {
+    "hosts": 10,
+    "ports": 59,
+    "vulns": 22,
+    "exploited": 38,
+    "creds": 9,
+    "privesc": 0,
+    "owasp": 23
+  },
+  "hosts": [
+    "192.168.195.139",
+    "192.168.195.140",
+    "192.168.195.137",
+    "192.168.195.128",
+    "192.168.195.146",
+    "192.168.195.254",
+    "192.168.195.1",
+    "192.168.195.137",
+    "192.168.195.139",
+    "192.168.195.140"
+  ],
+  "exploits": [
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "CVE-2011-2523",
+      "exploit": "vsftpd 2.3.4 Backdoor RCE \u2192 Root Shell",
+      "proof": "BACKDOOR SHELL on :6200!\n  $ id: uid=0(root) gid=0(root)\n  $ whoami: root\n  $ uname -a: Linux metasploitable 2.6.24-16-server #1 SMP Thu Apr 10 13:58:00 UTC 2008 i686 GNU/Linux\n  $ cat /etc/shadow | head -5: root:$1$/avpfBJ1$x0z8w5UF9Iv./DR9E9Lid.:14747:0:99999:7:::\ndaemon:*:14684:0:99999:7:::\nbin:*",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "FTP-ANON",
+      "exploit": "FTP Anonymous Login + Data Exfiltration",
+      "proof": "Anonymous login OK. Banner: 220 (vsFTPd 2.3.4). Files(0): ",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "FTP-DEFAULT-CREDS",
+      "exploit": "FTP Credential Access: msfadmin:msfadmin",
+      "proof": "FTP login msfadmin:msfadmin SUCCESS. Files: vulnerable",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "SSH-BRUTE",
+      "exploit": "SSH User Shell: msfadmin:msfadmin",
+      "proof": "SSH LOGIN SUCCESS: msfadmin:msfadmin\n  Identity: uid=1000(msfadmin) gid=1000(msfadmin) groups=4(adm),20(dialout),24(cdrom),25(floppy),29(audio),30(di\n  Users: root, daemon, bin, sys, sync, games, man, lp, mail, news, uucp, proxy, www-data, backup, list\n  SUID binaries (privesc): /bin/umount\n/bin/fus",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "SQLi",
+      "exploit": "SQL Injection \u2192 Data Extraction",
+      "proof": "SQL Injection confirmed:\n  Mutillidae SQLi: table found",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "PMA-NOAUTH",
+      "exploit": "phpMyAdmin No-Auth Access",
+      "proof": "phpMyAdmin accessible at /phpMyAdmin/ \u2014 NO AUTH!\n  Can read/write entire database.\n  Data: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\" dir=\"lt",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (12 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /phpMyAdmin/ (200)\n  /dvwa/ (302)\n  /dvwa/login.php (200)\n  /mutillidae/ (200)\n  /mutillidae/index.php (200)\n  /twiki/ (200)\n  /tikiwiki/ (200)\n  /dav/ (200)\n  /cgi-bin/ (403)\n  /server-status (403)\n  /.htpasswd (403)\n  SENSITIVE DATA:\n    /: Admin panel accessible\n",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 111,
+      "cve": "NFS-EXPORT",
+      "exploit": "NFS World-Readable Exports",
+      "proof": "NFS Exports: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:08 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00013s latency).\n\nPORT    STATE SERVICE\n111/tcp open  rpcbind\n| nfs-ls: Volume /\n|   access: Read Lookup Modify Extend Delete NoExecute\n| PERMISSION  UID  GID  SIZE   TIM",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:08 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution faile",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:08 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nHost script results:\n|_smb-enum-groups: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1099,
+      "cve": "JAVA-RMI",
+      "exploit": "Java RMI Registry Exploit",
+      "proof": "Java RMI exploitable: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:08 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT     STATE SERVICE\n1099/tcp open  rmiregistry\n| rmi-vuln-classloader: \n|   VULNERABLE:\n|   RMI registry default configuration remote code exec",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1524,
+      "cve": "INGRESLOCK-BACKDOOR",
+      "exploit": "Ingreslock Root Shell (port 1524)",
+      "proof": "INGRESLOCK BACKDOOR: Root shell on port 1524!\n  id: root@metasploitable:/# uid=0(root) gid=0(root) groups=0(root)\nroot@metasploitable:/#\n  $ whoami: root\nroot@metasploitable:/#\n  $ cat /etc/shadow | head -3: root:$1$/avpfBJ1$x0z8w5UF9Iv./DR9E9Lid.:14747:0:99999:7:::\ndaemon:*:14684:0:99999:7:::\nbin:*",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1524,
+      "cve": "RSH-NOAUTH",
+      "exploit": "rsh Remote Command Execution",
+      "proof": "rsh access: root@metasploitable:/#",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 2049,
+      "cve": "NFS-EXPORT",
+      "exploit": "NFS World-Readable Exports",
+      "proof": "NFS Exports: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:09 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT     STATE SERVICE\n2049/tcp open  nfs\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nNmap done: 1 IP address (1 host up) scanned in 0.79 seconds\n",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 3632,
+      "cve": "CVE-2004-2687",
+      "exploit": "DistCC Command Execution",
+      "proof": "DistCC RCE: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:09 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00025s latency).\n\nPORT     STATE SERVICE\n3632/tcp open  distccd\n| distcc-cve2004-2687: \n|   VULNERABLE:\n|   distcc Daemon Command Execution\n|     State: VULNERABLE (Exploi",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 5432,
+      "cve": "POSTGRES-DEFAULT",
+      "exploit": "PostgreSQL Access: postgres:postgres",
+      "proof": "PostgreSQL LOGIN: postgres:postgres\n  version: [('PostgreSQL 8.3.1 on i486-pc-linux-gnu, compiled by GCC cc (GCC) 4.2.3 (Ubuntu 4.2.3-2ubuntu4)',)]\n  databases: [('template1',), ('template0',), ('postgres',)]\n  users: [('postgres', 'md53175bce1d3201d16594cebf9d7eb3f9d')]\n  tables: []\n",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 6000,
+      "cve": "X11-NOAUTH",
+      "exploit": "X11 Unauthenticated Display Access",
+      "proof": "X11 no-auth! Can capture display. Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:09 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00013s latency).\n\nPORT     STATE SERVICE\n6000/tcp open  X11\nMAC Address: 00:0C:29:0",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 8180,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (7 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /admin (302)\n  /admin/ (200)\n  /manager/html (401)\n  /webdav/ (200)\n  /manager/status (401)\n  /host-manager/html (401)\n  SENSITIVE DATA:\n    /: Admin panel accessible\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 8180,
+      "cve": "TOMCAT-DEFAULT",
+      "exploit": "Tomcat Manager RCE: tomcat:tomcat",
+      "proof": "Tomcat Manager: tomcat:tomcat at /manager/html\nCan deploy WAR files \u2192 Remote Code Execution!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "suid_privesc",
+      "exploit": "PrivEsc: suid_privesc",
+      "proof": "SUID nmap found \u2014 known privilege escalation vector!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "suid_privesc",
+      "exploit": "PrivEsc: suid_privesc",
+      "proof": "SUID mount found \u2014 known privilege escalation vector!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "kernel_exploit",
+      "exploit": "PrivEsc: kernel_exploit",
+      "proof": "Kernel 2.6.24-16-server \u2014 vulnerable to DirtyCow (CVE-2016-5195), Multiple kernel exploits",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "SQLi",
+      "exploit": "SQL Injection \u2192 Data Extraction",
+      "proof": "SQL Injection confirmed:\n  Mutillidae SQLi: table found",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "PMA-NOAUTH",
+      "exploit": "phpMyAdmin No-Auth Access",
+      "proof": "phpMyAdmin accessible at /phpmyadmin/ \u2014 NO AUTH!\n  Can read/write entire database.\n  Data: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\" dir=\"lt",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (11 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /phpmyadmin/ (200)\n  /dvwa/ (302)\n  /dvwa/login.php (200)\n  /mutillidae/ (200)\n  /mutillidae/index.php (200)\n  /tikiwiki/ (302)\n  /joomla/administrator/ (200)\n  /cgi-bin/ (200)\n  /server-status (403)\n  /.htpasswd (403)\n  SENSITIVE DATA:\n    /: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:10 -0400\nNmap scan report for 192.168.195.140\nHost is up (0.00075s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:86:5E:7D (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution fa",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 143,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 143",
+      "proof": "Service banner: * OK [CAPABILITY IMAP4rev1 UIDPLUS CHILDREN NAMESPACE THREAD=ORDEREDSUBJECT THREAD=REFERENCES SORT QUOTA IDLE ACL ACL2=UNION] Courier-IMAP ready. Copy",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:10 -0400\nNmap scan report for 192.168.195.140\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:86:5E:7D (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 5001,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 5001",
+      "proof": "Service banner: \u0000\u0005",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 8080,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  /manager/html (401)\n  /manager/status (401)\n  /host-manager/html (401)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 8081,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /admin (302)\n  /admin/ (200)\n  SENSITIVE DATA:\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.146",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:10 -0400\nNmap scan report for 192.168.195.146\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:73:FE:EC (VMware)\n\nHost script results:\n|_smb-os-discovery: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.146",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 18:10 -0400\nNmap scan report for 192.168.195.146\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:73:FE:EC (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 912,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 912",
+      "proof": "Service banner: 220 VMware Authentication Daemon Version 1.0, ServerDaemonProtocol:SOAP, MKSDisplayProtocol:VNC , , , \r\n",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 8000,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (1 endpoints)",
+      "proof": "Accessible endpoints:\n  /robots.txt (200)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 8080,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /cgi-bin/ (403)\n  /.htpasswd (403)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 9011,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (302)\n  /admin (200)\n  /admin/ (200)\n  SENSITIVE DATA:\n    /admin: Admin panel accessible\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 9392,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 9392",
+      "proof": "Service banner: HTTP/1.1 405 Method Not Allowed\r\nDate: Sun, 16 Aug 2026 22:17:16 GMT\r\nConnection: close\r\nContent-Type: text/html; charset=utf-8\r\nExpires: -1\r\nCache-Co",
+      "severity": "Low",
+      "verified": true
+    }
+  ],
+  "credentials": []
+}
