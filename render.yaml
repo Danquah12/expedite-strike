@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: expedite-strike
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 9011
+      - key: PYTHONUNBUFFERED
+        value: "1"
