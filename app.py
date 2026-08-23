@@ -11819,12 +11819,36 @@ def poll_autopentest(n):
 
     # Exploit cards
     exploit_cards = []
-    for ex in state["exploits_succeeded"][-5:]:
+    seen_exploits = set()
+    raw_exploits = list(state.get("exploits_succeeded", []))
+    
+    # Also pull any CONFIRMED exploit findings if not already present
+    for f in state.get("findings", []):
+        if f.get("status") == "CONFIRMED" or f.get("scanner") in ("AutoPentest-Exploit", "AutoPentest-CredSpray", "AutoPentest-Metasploit", "XStrike-ZeroLogon", "XStrike-PrintNightmare", "XStrike-AD"):
+            key = f"{f.get('host')}:{f.get('title')}"
+            if key not in seen_exploits:
+                seen_exploits.add(key)
+                raw_exploits.append({
+                    "host": f.get("host", "Target"),
+                    "port": f.get("port", 0) or (f.get("target","").split(":")[-1] if ":" in f.get("target","") else ""),
+                    "cve": f.get("cve") or f.get("mitre_id") or f.get("title", "CONFIRMED EXPLOIT"),
+                    "exploit": f.get("title", "Exploit"),
+                    "severity": f.get("severity", "High"),
+                })
+
+    # Sort Critical -> High -> Medium -> Low
+    sev_rank = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+    sorted_exploits = sorted(raw_exploits, key=lambda x: (sev_rank.get(x.get("severity", "Medium"), 4), x.get("host", "")))
+
+    for ex in sorted_exploits[:25]:
         sev_color = {"Critical": "#ff4444", "High": "#ff8c00", "Medium": "#d4a843"}.get(ex.get("severity", ""), "#00bcd4")
+        port_str = f":{ex['port']}" if ex.get('port') and str(ex.get('port')) != "0" else ""
+        exploit_label = ex.get("exploit") or ex.get("cve") or "Exploit"
         exploit_cards.append(html.Div([
-            html.Span(f"✅ {ex['host']}:{ex['port']}", style={'fontWeight': 'bold', 'color': sev_color}),
-            html.Span(f" — {ex['cve']}", style={'color': '#888', 'fontSize': '11px', 'marginLeft': '5px'}),
-        ], style={'padding': '6px 8px', 'borderBottom': '1px solid #2d3748', 'fontSize': '12px'}))
+            html.Span(f"✅ {ex.get('host', 'Target')}{port_str}", style={'fontWeight': 'bold', 'color': sev_color}),
+            html.Span(f" — {exploit_label}", style={'color': '#cbd5e1', 'fontSize': '11px', 'marginLeft': '5px'}),
+        ], style={'padding': '6px 8px', 'borderBottom': '1px solid #1e293b', 'fontSize': '12px'}))
+
     if not exploit_cards:
         exploit_cards = [html.Div("Waiting for exploitation phase...", style={'color': '#888', 'textAlign': 'center', 'padding': '15px', 'fontSize': '12px'})]
 

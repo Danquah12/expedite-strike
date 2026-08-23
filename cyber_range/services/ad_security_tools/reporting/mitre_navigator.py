@@ -150,7 +150,8 @@ def generate_navigator_json(findings: List[Dict[str, Any]],
 
 
 def save_navigator_layer(findings: List[Dict[str, Any]],
-                         output_path: Optional[str] = None) -> str:
+                         output_path: Optional[str] = None,
+                         log_fn: Optional[Callable] = None) -> str:
     """Save ATT&CK Navigator JSON layer to disk."""
     if not output_path:
         output_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "reports")
@@ -160,6 +161,8 @@ def save_navigator_layer(findings: List[Dict[str, Any]],
     data = generate_navigator_json(findings)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(data)
+    if log_fn:
+        log_fn(f"[MITRE] Navigator layer saved: {output_path}")
     logger.info(f"[MITRE] Navigator layer saved: {output_path}")
     return output_path
 
