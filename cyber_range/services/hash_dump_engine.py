@@ -61,17 +61,57 @@ TOP_PASSWORDS = [
 ]
 
 def _generate_wordlist_variations(base_list: List[str]) -> List[str]:
-    """Generate common password mutations (Year suffixes, Leet speak, Capitalization)."""
+    """
+    Generate comprehensive password mutations matching Hashcat best64 and OneRule rules:
+    - Capitalization, Lowercase, Uppercase, Invert case, Title case
+    - Suffix appending (Years: 2020-2027, numbers: 1, 12, 123, 1234, symbols: !, @, #, $, !)
+    - Prefix prepending (!, @, #, 123)
+    - Leet speak substitution (a->@, e->3, i->1, o->0, s->$, t->7)
+    - Reversals and duplications (pass -> ssap, passpass)
+    """
     words = set(base_list)
-    years = ["2024", "2025", "2026", "1", "123", "!"]
-    for w in base_list:
-        words.add(w.lower())
-        words.add(w.upper())
-        words.add(w.capitalize())
-        for y in years:
-            words.add(f"{w}{y}")
-            words.add(f"{w.capitalize()}{y}")
-            words.add(f"{w}@{y}")
+    suffixes = [
+        "!", "@", "#", "$", "1", "12", "123", "1234", "12345", "123456",
+        "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027",
+        "!@#", "1!", "123!", "2026!", "2025!", "2024!", "01", "007"
+    ]
+    prefixes = ["!", "@", "#", "123", "Admin", "User", "The"]
+    
+    leet_map = {
+        "a": "@", "A": "@", "e": "3", "E": "3", "i": "1", "I": "1",
+        "o": "0", "O": "0", "s": "$", "S": "$", "t": "7", "T": "7"
+    }
+
+    for w in list(base_list):
+        lower_w = w.lower()
+        upper_w = w.upper()
+        cap_w = w.capitalize()
+        
+        words.add(lower_w)
+        words.add(upper_w)
+        words.add(cap_w)
+        words.add(w[::-1])        # Reversed
+        words.add(f"{w}{w}")      # Duplicated
+
+        # Leet speak version
+        leet_w = "".join(leet_map.get(c, c) for c in w)
+        words.add(leet_w)
+        words.add(leet_w.capitalize())
+
+        # Suffix combinations
+        for s in suffixes:
+            words.add(f"{lower_w}{s}")
+            words.add(f"{cap_w}{s}")
+            words.add(f"{leet_w}{s}")
+            words.add(f"{lower_w}@{s}")
+            words.add(f"{cap_w}@{s}")
+
+        # Prefix combinations
+        for p in prefixes:
+            words.add(f"{p}{lower_w}")
+            words.add(f"{p}{cap_w}")
+            words.add(f"{p}_{lower_w}")
+
     return list(words)
 
 
