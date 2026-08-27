@@ -12135,6 +12135,27 @@ def download_pentest_report(n_clicks):
         filename = f"XStrike_Pentest_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
         return dict(content=html_content, filename=filename, type='text/html')
 
+@app.callback(
+    Output("autopentest-report-download-html", "data"),
+    Input("autopentest-download-html-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def download_pentest_html_report(n_clicks):
+    """Generate and download the autonomous pentest report as interactive HTML."""
+    if not n_clicks:
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
+    from datetime import datetime
+    try:
+        from cyber_range.services.auto_pentest_orchestrator import generate_html_report
+        html_content = generate_html_report()
+        filename = f"XStrike_Pentest_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        return dict(content=html_content, filename=filename, type='text/html')
+    except Exception as e:
+        print(f"[Report] HTML generation error: {e}")
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
+
 print("[AutoPentest] ✅ Callbacks registered!", flush=True)
 
 # ═══════════════════════════════════════════════════════════════════
