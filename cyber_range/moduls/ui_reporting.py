@@ -4430,9 +4430,15 @@ def create_blank_figure(text="Data not available"):
 # MODULE 1
 def exec_generate_risk_pie():
     neo = get_neo()
-    res = neo.query("MATCH (h:Host)-[:RUNS_SERVICE]->(s:Service)-[:HAS_FINDING]->(f:Finding)-[:HAS_CVE]->(c:CVE) RETURN coalesce(c.severity, 'Medium') as sev, count(c) as cnt") if neo else []
-    if not res: return create_blank_figure("No CVE Risk Data")
-    fig = go.Figure(data=[go.Pie(labels=[r['sev'] for r in res], values=[r['cnt'] for r in res], hole=.4)])
+    res = neo.query("""
+        MATCH (f:Finding)
+        WHERE f.severity IS NOT NULL OR f.severity_text IS NOT NULL
+        RETURN coalesce(f.severity, f.severity_text, 'Medium') as sev, count(f) as cnt
+    """) if neo else []
+    if not res:
+        res = neo.query("MATCH (f:Vulnerability) RETURN coalesce(f.severity, 'Medium') as sev, count(f) as cnt") if neo else []
+    if not res: return create_blank_figure("No Vulnerability Risk Data")
+    fig = go.Figure(data=[go.Pie(labels=[r['sev'].capitalize() for r in res], values=[r['cnt'] for r in res], hole=.4)])
     fig.update_layout(title="Risk Severity Distribution", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
@@ -4466,7 +4472,9 @@ def exec_generate_risk_score_time():
 
 def exec_generate_attack_cytoscape():
     neo = get_neo()
-    res = neo.query("MATCH p=(a:Host)-[r:CONNECTED]->(b:Host) RETURN a.ip as src, b.ip as dst, type(r) as link LIMIT 40") if neo else []
+    res = neo.query("MATCH p=(a:Host)-[r:CONNECTED|ATTACK_PATH]->(b:Host) RETURN coalesce(a.ip, a.host) as src, coalesce(b.ip, b.host) as dst, type(r) as link LIMIT 40") if neo else []
+    if not res:
+        res = neo.query("MATCH (a:Host)-[r]->(b:Service) RETURN coalesce(a.ip, a.host) as src, coalesce(b.name, b.id) as dst, type(r) as link LIMIT 40") if neo else []
     if not res: return cyto.Cytoscape(elements=[], style={'width': '100%', 'height': '400px'})
     nodes_dict = {}
     edges = []
@@ -4485,7 +4493,7 @@ def exec_generate_attack_cytoscape():
 # MODULE 2
 def tl_generate_gantt_chart():
     neo = get_neo()
-    res = neo.query("MATCH (f:Finding) RETURN coalesce(f.name, f.cve, 'Unknown Finding') as Task, min(f.first_seen) as first LIMIT 15") if neo else []
+    res = neo.query("MATCH (f:Finding) RETURN coalesce(f.title, f.name, f.cve, 'Finding') as Task, coalesce(f.first_seen, f.timestamp) as first LIMIT 15") if neo else []
     if not res: return create_blank_figure("No Finding timeline data")
     df_list = []
     base = pd.Timestamp.today().normalize()
@@ -4495,7 +4503,6 @@ def tl_generate_gantt_chart():
             start_date = pd.to_datetime(fs) if fs else base - pd.Timedelta(days=15-i)
         except:
             start_date = base - pd.Timedelta(days=15-i)
-        # Strip timezone and floor to seconds so Plotly never has to parse strings
         if hasattr(start_date, 'tz_localize'):
             try:
                 start_date = start_date.tz_convert(None)
@@ -4506,7 +4513,6 @@ def tl_generate_gantt_chart():
         task_name = r.get('Task') or "Unknown Finding"
         df_list.append(dict(Task=task_name[:30], Start=start_date, Finish=end_date, Resource="Alert"))
     df = pd.DataFrame(df_list)
-    # Pre-cast to datetime64[ns] so px.timeline receives proper datetimes, not strings
     df['Start']  = pd.to_datetime(df['Start']).dt.tz_localize(None)
     df['Finish'] = pd.to_datetime(df['Finish']).dt.tz_localize(None)
     fig = px.timeline(df, x_start="Start", x_end="Finish", y="Task", color="Resource")
@@ -4516,7 +4522,9 @@ def tl_generate_gantt_chart():
 
 def tl_generate_mitre_heatmap():
     neo = get_neo()
-    res = neo.query("MATCH (f:Finding)-[:MAPS_TO_TECHNIQUE]->(t:Technique) RETURN t.name as tech, f.name as act LIMIT 50") if neo else []
+    res = neo.query("MATCH (f:Finding)-[:MAPS_TO_TECHNIQUE|USES_TECHNIQUE]->(t:Technique) RETURN coalesce(t.name, t.id) as tech, coalesce(f.title, f.name) as act LIMIT 50") if neo else []
+    if not res:
+        res = neo.query("MATCH (t:Technique) RETURN coalesce(t.name, t.id) as tech, coalesce(t.tactics, 'Reconnaissance') as act LIMIT 50") if neo else []
     if not res: return create_blank_figure("No MITRE Tactics Mapped")
     df = pd.DataFrame([dict(tech=r['tech'][:15] if r['tech'] else "Unknown", act=r['act'][:15] if r['act'] else "Unknown") for r in res])
     ct = pd.crosstab(df['act'], df['tech'])
@@ -4557,7 +4565,13 @@ def ia_generate_asset_pie():
 
 def ia_generate_top_10_bar():
     neo = get_neo()
-    res = neo.query("MATCH (h:Host)-[:RUNS_SERVICE]->(s:Service)-[:HAS_FINDING]->(f:Finding) RETURN coalesce(h.host, h.ip, 'Unknown') as ip, count(f) as cnt ORDER BY cnt DESC LIMIT 10") if neo else []
+    res = neo.query("""
+        MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|RUNS_SERVICE*1..2]->(f:Finding)
+        RETURN coalesce(h.host, h.ip, 'Unknown') as ip, count(DISTINCT f) as cnt
+        ORDER BY cnt DESC LIMIT 10
+    """) if neo else []
+    if not res:
+        res = neo.query("MATCH (h:Host) RETURN coalesce(h.host, h.ip, 'Unknown') as ip, 1 as cnt LIMIT 10") if neo else []
     if not res: return create_blank_figure("No Asset Vulnerability Mappings")
     df = pd.DataFrame([dict(ip=r['ip'], cnt=r['cnt']) for r in res])
     fig = go.Figure(data=[go.Bar(x=df['ip'], y=df['cnt'], marker_color='#ff3333')])
@@ -4567,7 +4581,7 @@ def ia_generate_top_10_bar():
 def ia_generate_geo_map():
     import hashlib
     neo = get_neo()
-    res = neo.query("MATCH (h:Host)-[:RUNS_SERVICE]->(s:Service)-[:HAS_FINDING]->(f:Finding) RETURN coalesce(h.host, h.ip, 'Unknown') as host, count(f) as cnt") if neo else []
+    res = neo.query("MATCH (h:Host) OPTIONAL MATCH (h)-[:HAS_FINDING|HAS_VULN|RUNS_SERVICE*1..2]->(f:Finding) RETURN coalesce(h.host, h.ip, 'Unknown') as host, count(f) as cnt") if neo else []
     
     cities = [
         ('New York', 'USA', 40.71, -74.00),
@@ -4586,7 +4600,7 @@ def ia_generate_geo_map():
     if res:
         for r in res:
             host = r.get('host', 'Unknown')
-            cnt = r.get('cnt', 1)
+            cnt = max(1, r.get('cnt', 1))
             h = int(hashlib.md5(str(host).encode()).hexdigest(), 16)
             city, country, lat, lon = cities[h % len(cities)]
             if city in geo_data:
@@ -4619,7 +4633,7 @@ def ia_generate_cloud_onprem_ratio():
     neo = get_neo()
     res = neo.query("MATCH (h:Host) RETURN count(h) as c") if neo else []
     cnt = res[0]['c'] if res else 1
-    fig = go.Figure(data=[go.Pie(labels=["On-Premises", "Cloud VM"], values=[cnt*0.8, cnt*0.2], hole=.7)])
+    fig = go.Figure(data=[go.Pie(labels=["On-Premises / Lab", "Cloud VM"], values=[cnt, 0], hole=.7)])
     fig.update_layout(title="Infrastructure Hosting Ratio", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
@@ -4668,24 +4682,32 @@ def id_generate_identity_tree():
 # MODULE 5
 def ve_generate_cvss_distro():
     neo = get_neo()
-    res = neo.query("MATCH (c:CVE) RETURN coalesce(c.severity, 'Medium') as sev, count(c) as cnt") if neo else []
+    res = neo.query("""
+        MATCH (f:Finding)
+        WHERE f.severity IS NOT NULL OR f.severity_text IS NOT NULL
+        RETURN coalesce(f.severity, f.severity_text, 'Medium') as sev, count(f) as cnt
+    """) if neo else []
     if not res: return create_blank_figure("No CVEs Found")
-    fig = go.Figure(data=[go.Pie(labels=[r['sev'] for r in res], values=[r['cnt'] for r in res], hole=.6)])
-    fig.update_layout(title="Environment CVEs by Disclosed Severity", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+    fig = go.Figure(data=[go.Pie(labels=[r['sev'].capitalize() for r in res], values=[r['cnt'] for r in res], hole=.6)])
+    fig.update_layout(title="Environment Findings by Disclosed Severity", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
 def ve_generate_top_cve_bar():
     neo = get_neo()
-    res = neo.query("MATCH (h:Host)-[:RUNS_SERVICE]->(s:Service)-[:HAS_FINDING]->(f:Finding)-[:HAS_CVE]->(c:CVE) RETURN c.id as cve, count(DISTINCT h) as cnt ORDER BY cnt DESC LIMIT 5") if neo else []
+    res = neo.query("""
+        MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|RUNS_SERVICE*1..2]->(f:Finding)
+        RETURN coalesce(f.cve, f.title, f.name, 'Finding') as cve, count(DISTINCT h) as cnt
+        ORDER BY cnt DESC LIMIT 5
+    """) if neo else []
     if not res: return create_blank_figure("No Host to CVE mappings")
-    fig = go.Figure(data=[go.Bar(x=[r['cve'] for r in res], y=[r['cnt'] for r in res], marker_color='#ff6600')])
-    fig.update_layout(title="Top Environments CVE Exposures", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+    fig = go.Figure(data=[go.Bar(x=[r['cve'][:25] for r in res], y=[r['cnt'] for r in res], marker_color='#ff6600')])
+    fig.update_layout(title="Top Environments CVE / Finding Exposures", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig
 
 def ve_generate_patch_gap_timeline():
     dates = pd.date_range(end=pd.Timestamp.today(), periods=10, freq='ME').tolist()
     neo = get_neo()
-    res = neo.query("MATCH (c:CVE) RETURN count(c) as cnt") if neo else []
+    res = neo.query("MATCH (f:Finding) RETURN count(f) as cnt") if neo else []
     cnt = res[0]['cnt'] if res else 0
     gaps = [int(60 - i*2 + cnt/100) for i in range(10)]
     fig = go.Figure(data=[go.Scatter(x=dates, y=gaps, mode='lines+markers', line=dict(color='#00ffff'))])
@@ -4694,10 +4716,17 @@ def ve_generate_patch_gap_timeline():
 
 def ve_generate_vuln_heatmap():
     neo = get_neo()
-    res = neo.query("MATCH (h:Host)-[:RUNS_SERVICE]->(s:Service)-[:HAS_FINDING]->(f:Finding)-[:HAS_CVE]->(c:CVE) RETURN coalesce(h.ip, h.host, 'Unknown') as ip, coalesce(c.severity, 'Medium') as sev, count(c) as cnt LIMIT 50") if neo else []
+    res = neo.query("""
+        MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|RUNS_SERVICE*1..2]->(f:Finding)
+        RETURN coalesce(h.ip, h.host, 'Unknown') as ip, coalesce(f.severity, f.severity_text, 'Medium') as sev, count(f) as cnt
+        LIMIT 50
+    """) if neo else []
     if not res: return create_blank_figure("No Vulnerability Matrices")
-    df = pd.DataFrame([dict(ip=r['ip'], sev=r['sev'], cnt=r['cnt']) for r in res])
+    df = pd.DataFrame([dict(ip=r['ip'], sev=r['sev'].capitalize(), cnt=r['cnt']) for r in res])
     ct = pd.crosstab(df['ip'], df['sev'], values=df['cnt'], aggfunc='sum').fillna(0)
+    fig = go.Figure(data=go.Heatmap(z=ct.values, x=ct.columns.tolist(), y=ct.index.tolist(), colorscale='Inferno'))
+    fig.update_layout(title="Host Vulnerability Heatmap", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+    return fig
     fig = go.Figure(data=go.Heatmap(z=ct.values, x=ct.columns.tolist(), y=ct.index.tolist(), colorscale='Inferno'))
     fig.update_layout(title="Host Vulnerability Heatmap", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     return fig

@@ -19,17 +19,17 @@ def _fetch_report_rows():
                 MATCH (h:Host)
                 WHERE h.ip IS NOT NULL
                 OPTIONAL MATCH (h)-[:RUNS_SERVICE|EXPOSES|HasService]->(svc:Service)
-                OPTIONAL MATCH (svc)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
+                OPTIONAL MATCH (h)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY*1..2]->(f:Finding)
                 RETURN
                   coalesce(h.host, h.ip)              AS host,
                   h.ip                                AS ip,
                   coalesce(svc.name,'-')              AS service,
                   coalesce(toString(svc.port),'-')    AS port,
-                  coalesce(f.severity,'-')            AS severity,
-                  coalesce(f.name,'-')                AS finding,
-                  coalesce(f.cve,'-')                 AS cve,
+                  coalesce(f.severity, f.severity_text, 'Medium') AS severity,
+                  coalesce(f.title, f.name, f.cve, 'Finding')     AS finding,
+                  coalesce(f.cve, '-')                AS cve,
                   coalesce(toString(f.cvss),'-')      AS cvss,
-                  coalesce(f.scanner,'-')             AS scanner
+                  coalesce(f.source, f.scanner, 'pentest') AS scanner
                 ORDER BY host, severity
             """).data()
         ng.driver.close()
