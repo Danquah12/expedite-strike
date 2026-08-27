@@ -1,0 +1,250 @@
+/* ================================================================
+   EXPEDITE STRIKE MEGA MENU — OffSec-style 3-column mega dropdown
+   Dark glass theme with smooth hover transitions
+   ================================================================ */
+
+/* ── Nav Bar Container ─────────────────────────────────────────── */
+.aegis-mega-nav {
+    background: linear-gradient(180deg, #070a12 0%, #050810 100%);
+    border-bottom: 1px solid #1a2535;
+    position: relative;
+    z-index: 1100;
+    padding: 0 4px;
+    display: flex;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.aegis-mega-nav::-webkit-scrollbar { height: 3px; }
+.aegis-mega-nav::-webkit-scrollbar-thumb { background: #1e3a5a; border-radius: 2px; }
+
+/* ── Individual Nav Group (label + panel wrapper) ──────────────── */
+.mega-group {
+    position: static;  /* panel uses fixed positioning */
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* ── Trigger Labels ─────────────────────────────────────────────── */
+.mega-trigger {
+    padding: 11px 13px;
+    color: #8090b0;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    user-select: none;
+}
+.mega-trigger:hover,
+.mega-group:hover .mega-trigger {
+    color: #42b9f5;
+    border-bottom-color: #1e5a8a;
+}
+.mega-trigger.active {
+    color: #42b9f5;
+    border-bottom-color: #42b9f5;
+}
+
+/* ── Mega Dropdown Panel ────────────────────────────────────────── */
+.mega-panel {
+    position: fixed;
+    top: 46px;              /* height of the aegis-mega-nav bar */
+    left: 0;
+    width: 100vw;
+    min-width: 700px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    background: rgba(6, 9, 18, 0.98);
+    border-top: 1px solid #1e3050;
+    border-bottom: 1px solid #1a2535;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 4px 20px rgba(0,80,160,0.1);
+    backdrop-filter: blur(20px);
+    padding: 22px 28px;
+    display: flex;
+    gap: 0;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, visibility 0.18s ease, transform 0.18s ease;
+    pointer-events: none;
+    z-index: 9990;
+}
+.mega-group:hover .mega-panel {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+/* ── Columns ────────────────────────────────────────────────────── */
+.mega-col {
+    flex: 1;
+    padding: 0 18px;
+    border-right: 1px solid #111e30;
+    min-width: 200px;
+}
+.mega-col:first-child  { padding-left: 0; }
+.mega-col:last-child   { border-right: none; }
+
+.mega-col-header {
+    color: #2a5a8a;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #111e30;
+    font-family: 'Segoe UI', 'Inter', monospace;
+}
+
+/* ── Scrollable Column (for Reports) ───────────────────────────── */
+.mega-col-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+}
+.mega-col-scroll::-webkit-scrollbar       { width: 3px; }
+.mega-col-scroll::-webkit-scrollbar-track { background: transparent; }
+.mega-col-scroll::-webkit-scrollbar-thumb { background: #1e3a5a; border-radius: 4px; }
+
+/* ── Menu Item Cards ───────────────────────────────────────────── */
+.mega-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 3px;
+}
+.mega-item:hover {
+    border-color: #1e3a60;
+    background: #0a1422;
+}
+
+/* Primary featured item (like OffSec bordered cards) */
+.mega-item-primary {
+    background: #080e1c;
+    border-color: #142340 !important;
+}
+.mega-item-primary:hover {
+    border-color: #1e4a80 !important;
+    background: #0c1828;
+}
+
+.mega-item-icon {
+    font-size: 17px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    line-height: 1;
+}
+.mega-item-title {
+    color: #c0d0e8;
+    font-weight: 600;
+    font-size: 12.5px;
+    line-height: 1.3;
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+}
+.mega-item-desc {
+    color: #3a5070;
+    font-size: 10.5px;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* Section sub-header within a column */
+.mega-section-label {
+    color: #c0440a;
+    font-weight: 800;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 4px 0 8px 0;
+    padding: 0 10px;
+}
+
+/* ── CTA Column ─────────────────────────────────────────────────── */
+.mega-cta-col {
+    width: 190px;
+    flex-shrink: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.mega-cta-btn {
+    display: block;
+    padding: 11px 14px;
+    background: linear-gradient(135deg, #0d2240, #091830);
+    border: 1px solid #1a4070;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #42b9f5;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+    text-align: center;
+    margin-bottom: 8px;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+    user-select: none;
+}
+.mega-cta-btn:hover {
+    background: linear-gradient(135deg, #152e5a, #0e2040);
+    border-color: #42b9f5;
+    color: #7dd4f8;
+    box-shadow: 0 0 12px rgba(66,185,245,0.15);
+}
+
+/* Pill badge inside CTA column */
+.mega-badge-block {
+    border: 1px solid #111e30;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 4px;
+}
+.mega-badge-title {
+    color: #2a5a8a;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+}
+.mega-badge-body {
+    color: #3a5578;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+/* ── Divider ────────────────────────────────────────────────────── */
+.mega-divider {
+    height: 1px;
+    background: #0e1a28;
+    margin: 7px 0;
+}
+
+/* ── Pulsing Active Group ───────────────────────────────────────── */
+@keyframes aegis-pulse-nav {
+    0%   { border-bottom-color: #1e5a8a; }
+    50%  { border-bottom-color: #42b9f5; }
+    100% { border-bottom-color: #1e5a8a; }
+}
+.mega-trigger.nav-pulsing {
+    color: #42b9f5;
+    animation: aegis-pulse-nav 1.5s ease-in-out infinite;
+}
