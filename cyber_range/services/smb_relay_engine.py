@@ -119,7 +119,7 @@ def _check_signing_via_socket(ip: str, port: int = 445) -> bool:
             b"\xffSMB"
             b"\x72\x00\x00\x00\x00"
             b"\x18\x01\x28\x00"
-            b"\x00" * 12
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00"
             b"\x00\x00"
             b"\xff\xff\xff\xff"
