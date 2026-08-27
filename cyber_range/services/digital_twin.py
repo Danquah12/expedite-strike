@@ -145,31 +145,59 @@ class DigitalTwin:
     def build_graph_elements(self):
         assets = self.db.run_query("""
             MATCH (a:Host)
-            RETURN id(a) AS id, coalesce(a.host, a.ip, a.name, toString(id(a))) AS host
+            RETURN coalesce(elementId(a), toString(id(a))) AS id, coalesce(a.host, a.ip, a.name, toString(id(a))) AS host
         """)
 
         edges = self.db.run_query("""
             MATCH (a:Host)-[:CONNECTED]-(b:Host)
-            RETURN id(a) AS src, id(b) AS dst
+            RETURN coalesce(elementId(a), toString(id(a))) AS src, coalesce(elementId(b), toString(id(b))) AS dst
+        """)
+
+        vuln_nodes = self.db.run_query("""
+            MATCH (h:Host)-[:HAS_FINDING|HAS_VULN]->(v:Finding)
+            RETURN coalesce(elementId(v), toString(id(v))) AS vid, v.name AS name, v.severity AS sev, coalesce(elementId(h), toString(id(h))) AS hid
+            LIMIT 50
         """)
 
         nodes = []
         links = []
+        seen_nodes = set()
 
-        for a in assets:
-            nodes.append({
-                "data": {
-                    "id": f"asset-{a['id']}",
-                    "label": a["host"],
-                    "type": "asset"
-                }
-            })
+        for a in (assets or []):
+            nid = f"asset-{a['id']}"
+            if nid not in seen_nodes:
+                seen_nodes.add(nid)
+                nodes.append({
+                    "data": {
+                        "id": nid,
+                        "label": a["host"],
+                        "type": "asset"
+                    }
+                })
 
-        for e in edges:
+        for e in (edges or []):
             links.append({
                 "data": {
                     "source": f"asset-{e['src']}",
                     "target": f"asset-{e['dst']}"
+                }
+            })
+
+        for v in (vuln_nodes or []):
+            vid = f"vuln-{v['vid']}"
+            if vid not in seen_nodes:
+                seen_nodes.add(vid)
+                nodes.append({
+                    "data": {
+                        "id": vid,
+                        "label": (v["name"] or "Vuln")[:30],
+                        "type": "vulnerability"
+                    }
+                })
+            links.append({
+                "data": {
+                    "source": f"asset-{v['hid']}",
+                    "target": vid
                 }
             })
 

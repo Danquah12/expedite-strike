@@ -116,6 +116,95 @@ class Neo4jEngine:
             print(f"[Neo4j] Connection failed: {e}")
             return False
 
+    def sync_findings_and_topology(self, hosts=None, findings=None, attack_paths=None):
+        """Sync discovered hosts, open ports, vulnerabilities, and attack paths to Neo4j."""
+        if self._is_mock():
+            return False
+        try:
+            with self.driver.session() as session:
+                # 1. Ingest Hosts & Ports
+                for h in (hosts or []):
+                    ip = h.get("ip", "")
+                    if not ip: continue
+                    hostname = h.get("hostname", ip)
+                    os_name = h.get("os", "Windows / Linux Host")
+                    session.run("""
+                        MERGE (h:Host {ip: $ip})
+                        SET h:Asset, h.host = $ip, h.name = $hostname, h.hostname = $hostname, h.os = $os_name, h.last_seen = datetime()
+                    """, ip=ip, hostname=hostname, os_name=os_name)
+
+                    for p in h.get("ports", []):
+                        port_num = p.get("port", p) if isinstance(p, dict) else p
+                        svc_name = p.get("service", f"port-{port_num}") if isinstance(p, dict) else f"port-{port_num}"
+                        session.run("""
+                            MATCH (h:Host {ip: $ip})
+                            MERGE (s:Service {port: $port, host: $ip})
+                            SET s.name = $svc_name, s.service = $svc_name
+                            MERGE (h)-[:RUNS_SERVICE]->(s)
+                            MERGE (h)-[:EXPOSES]->(s)
+                            MERGE (h)-[:HasService]->(s)
+                        """, ip=ip, port=port_num, svc_name=svc_name)
+
+                # 2. Ingest Findings
+                for f in (findings or []):
+                    host_raw = f.get("host", "127.0.0.1")
+                    host_clean = str(host_raw).replace("http://", "").replace("https://", "").split(":")[0].split("/")[0]
+                    if not host_clean: continue
+
+                    title = f.get("title", "Vulnerability Finding")
+                    sev = f.get("severity", "Medium")
+                    cvss_val = float(f.get("cvss", 10.0 if sev == "Critical" else 7.5 if sev == "High" else 5.0 if sev == "Medium" else 2.0))
+                    mitre_id = f.get("mitre_id", "T1046")
+                    src = str(f.get("module", f.get("scanner", "autopentest"))).lower()
+                    cve_val = f.get("cve", title if "CVE-" in title else None)
+
+                    session.run("""
+                        MERGE (h:Host {ip: $host})
+                        SET h:Asset, h.host = $host, h.last_seen = datetime()
+
+                        MERGE (f:Finding {title: $title, host: $host})
+                        SET f:Vulnerability, f.name = $title, f.severity = $sev, f.cvss = $cvss_val,
+                            f.source = $src, f.description = $desc, f.mitre_id = $mitre_id,
+                            f.exploitable = ($status = 'CONFIRMED' OR $sev IN ['Critical', 'High']),
+                            f.cve = $cve_val, f.first_seen = datetime()
+
+                        MERGE (h)-[:HAS_FINDING]->(f)
+                        MERGE (h)-[:HAS_VULN]->(f)
+                        MERGE (h)-[:HAS_VULNERABILITY]->(f)
+                    """, host=host_clean, title=title, sev=sev, cvss_val=cvss_val,
+                         src=src, desc=f.get("description", ""), mitre_id=mitre_id,
+                         status=f.get("status", "POTENTIAL"), cve_val=cve_val)
+
+                    if mitre_id and mitre_id.startswith("T"):
+                        session.run("""
+                            MATCH (f:Finding {title: $title, host: $host})
+                            MERGE (t:Technique {id: $mitre_id})
+                            SET t.name = $mitre_id
+                            MERGE (f)-[:USES_TECHNIQUE]->(t)
+                        """, title=title, host=host_clean, mitre_id=mitre_id)
+
+                # 3. Create Network Interconnections between scanned subnet hosts
+                session.run("""
+                    MATCH (a:Host), (b:Host)
+                    WHERE a.ip <> b.ip AND a.ip STARTS WITH split(b.ip, '.')[0] + '.' + split(b.ip, '.')[1] + '.' + split(b.ip, '.')[2]
+                    MERGE (a)-[:CONNECTED]-(b)
+                """)
+
+                # 4. Attack Paths
+                for path in (attack_paths or []):
+                    src = path.get("source", path.get("src", ""))
+                    dst = path.get("target", path.get("dst", ""))
+                    tech = path.get("technique", "Lateral Movement")
+                    if src and dst:
+                        session.run("""
+                            MATCH (a:Host {ip: $src}), (b:Host {ip: $dst})
+                            MERGE (a)-[r:ATTACK_PATH {technique: $tech}]->(b)
+                        """, src=src, dst=dst, tech=tech)
+            return True
+        except Exception as e:
+            print(f"[Neo4j Sync] Error: {e}")
+            return False
+
     @property
     def is_mock(self):
         return self._is_mock()

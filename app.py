@@ -12181,69 +12181,7 @@ app.index_string = _original_index.replace(
 )
 
 
-if __name__ == "__main__":
-    # ── Auto-clear stale process on port 9009 ─────────────────────────────
-    import subprocess as _sp, socket as _sock
-    _PORT = 9011
-    with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
-        _port_busy = _s.connect_ex(("127.0.0.1", _PORT)) == 0
-    if _port_busy:
-        print(f"[APP] Port {_PORT} busy — killing stale process ...")
-        if os.name == 'nt':
-            # Windows: find PID on port and kill it
-            try:
-                _r = _sp.run(f'netstat -ano | findstr :{_PORT}', capture_output=True, text=True, shell=True)
-                for _line in _r.stdout.strip().split('\n'):
-                    _parts = _line.split()
-                    if len(_parts) >= 5 and 'LISTEN' in _line:
-                        _pid = _parts[-1]
-                        _sp.run(f'taskkill /F /PID {_pid}', capture_output=True, shell=True)
-            except Exception:
-                pass
-        else:
-            _sp.run(["fuser", "-k", f"{_PORT}/tcp"], capture_output=True)
-            import time as _t; _t.sleep(1)
-            _sp.run(["fuser", "-k", "-9", f"{_PORT}/tcp"], capture_output=True)
-        import time as _t; _t.sleep(2)
-        # Wait up to 10s for the port to actually clear
-        for _try in range(10):
-            with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s2:
-                if _s2.connect_ex(("127.0.0.1", _PORT)) != 0:
-                    break
-            _t.sleep(1)
-        print(f"[APP] Port {_PORT} cleared ✅")
-    # ──────────────────────────────────────────────────────────────────────
-    ensure_neo4j_running()
-    # Ensure findings DB schema exists (but do NOT seed demo data)
-    try:
-        from cyber_range.services.findings_service import _ensure_schema
-        _ensure_schema()
-        print("[APP] ✅ Findings DB schema verified (no demo data)")
-    except Exception as _se:
-        print(f"[APP] ⚠ Could not init findings DB: {_se}")
 
-    # ZAP: detect-only (don't auto-launch — saves ~1GB RAM in cgroup)
-    try:
-        import urllib.request as _ur, json as _jj
-        with _ur.urlopen("http://127.0.0.1:8090/JSON/core/view/version/", timeout=2) as _r:
-            _zv = _jj.loads(_r.read()).get("version", "?")
-        print(f"[APP] ZAP daemon v{_zv} running on :8090 ✅")
-    except Exception:
-        print("[APP] ⚠️  ZAP not running — start in separate terminal:"
-              " java -Xmx512m -jar /usr/share/zaproxy/zap-2.17.0.jar -daemon -port 8090"
-              " -config api.disablekey=true -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true &")
-    # Browser auto-open disabled to prevent OOM kills
-    # _browser_thread = threading.Timer(1.2, open_browser)
-    # _browser_thread.daemon = True
-    # _browser_thread.start()
-    print("[APP] ✅ Navigate to http://0.0.0.0:9011/ or https://vulne.expediteconsults.com")
-    app.run(
-        host="0.0.0.0",
-        port=9011,
-        debug=False,
-        use_reloader=False,
-        threaded=True
-    )
 
 
 # =====================================================================
@@ -12781,5 +12719,33 @@ def submit_admin_login(_, username, password):
     status  = f"Admin: {u}"
     import cyber_range.moduls.ui_admin_panel as _ap
     return "admin", session, status, btn, _ap.generate_admin_panel_layout()
+
+
+if __name__ == "__main__":
+    ensure_neo4j_running()
+    try:
+        from cyber_range.services.findings_service import _ensure_schema
+        _ensure_schema()
+        print("[APP] ✅ Findings DB schema verified")
+        from cyber_range.services.neo4j_engine import neo4j
+        import sqlite3
+        conn = sqlite3.connect("vuln_intel.db")
+        c = conn.cursor()
+        c.execute("SELECT module, title, severity, status, host, description, mitre_id FROM platform_findings")
+        rows = [{"module": r[0], "title": r[1], "severity": r[2], "status": r[3], "host": r[4], "description": r[5], "mitre_id": r[6]} for r in c.fetchall()]
+        conn.close()
+        neo4j.sync_findings_and_topology(findings=rows)
+        print(f"[APP] ✅ Synced {len(rows)} findings to Neo4j graph")
+    except Exception as _se:
+        print(f"[APP] ⚠ Could not init findings DB: {_se}")
+
+    print("[APP] ✅ Starting Dash on http://0.0.0.0:9011")
+    app.run(
+        host="0.0.0.0",
+        port=9011,
+        debug=False,
+        use_reloader=False,
+        threaded=True
+    )
 
 
