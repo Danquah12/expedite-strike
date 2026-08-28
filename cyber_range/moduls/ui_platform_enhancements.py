@@ -1018,6 +1018,68 @@ def _build_scan_diff():
     return []
 
 
+def _build_scan_diff_graph(rows):
+    """
+    Build dual-panel high-impact visual charts for Scan Diff:
+    1. Host vs Findings distribution
+    2. CVSS Severity profile breakdown
+    """
+    if not rows:
+        return go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
+
+    from collections import Counter
+    # Count findings per host
+    host_counts = Counter(r.get("host", "unknown") for r in rows)
+    hosts = list(host_counts.keys())
+    counts = list(host_counts.values())
+
+    # Count severity
+    crit = sum(1 for r in rows if float(r.get("cvss", 0) or 0) >= 9.0)
+    high = sum(1 for r in rows if 7.0 <= float(r.get("cvss", 0) or 0) < 9.0)
+    med = sum(1 for r in rows if 4.0 <= float(r.get("cvss", 0) or 0) < 7.0)
+    low = sum(1 for r in rows if float(r.get("cvss", 0) or 0) < 4.0)
+
+    from plotly.subplots import make_subplots
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=("🖥️ Findings Discovered per Host Endpoint", "🛡️ Vulnerability Severity Profile"),
+        specs=[[{"type": "bar"}, {"type": "pie"}]]
+    )
+
+    # Subplot 1: Bar chart of hosts
+    fig.add_trace(go.Bar(
+        x=hosts, y=counts,
+        marker_color="#00d6b4",
+        text=counts,
+        textposition="outside",
+        textfont=dict(color="#ffffff", size=11),
+        name="Findings"
+    ), row=1, col=1)
+
+    # Subplot 2: Donut pie of CVSS severity
+    fig.add_trace(go.Pie(
+        labels=["Critical (≥9.0)", "High (7.0-8.9)", "Medium (4.0-6.9)", "Low (<4.0)"],
+        values=[crit, high, med, low],
+        hole=0.5,
+        marker=dict(colors=["#ff3355", "#ff8c00", "#ffcc00", "#00d6b4"]),
+        textinfo="label+percent",
+        textfont=dict(color="#ffffff", size=10),
+        name="Severity"
+    ), row=1, col=2)
+
+    fig.update_layout(
+        paper_bgcolor="#0b0f19",
+        plot_bgcolor="#111",
+        height=280,
+        margin=dict(t=50, b=30, l=30, r=30),
+        showlegend=False,
+        font=dict(color="#cbd5e1")
+    )
+    fig.update_xaxes(color="#aaa", gridcolor="#222", row=1, col=1)
+    fig.update_yaxes(color="#aaa", gridcolor="#222", row=1, col=1)
+    return fig
+
+
 def scan_diff_layout():
     rows = _build_scan_diff()
 
@@ -1026,7 +1088,7 @@ def scan_diff_layout():
     else:
         cols = ["cve","cvss","host","status","date"]
         STATUS_COLS = {"NEW":"#44ff88","EXISTING":"#888","nmap":"#00aaff",
-                       "zap":"#ffaa00","AegisProbe":"#bf79ff"}
+                       "zap":"#ffaa00","AegisProbe":"#bf79ff","autopentest-vulnscan":"#00d6b4"}
         header = html.Thead(html.Tr([html.Th(c.upper(),style=_th()) for c in cols]))
         body_rows = []
         for i, row in enumerate(rows):
@@ -1063,20 +1125,20 @@ def scan_diff_layout():
                className="text-muted mb-3",style={"fontSize":"13px"}),
         dbc.Row([
             dbc.Col(dbc.Card([dbc.CardBody([
-                html.Div(str(sum(1 for r in rows if r.get("status")=="NEW")),
-                         style={"color":"#44ff88","fontSize":"28px","fontWeight":"bold"}),
-                html.Small("New This Week",style={"color":"#888"}),
-            ])],style={"border":"1px solid #1a4a1a","backgroundColor":"#0d0d0d"}),md=3),
+                html.Div(str(sum(1 for r in rows if float(r.get("cvss", 0) or 0) >= 9.0)),
+                         style={"color":"#ff3355","fontSize":"28px","fontWeight":"bold"}),
+                html.Small("Critical Severity (CVSS ≥9.0)",style={"color":"#888"}),
+            ])],style={"border":"1px solid #ff335544","backgroundColor":"#0d0d0d"}),md=3),
             dbc.Col(dbc.Card([dbc.CardBody([
-                html.Div(str(sum(1 for r in rows if r.get("status")=="EXISTING")),
-                         style={"color":"#888","fontSize":"28px","fontWeight":"bold"}),
-                html.Small("Previously Known",style={"color":"#888"}),
-            ])],style={"border":"1px solid #333","backgroundColor":"#0d0d0d"}),md=3),
+                html.Div(str(sum(1 for r in rows if 7.0 <= float(r.get("cvss", 0) or 0) < 9.0)),
+                         style={"color":"#ff8c00","fontSize":"28px","fontWeight":"bold"}),
+                html.Small("High Severity (7.0 - 8.9)",style={"color":"#888"}),
+            ])],style={"border":"1px solid #ff8c0044","backgroundColor":"#0d0d0d"}),md=3),
             dbc.Col(dbc.Card([dbc.CardBody([
                 html.Div(str(len(rows)),
-                         style={"color":"#00aaff","fontSize":"28px","fontWeight":"bold"}),
-                html.Small("Total in View",style={"color":"#888"}),
-            ])],style={"border":"1px solid #1a3a5c","backgroundColor":"#0d0d0d"}),md=3),
+                         style={"color":"#00d6b4","fontSize":"28px","fontWeight":"bold"}),
+                html.Small("Total Findings in View",style={"color":"#888"}),
+            ])],style={"border":"1px solid #00d6b444","backgroundColor":"#0d0d0d"}),md=3),
             dbc.Col([
                 html.A(dbc.Button("⬇ Export CSV", color="info", outline=True,
                                    className="fw-bold w-100 mt-2"),
@@ -1084,6 +1146,21 @@ def scan_diff_layout():
                        download="scan_diff.csv"),
             ], md=3),
         ], className="mb-4"),
+
+        # Visual Scan Diff Graph Card
+        dbc.Card([
+            dbc.CardHeader(
+                html.Div([
+                    html.Span("📊 SCAN INTEL & HOST EXPOSURE TOPOLOGY", style={"fontWeight": "bold", "color": "#00d6b4", "fontSize": "12px", "fontFamily": "monospace"}),
+                    dbc.Badge("GRAPH TELEMETRY", color="success", className="float-end")
+                ]),
+                style={"backgroundColor": "#0f172a", "borderBottom": "1px solid #00d6b444"}
+            ),
+            dbc.CardBody([
+                dcc.Graph(figure=_build_scan_diff_graph(rows), config={"displayModeBar": False})
+            ])
+        ], style={"backgroundColor": "#0d111a", "border": "1px solid #1e293b", "borderRadius": "8px", "marginBottom": "20px"}),
+
         dbc.Card([
             dbc.CardBody(table_content)
         ],style={"border":"1px solid #333","backgroundColor":"#0d0d0d"}),
