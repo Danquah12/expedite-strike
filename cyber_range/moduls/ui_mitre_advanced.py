@@ -18,37 +18,40 @@ def generate_threat_actor_layout():
         with driver.session() as session:
             # Query the database for top Threat Actors
             result = session.run("""
-                MATCH (a:IntrusionSet)
+                MATCH (a:ThreatActor)
                 OPTIONAL MATCH (a)-[:USES]->(t:Technique)
-                OPTIONAL MATCH (v:Vulnerability)-[:MAPS_TO_TECHNIQUE]->(t)
-                RETURN a.name AS `Threat Actor / Group`, 
+                OPTIONAL MATCH (f:Finding) WHERE f.mitre_id = t.id OR (f)-[:MAPS_TO_TECHNIQUE]->(t)
+                RETURN coalesce(a.label, a.name, a.id) AS `Threat Actor / Group`, 
                        count(DISTINCT t) AS `Mapped Techniques`, 
-                       count(DISTINCT v) AS `Exploitable Vulnerabilities`,
-                       a.description AS `Description`
-                ORDER BY `Exploitable Vulnerabilities` DESC, `Mapped Techniques` DESC
-                LIMIT 20
+                       count(DISTINCT f) AS `Exploitable Vulnerabilities`,
+                       coalesce(a.description, a.desc, 'Known advanced persistent threat actor.') AS `Description`
+                ORDER BY `Mapped Techniques` DESC, `Threat Actor / Group` ASC
+                LIMIT 50
             """).data()
             
             if result:
                 df = pd.DataFrame(result)
             else:
-                df = pd.DataFrame([{"Threat Actor / Group": "No Data", "Mapped Techniques": 0, "Description": "No Intrusion Sets found in database."}])
+                df = pd.DataFrame([{"Threat Actor / Group": "No Data", "Mapped Techniques": 0, "Exploitable Vulnerabilities": 0, "Description": "No Threat Actors found in database."}])
     except Exception as e:
-        df = pd.DataFrame([{"Threat Actor / Group": "Error", "Mapped Techniques": 0, "Description": str(e)}])
+        df = pd.DataFrame([{"Threat Actor / Group": "Error", "Mapped Techniques": 0, "Exploitable Vulnerabilities": 0, "Description": str(e)}])
     finally:
         driver.close()
 
     table = dash_table.DataTable(
         data=df.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df.columns],
-        style_table={'overflowX': 'auto', 'backgroundColor': '#2A2A2A', 'color': 'white', 'borderRadius': '10px'},
-        style_header={'backgroundColor': '#1E1E1E', 'color': '#E0E0E0', 'fontWeight': 'bold', 'border': '1px solid #444'},
-        style_cell={'backgroundColor': '#2A2A2A', 'color': '#E0E0E0', 'textAlign': 'left', 'border': '1px solid #444', 'padding': '10px'},
+        sort_action="native",
+        filter_action="native",
+        style_table={'overflowX': 'auto', 'backgroundColor': '#0b0f19', 'color': 'white', 'borderRadius': '8px', 'border': '1px solid #2d3748'},
+        style_header={'backgroundColor': '#162032', 'color': '#00d6b4', 'fontWeight': 'bold', 'border': '1px solid #2d3748', 'textTransform': 'uppercase', 'fontSize': '11px', 'letterSpacing': '1px'},
+        style_cell={'backgroundColor': '#0b0f19', 'color': '#e2e8f0', 'textAlign': 'left', 'border': '1px solid #1a2234', 'padding': '10px 12px', 'fontSize': '12px'},
+        style_filter={'backgroundColor': '#131c2b', 'color': '#ffffff', 'border': '1px solid #2d3748'},
         style_data={'whiteSpace': 'normal', 'height': 'auto'},
         style_data_conditional=[
-            {'if': {'row_index': 'odd'}, 'backgroundColor': '#333333'}
+            {'if': {'row_index': 'odd'}, 'backgroundColor': '#111827'}
         ],
-        page_size=10
+        page_size=15
     )
 
     return dbc.Container([
@@ -264,38 +267,42 @@ def generate_control_effectiveness_layout():
     driver = _get_neo4j_driver()
     try:
         with driver.session() as session:
-            # Output the top Mitigations (Course of Action)
+            # Output the top Mitigations
             result = session.run("""
-                MATCH (c:CourseOfAction)-[:MITIGATES]->(t:Technique)
-                OPTIONAL MATCH (v:Vulnerability)-[:MAPS_TO_TECHNIQUE]->(t)
-                RETURN c.name AS `Security Control / Mitigation`, 
+                MATCH (c:Mitigation)
+                OPTIONAL MATCH (c)-[:MITIGATES]->(t:Technique)
+                OPTIONAL MATCH (f:Finding) WHERE f.mitre_id = t.id OR (f)-[:MAPS_TO_TECHNIQUE]->(t)
+                RETURN coalesce(c.label, c.name, c.id) AS `Security Control / Mitigation`, 
                        count(DISTINCT t) AS `Techniques Mitigated`, 
-                       count(DISTINCT v) AS `Vulnerabilities Covered`,
-                       c.description AS `Description`
-                ORDER BY `Vulnerabilities Covered` DESC, `Techniques Mitigated` DESC
-                LIMIT 20
+                       count(DISTINCT f) AS `Vulnerabilities Covered`,
+                       coalesce(c.description, c.desc, 'Recommended MITRE defensive control.') AS `Description`
+                ORDER BY `Techniques Mitigated` DESC, `Vulnerabilities Covered` DESC
+                LIMIT 50
             """).data()
             
             if result:
                 df = pd.DataFrame(result)
             else:
-                df = pd.DataFrame([{"Security Control / Mitigation": "No Data", "Techniques Mitigated": 0, "Description": "No CourseOfActions found."}])
+                df = pd.DataFrame([{"Security Control / Mitigation": "No Data", "Techniques Mitigated": 0, "Vulnerabilities Covered": 0, "Description": "No Mitigations found."}])
     except Exception as e:
-        df = pd.DataFrame([{"Security Control / Mitigation": "Error", "Techniques Mitigated": 0, "Description": str(e)}])
+        df = pd.DataFrame([{"Security Control / Mitigation": "Error", "Techniques Mitigated": 0, "Vulnerabilities Covered": 0, "Description": str(e)}])
     finally:
         driver.close()
 
     table = dash_table.DataTable(
         data=df.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df.columns],
-        style_table={'overflowX': 'auto', 'backgroundColor': '#2A2A2A', 'color': 'white', 'borderRadius': '10px'},
-        style_header={'backgroundColor': '#1E1E1E', 'color': '#E0E0E0', 'fontWeight': 'bold', 'border': '1px solid #444'},
-        style_cell={'backgroundColor': '#2A2A2A', 'color': '#E0E0E0', 'textAlign': 'left', 'border': '1px solid #444', 'padding': '10px'},
+        sort_action="native",
+        filter_action="native",
+        style_table={'overflowX': 'auto', 'backgroundColor': '#0b0f19', 'color': 'white', 'borderRadius': '8px', 'border': '1px solid #2d3748'},
+        style_header={'backgroundColor': '#162032', 'color': '#00d6b4', 'fontWeight': 'bold', 'border': '1px solid #2d3748', 'textTransform': 'uppercase', 'fontSize': '11px', 'letterSpacing': '1px'},
+        style_cell={'backgroundColor': '#0b0f19', 'color': '#e2e8f0', 'textAlign': 'left', 'border': '1px solid #1a2234', 'padding': '10px 12px', 'fontSize': '12px'},
+        style_filter={'backgroundColor': '#131c2b', 'color': '#ffffff', 'border': '1px solid #2d3748'},
         style_data={'whiteSpace': 'normal', 'height': 'auto'},
         style_data_conditional=[
-            {'if': {'row_index': 'odd'}, 'backgroundColor': '#333333'}
+            {'if': {'row_index': 'odd'}, 'backgroundColor': '#111827'}
         ],
-        page_size=10
+        page_size=15
     )
 
     return dbc.Container([
@@ -308,44 +315,46 @@ def generate_d3fend_layout():
     driver = _get_neo4j_driver()
     try:
         with driver.session() as session:
-            # Similar to Mitigations but targeting explicit IDs or generic defensive countermeasures mapped in DB
+            # Defensive countermeasures mapped in DB
             result = session.run("""
-                MATCH (c:CourseOfAction)
-                WHERE c.mitre_id IS NOT NULL
+                MATCH (c:Mitigation)
                 OPTIONAL MATCH (c)-[:MITIGATES]->(t:Technique)
-                OPTIONAL MATCH (v:Vulnerability)-[:MAPS_TO_TECHNIQUE]->(t)
-                RETURN c.mitre_id AS `Countermeasure ID`, 
-                       c.name AS `Defensive Artifact`, 
-                       count(DISTINCT v) AS `Vulnerabilities Covered`,
-                       c.description AS `Implementation Detail`
+                OPTIONAL MATCH (f:Finding) WHERE f.mitre_id = t.id OR (f)-[:MAPS_TO_TECHNIQUE]->(t)
+                RETURN coalesce(c.id, c.stix_id) AS `Countermeasure ID`, 
+                       coalesce(c.label, c.name) AS `Defensive Artifact`, 
+                       count(DISTINCT f) AS `Vulnerabilities Covered`,
+                       coalesce(c.description, c.desc, 'Standard hardening configuration and security control implementation.') AS `Implementation Detail`
                 ORDER BY `Vulnerabilities Covered` DESC, `Countermeasure ID` ASC
-                LIMIT 20
+                LIMIT 50
             """).data()
             
             if result:
                 df = pd.DataFrame(result)
             else:
-                df = pd.DataFrame([{"Countermeasure ID": "N/A", "Defensive Artifact": "No D3FEND Data", "Implementation Detail": "No corresponding MITRE IDs stored."}])
+                df = pd.DataFrame([{"Countermeasure ID": "N/A", "Defensive Artifact": "No D3FEND Data", "Vulnerabilities Covered": 0, "Implementation Detail": "No corresponding MITRE IDs stored."}])
     except Exception as e:
-        df = pd.DataFrame([{"Countermeasure ID": "Error", "Defensive Artifact": "Error", "Implementation Detail": str(e)}])
+        df = pd.DataFrame([{"Countermeasure ID": "Error", "Defensive Artifact": "Error", "Vulnerabilities Covered": 0, "Implementation Detail": str(e)}])
     finally:
         driver.close()
 
     table = dash_table.DataTable(
         data=df.to_dict("records"),
         columns=[{"name": i, "id": i} for i in df.columns],
-        style_table={'overflowX': 'auto', 'backgroundColor': '#2A2A2A', 'color': 'white', 'borderRadius': '10px'},
-        style_header={'backgroundColor': '#2C1B4D', 'color': '#E0E0E0', 'fontWeight': 'bold', 'border': '1px solid #444'},
-        style_cell={'backgroundColor': '#1E1A29', 'color': '#E0E0E0', 'textAlign': 'left', 'border': '1px solid #444', 'padding': '10px'},
+        sort_action="native",
+        filter_action="native",
+        style_table={'overflowX': 'auto', 'backgroundColor': '#0b0f19', 'color': 'white', 'borderRadius': '8px', 'border': '1px solid #2d3748'},
+        style_header={'backgroundColor': '#162032', 'color': '#00d6b4', 'fontWeight': 'bold', 'border': '1px solid #2d3748', 'textTransform': 'uppercase', 'fontSize': '11px', 'letterSpacing': '1px'},
+        style_cell={'backgroundColor': '#0b0f19', 'color': '#e2e8f0', 'textAlign': 'left', 'border': '1px solid #1a2234', 'padding': '10px 12px', 'fontSize': '12px'},
+        style_filter={'backgroundColor': '#131c2b', 'color': '#ffffff', 'border': '1px solid #2d3748'},
         style_data={'whiteSpace': 'normal', 'height': 'auto'},
         style_data_conditional=[
-            {'if': {'row_index': 'odd'}, 'backgroundColor': '#252033'}
+            {'if': {'row_index': 'odd'}, 'backgroundColor': '#111827'}
         ],
-        page_size=10
+        page_size=15
     )
 
     return dbc.Container([
-        html.H3("🏰 D3FEND Mapping (Defensive Countermeasures)", className="text-primary mb-3"),
-        html.P("Map your architecture against the MITRE D3FEND framework to understand countermeasure coverage.", className="text-light"),
-        html.Div(table, className="mt-4 shadow-sm border border-secondary rounded")
+        html.H3("🛡️ NSA / D3FEND Matrix", className="text-info mb-3"),
+        html.P("Granular defensive engineering matrix mapping specific architectural hardening countermeasures to CVEs and Findings.", className="text-light"),
+        html.Div(table, className="mt-4 shadow-sm")
     ], fluid=True, className="p-4")
