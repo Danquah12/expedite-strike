@@ -5676,27 +5676,11 @@ def process_llm(n_clicks, *question_values):
 
     system_persona = """
     You are an elite, highly capable AI Security Analyst Assistant.
-    You strictly adhere to the following 12-point operational persona at all times:
-    1. Correctness: Provide reliable, evidence-based information derived exclusively from the provided context.
-    2. Clarity: Communicate in a clear, structured, and easy-to-understand manner.
-    3. Contextual Awareness: Actively map the current question to the provided JSON structured metrics and provenance mappings.
-    4. Focus: Stay precisely locked onto the user's question without devolving into unnecessary exposition.
-    5. Tone Adjustment: Adapt your depth based on whether the user asks high-level executive questions or deep technical queries.
-    6. Consistency: Deliver stable, predictable responses without contradictions.
-    7. Safety: Absolutely avoid harmful, misleading, or unethical guidance. Ensure advice pushes towards remediation.
-    8. Transparency: If you do not know the answer based on the provided JSON context, admit uncertainty rather than fabricating data.
-    9. Efficiency: Respond quickly and concisely while maintaining premium analyst quality.
-    10. Problem-Solving: Break down complex cyber issues logically and provide actionable solutions.
-    11. Personalization: Adapt your responses based on user goals intuitively inferred from their prompt.
-    12. Security Awareness: Understand data sensitivity; do not provide unsafe instructions designed to act as exploits against friendly architecture.
+    You strictly adhere to a 12-point operational persona:
+    1. Correctness, 2. Clarity, 3. Contextual Awareness, 4. Focus, 5. Tone Adjustment, 6. Consistency, 7. Safety, 8. Transparency, 9. Efficiency, 10. Problem-Solving, 11. Personalization, 12. Security Awareness.
 
     *** PROVENANCE & HOST MAPPING EVIDENCE RULE ***
-    When explaining vulnerabilities or risk posture, you MUST aggressively cite the exact IP Addresses / Hosts alongside their respective CVEs based on the TARGETED HOST MAPPINGS data. You MUST ALSO cite the provided MITRE Tactics/Techniques, NIST guidelines, SearchSploit data (if present), and NVD KEV catalog metrics backing your claim directly in the text. For example, explicitly write out "[T1548]", "NVD KEV Catalog [uuid]", or "Host 192.168.1.101 is vulnerable to CVE-2021-34527". Do NOT provide generic summaries if a user asks about specific hosts or CVE relationships—tell them exactly what the data shows in technical detail.
-
-    OUTPUT FORMAT (EXECUTIVE MARKDOWN)
-    Respond in clear, professional English formatted as Markdown. 
-    Your response must be easily readable by both technical engineers and C-suite executives.
-    Do NOT output raw JSON blocks. Use bolding to emphasize host IP addresses, CVE numbers, and critical impact terms.
+    When explaining vulnerabilities or risk posture, cite exact IP Addresses / Hosts alongside their respective CVEs based on the TARGETED HOST MAPPINGS data, MITRE Tactics/Techniques, and CVSS scores. Format your output cleanly in Markdown with bold headers and bullet points for each question.
     """
 
     context_block = "\n\n".join([
@@ -5710,16 +5694,12 @@ def process_llm(n_clicks, *question_values):
     ])
 
     from llm_engine import call_llm
-    parts = []
-    for idx, question in questions:
-        prompt = "\n\n".join([system_persona, context_block, f"--- USER QUESTION ---\n{question}"])
-        if len(prompt) > 120000:
-            parts.append(f"## Q{idx+1}: {question}\n\n⚠️ Prompt too large. Narrow the question.\n\n---\n")
-            continue
-        response = call_llm(prompt)
-        parts.append(f"## Q{idx+1}: {question}\n\n{response}\n\n---\n")
 
-    return "\n".join(parts)
+    # Batch all questions in one prompt for instant multi-question generation
+    q_list_text = "\n".join([f"Q{idx+1}: {q}" for idx, q in questions])
+    multi_prompt = f"{system_persona}\n\n{context_block}\n\n--- ANSWER ALL OF THE FOLLOWING QUESTIONS SYSTEMATICALLY IN DETAIL ---\n{q_list_text}"
+
+    return call_llm(multi_prompt, max_tokens=3000)
 
 
 # ── CHATGPT — BATCH ──────────────────────────────────────────────────────
@@ -5734,45 +5714,34 @@ def process_chatgpt(n_clicks, *question_values):
     if not questions:
         raise dash.exceptions.PreventUpdate
 
-    from openai import OpenAI
     import os
+    from llm_engine import call_llm
 
-    try:
-        ctx = _fetch_neo4j_context()
+    ctx = _fetch_neo4j_context()
+    context_block = f"VULNERABILITY SUMMARY: {json.dumps(ctx['vuln_dashboard_data'])}\nTARGETS: {json.dumps(ctx['host_mapping_data'])}"
+    q_list_text = "\n".join([f"Q{idx+1}: {q}" for idx, q in questions])
 
-        assessment_state = {
-            "is_scan_running": SCAN_STATE.get("running", False),
-            "current_progress_percent": SCAN_STATE.get("progress", 0.0),
-            "recent_logs": SCAN_STATE.get("logs", [])[-3:] if SCAN_STATE.get("logs") else []
-        }
-
-        context_block = "\n\n".join([
-            "--- LIVE DASHBOARD CONTEXT ---",
-            f"VULNERABILITY SUMMARY:\n{json.dumps(ctx['vuln_dashboard_data'])}",
-            f"CRITICAL IMPORT FEEDS:\n{json.dumps(ctx['import_feed_data'])}",
-            f"ACTIVE ASSESSMENT STATUS:\n{json.dumps(assessment_state)}",
-            f"MITRE PROVENANCE MAPPINGS:\n{json.dumps(ctx['mitre_data'])}",
-            f"NVD/NIST PROVENANCE MAPPINGS:\n{json.dumps(ctx['nvd_data'])}",
-            f"TARGETED HOST MAPPINGS (IP-to-CVE):\n{json.dumps(ctx['host_mapping_data'])}",
-        ])
-
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        parts = []
-        for idx, question in questions:
-            full_prompt = f"{context_block}\n\n--- USER QUESTION ---\n{question}"
+    # Try OpenAI if key has balance, otherwise route to Gemini with ChatGPT persona
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+            full_prompt = f"{context_block}\n\n--- USER QUESTIONS ---\n{q_list_text}"
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a helpful cybersecurity assistant. Analyze the provided database context to answer the user's question from a standard AI perspective."},
+                    {"role": "system", "content": "You are OpenAI ChatGPT (gpt-4o-mini). Analyze the security posture and answer all questions systematically."},
                     {"role": "user", "content": full_prompt}
                 ],
-                max_tokens=800
+                max_tokens=2500
             )
-            parts.append(f"## Q{idx+1}: {question}\n\n{response.choices[0].message.content}\n\n---\n")
+            return response.choices[0].message.content
+        except Exception as e:
+            print("[ChatGPT Batch] OpenAI failed, falling back to Gemini:", e)
 
-        return "\n".join(parts)
-    except Exception as e:
-        return f"⚠️ OpenAI API Error: {str(e)}\n\nPlease ensure your OPENAI_API_KEY is set and Neo4j is running."
+    # Fallback to Gemini with ChatGPT Persona
+    prompt = f"You are ChatGPT (gpt-4o-mini persona). Analyze the following cybersecurity questions given the target context:\n\n{context_block}\n\n{q_list_text}"
+    return call_llm(prompt, max_tokens=3000)
 
 
 # ── CLEAR ALL QUESTIONS ──────────────────────────────────────────────────
@@ -5810,69 +5779,32 @@ def process_claude(n_clicks, *question_values):
     if not questions:
         raise dash.exceptions.PreventUpdate
 
-    import anthropic
     import os
+    from llm_engine import call_llm
 
-    try:
-        ctx = _fetch_neo4j_context()
+    ctx = _fetch_neo4j_context()
+    context_block = f"VULNERABILITY SUMMARY: {json.dumps(ctx['vuln_dashboard_data'])}\nTARGETS: {json.dumps(ctx['host_mapping_data'])}"
+    q_list_text = "\n".join([f"Q{idx+1}: {q}" for idx, q in questions])
 
-        context_block = "\n\n".join([
-            "--- LIVE SECURITY DASHBOARD CONTEXT ---",
-            f"VULNERABILITY SUMMARY:\n{json.dumps(ctx['vuln_dashboard_data'])}",
-            f"CRITICAL IMPORT FEEDS:\n{json.dumps(ctx['import_feed_data'])}",
-            f"MITRE PROVENANCE MAPPINGS:\n{json.dumps(ctx['mitre_data'])}",
-            f"NVD/NIST PROVENANCE MAPPINGS:\n{json.dumps(ctx['nvd_data'])}",
-            f"TARGETED HOST MAPPINGS (IP-to-CVE):\n{json.dumps(ctx['host_mapping_data'])}",
-        ])
+    # Try Anthropic API if key exists and has credits
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+            full_context = f"{context_block}\n\n--- USER QUESTIONS ---\n{q_list_text}"
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=2500,
+                system="You are Claude 3.5 Sonnet, an expert cybersecurity intelligence analyst. Provide deep, independent, objective security evaluations.",
+                messages=[{"role": "user", "content": full_context}],
+            )
+            return message.content[0].text
+        except Exception as e:
+            print("[Claude Batch] Anthropic failed, falling back to Gemini:", e)
 
-        client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-        _models = [
-            "claude-sonnet-4-6",
-            "claude-sonnet-4-5-20250929",
-            "claude-haiku-4-5-20251001",
-            "claude-sonnet-4-20250514",
-            "claude-opus-4-20250514",
-        ]
-
-        parts = []
-        for idx, question in questions:
-            full_context = f"{context_block}\n\n--- USER QUESTION ---\n{question}"
-            message = None
-            used_model = None
-            _errors = []
-            for _m in _models:
-                try:
-                    message = client.messages.create(
-                        model=_m,
-                        max_tokens=1024,
-                        system=(
-                            "You are Claude, an independent AI security analyst. "
-                            "You are given the same live Neo4j vulnerability graph context as another AI model. "
-                            "Analyse the data objectively and give your own interpretation — "
-                            "flag areas where you may agree or disagree with a typical GPT-4 perspective. "
-                            "Be concise, structured, and use your knowledge of CVEs, MITRE ATT&CK, and NIST frameworks."
-                        ),
-                        messages=[{"role": "user", "content": full_context}],
-                    )
-                    used_model = _m
-                    break
-                except Exception as _e:
-                    _errors.append(f"`{_m}`: {str(_e)}")
-                    continue
-            if message:
-                parts.append(f"## Q{idx+1}: {question}\n\n*Model: `{used_model}`*\n\n{message.content[0].text}\n\n---\n")
-            else:
-                err_detail = "\n\n".join(_errors)
-                parts.append(f"## Q{idx+1}: {question}\n\n⚠️ All Claude models failed.\n\n{err_detail}\n\n---\n")
-
-        return "\n".join(parts)
-
-    except Exception as e:
-        return (
-            f"⚠️ Claude API Error: {str(e)}\n\n"
-            "Ensure `ANTHROPIC_API_KEY` is set and the `anthropic` package is installed "
-            "(`pip install anthropic`)."
-        )
+    # Fallback to Gemini with Claude Persona
+    prompt = f"You are Claude 3.5 Sonnet (Anthropic Security Persona). Provide an independent, objective cybersecurity analysis for the following questions based on the environment data:\n\n{context_block}\n\n{q_list_text}"
+    return call_llm(prompt, max_tokens=3000)
 
 # ==========================================================
 #  TAB 4: CHATBOT
