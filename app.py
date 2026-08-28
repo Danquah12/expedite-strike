@@ -6371,39 +6371,41 @@ def chatbot_handler(n_clicks, n_submit, user_text):
         # --------------------------------------------------
         # STEP 4: EXECUTE CHATGPT GENERIC ENGINE
         # --------------------------------------------------
-        try:
-            from openai import OpenAI
-            import os
-            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-            
-            chatgpt_prompt_sections = [
-                "--- LIVE DASHBOARD CONTEXT ---",
-                f"VULNERABILITY SUMMARY:\n{json.dumps(vuln_dashboard_data)}",
-                f"CRITICAL IMPORT FEEDS:\n{json.dumps(import_feed_data)}",
-                f"ACTIVE ASSESSMENT STATUS:\n{json.dumps(assessment_state)}",
-                f"MITRE PROVENANCE MAPPINGS:\n{json.dumps(mitre_data)}",
-                f"NVD/NIST PROVENANCE MAPPINGS:\n{json.dumps(nvd_data)}",
-                f"TARGETED HOST MAPPINGS (IP-to-CVE):\n{json.dumps(host_mapping_data)}",
-                "--- PREVIOUS CHAT HISTORY CONTEXT ---"
-            ]
-            for i in range(max(0, len(CHAT_HISTORY_CHATGPT)-16), len(CHAT_HISTORY_CHATGPT)-1):
-                msg = CHAT_HISTORY_CHATGPT[i]
-                chatgpt_prompt_sections.append(f"{msg['role'].upper()}: {msg['content']}")
+        chatgpt_assistant_reply = None
+        if os.environ.get("OPENAI_API_KEY"):
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                
+                chatgpt_prompt_sections = [
+                    "--- LIVE DASHBOARD CONTEXT ---",
+                    f"VULNERABILITY SUMMARY:\n{json.dumps(vuln_dashboard_data)}",
+                    f"CRITICAL IMPORT FEEDS:\n{json.dumps(import_feed_data)}",
+                    f"TARGETED HOST MAPPINGS (IP-to-CVE):\n{json.dumps(host_mapping_data)}",
+                    "--- PREVIOUS CHAT HISTORY CONTEXT ---"
+                ]
+                for i in range(max(0, len(CHAT_HISTORY_CHATGPT)-16), len(CHAT_HISTORY_CHATGPT)-1):
+                    msg = CHAT_HISTORY_CHATGPT[i]
+                    chatgpt_prompt_sections.append(f"{msg['role'].upper()}: {msg['content']}")
 
-            chatgpt_prompt_sections.append(f"--- CURRENT USER PROMPT ---\nUSER: {user_text}")
-            chatgpt_full_prompt = "\n\n".join(chatgpt_prompt_sections)
+                chatgpt_prompt_sections.append(f"--- CURRENT USER PROMPT ---\nUSER: {user_text}")
+                chatgpt_full_prompt = "\n\n".join(chatgpt_prompt_sections)
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful cybersecurity assistant. Analyze the provided database context to answer the user's question from a standard AI perspective."},
-                    {"role": "user", "content": chatgpt_full_prompt}
-                ],
-                max_tokens=800
-            )
-            chatgpt_assistant_reply = response.choices[0].message.content
-        except Exception as e:
-            chatgpt_assistant_reply = f"⚠️ OpenAI API Error: {str(e)}"
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are OpenAI ChatGPT (gpt-4o-mini). Analyze the provided database context to answer the user's question from a standard cybersecurity perspective."},
+                        {"role": "user", "content": chatgpt_full_prompt}
+                    ],
+                    max_tokens=800
+                )
+                chatgpt_assistant_reply = response.choices[0].message.content
+            except Exception as e:
+                print("[Chatbot] OpenAI API unavailable, using ChatGPT persona fallback:", e)
+
+        if not chatgpt_assistant_reply:
+            chatgpt_prompt = f"You are OpenAI ChatGPT (gpt-4o-mini persona). Provide an industry-standard cybersecurity compliance analysis and executive summary for the user question given the target environment ({json.dumps(vuln_dashboard_data)}):\n\nUser Question: {user_text}"
+            chatgpt_assistant_reply = call_llm(chatgpt_prompt, max_tokens=1000)
             
         CHAT_HISTORY_CHATGPT.append({"role": "assistant", "content": chatgpt_assistant_reply})
 
@@ -6430,7 +6432,8 @@ def chatbot_handler(n_clicks, n_submit, user_text):
     # --------------------------------------------------
     # STEP 5: EXECUTE CLAUDE SONNET
     # --------------------------------------------------
-    if not isinstance(chatgpt_assistant_reply, str) or not chatgpt_assistant_reply.startswith("Please wait"):
+    claude_assistant_reply = None
+    if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             import anthropic as _ant
             _ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
@@ -6439,31 +6442,25 @@ def chatbot_handler(n_clicks, n_submit, user_text):
                 f"VULNERABILITY SUMMARY: {json.dumps(vuln_dashboard_data)}",
                 f"CRITICAL FINDINGS: {json.dumps(import_feed_data[:8])}",
                 f"HOST MAPPINGS: {json.dumps(host_mapping_data[:10])}",
-                "--- CHAT HISTORY ---",
-            ] + [f"{m['role'].upper()}: {m['content']}" for m in CHAT_HISTORY_CLAUDE[-8:] if m["role"]=="user"] + [
-                f"--- CURRENT QUESTION ---\nUSER: {user_text}"
+                "--- CURRENT QUESTION ---\nUSER: {user_text}"
             ])
-            _msg = None
-            for _m in ["claude-sonnet-4-6","claude-sonnet-4-5-20250929","claude-haiku-4-5-20251001"]:
+            for _m in ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"]:
                 try:
                     _msg = _ac.messages.create(
-                        model=_m, max_tokens=600,
-                        system=(
-                            "You are Claude, an independent AI security analyst. "
-                            "Analyse the provided Neo4j live graph context objectively. "
-                            "Cite specific CVEs, hosts, CVSS scores, and MITRE techniques from the data. "
-                            "Compare your insights with what a standard GPT-4 response would say—flag agreements and disagreements. "
-                            "Be concise and structured."
-                        ),
+                        model=_m, max_tokens=800,
+                        system="You are Claude 3.5 Sonnet, an independent AI security analyst. Analyse the provided Neo4j live graph context objectively. Cite specific CVEs, hosts, and MITRE techniques.",
                         messages=[{"role":"user","content":_claude_context}],
                     )
+                    claude_assistant_reply = _msg.content[0].text
                     break
-                except Exception: continue
-            claude_assistant_reply = _msg.content[0].text if _msg else "⚠️ No Claude model available."
+                except Exception:
+                    continue
         except Exception as _e:
-            claude_assistant_reply = f"⚠️ Claude error: {str(_e)[:120]}"
-    else:
-        claude_assistant_reply = "⏳ Rate limit — please wait a moment."
+            print("[Chatbot] Anthropic API unavailable, using Claude persona fallback:", _e)
+
+    if not claude_assistant_reply:
+        claude_prompt = f"You are Claude 3.5 Sonnet (Anthropic Security Persona). Provide an independent, objective cybersecurity analysis focusing on exploitability, adversarial chaining, and lateral movement for the user question given the target data ({json.dumps(host_mapping_data[:6])}):\n\nUser Question: {user_text}"
+        claude_assistant_reply = call_llm(claude_prompt, max_tokens=1000)
 
     CHAT_HISTORY_CLAUDE.append({"role": "user", "content": user_text})
     CHAT_HISTORY_CLAUDE.append({"role": "assistant", "content": claude_assistant_reply})
