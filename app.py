@@ -10627,15 +10627,19 @@ def route_cloud_security(n_clicks):
 
 
 # =====================================================================
+# =====================================================================
 # DROPDOWN ROUTING CALLBACK (FOR EXTERNAL PEN TEST)
 # =====================================================================
 @callback(
     Output("tabs", "active_tab", allow_duplicate=True),
-    Input("menu-ext-pentest-0", "n_clicks"),
+    [
+        Input("menu-ext-pentest-0", "n_clicks"),
+        Input("menu-ext-pentest-cta", "n_clicks"),
+    ],
     prevent_initial_call=True
 )
-def route_ext_pentest(n_clicks):
-    if n_clicks:
+def route_ext_pentest(*clicks):
+    if any(c for c in clicks if c):
         return "ext-pentest"
     raise dash.exceptions.PreventUpdate
 
@@ -10645,11 +10649,14 @@ def route_ext_pentest(n_clicks):
 # =====================================================================
 @callback(
     Output("tabs", "active_tab", allow_duplicate=True),
-    Input("menu-osint-0", "n_clicks"),
+    [
+        Input("menu-osint-0", "n_clicks"),
+        Input("menu-osint-recon-cta", "n_clicks"),
+    ],
     prevent_initial_call=True
 )
-def route_osint(n_clicks):
-    if n_clicks:
+def route_osint(*clicks):
+    if any(c for c in clicks if c):
         return "osint"
     raise dash.exceptions.PreventUpdate
 
