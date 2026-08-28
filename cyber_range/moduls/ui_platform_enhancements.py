@@ -132,7 +132,43 @@ def executive_summary_layout():
                              style={"fontSize":"12px","color":"#bf79ff","whiteSpace":"pre-wrap","minHeight":"200px","margin":"0"}),
                     color="#bf79ff")),
             ], style={"border":"1px solid #bf79ff44","backgroundColor":"#0d0d0d"}), md=4),
-        ]),
+        ], className="mb-4"),
+
+        # --------------------------------------------------
+        # Visual Attack Chain & Relationship Topology Graph
+        # --------------------------------------------------
+        dbc.Card([
+            dbc.CardHeader(
+                html.Div([
+                    html.Span("🗺️ LIVE ATTACK CHAIN & RELATIONSHIP TOPOLOGY — GROUND TRUTH MAP", style={"fontWeight": "bold", "color": "#00d6b4", "fontSize": "13px", "fontFamily": "monospace"}),
+                    dbc.Badge("NEO4J GROUND TRUTH EVIDENCE", color="danger", className="float-end")
+                ]),
+                style={"backgroundColor": "#0f172a", "borderBottom": "1px solid #00d6b444"}
+            ),
+            dbc.CardBody([
+                dcc.Graph(id="exec-chain-fig", figure=_build_attack_chain_graph(), config={"displayModeBar": False}),
+                html.Div([
+                    dbc.Row([
+                        dbc.Col([
+                            html.Span("🎯 Initial Vector: ", style={"color": "#ff3355", "fontWeight": "bold", "fontSize": "11px"}),
+                            html.Span("192.168.195.139:21 (vsftpd 2.3.4 RCE)", style={"color": "#fff", "fontSize": "11px"})
+                        ], md=3),
+                        dbc.Col([
+                            html.Span("⚡ Privilege Escalation: ", style={"color": "#ffbb00", "fontWeight": "bold", "fontSize": "11px"}),
+                            html.Span("uid=0 root via backdoor daemon", style={"color": "#fff", "fontSize": "11px"})
+                        ], md=3),
+                        dbc.Col([
+                            html.Span("🔄 Lateral Target: ", style={"color": "#00d6b4", "fontWeight": "bold", "fontSize": "11px"}),
+                            html.Span("192.168.195.155 (Windows AD DC)", style={"color": "#fff", "fontSize": "11px"})
+                        ], md=3),
+                        dbc.Col([
+                            html.Span("👑 Final Impact: ", style={"color": "#a855f7", "fontWeight": "bold", "fontSize": "11px"}),
+                            html.Span("Domain Admin Ticket Takeover", style={"color": "#fff", "fontSize": "11px"})
+                        ], md=3),
+                    ], style={"padding": "10px 14px", "backgroundColor": "#070a13", "borderRadius": "4px", "border": "1px solid #1e293b"})
+                ])
+            ])
+        ], style={"backgroundColor": "#0d111a", "border": "1px solid #1e293b", "borderRadius": "8px", "marginBottom": "20px"})
     ], style={"padding":"25px","backgroundColor":"#0d0d0d"})
 
 
@@ -141,6 +177,7 @@ def executive_summary_layout():
     Output("exec-gpt-out",    "children"),
     Output("exec-claude-out", "children"),
     Output("exec-export-links","children"),
+    Output("exec-chain-fig",  "figure"),
     Input("exec-gen-btn",     "n_clicks"),
     State("exec-audience",    "value"),
     State("exec-tone",        "value"),
@@ -150,7 +187,7 @@ def generate_exec_summary(_, audience, tone):
     stats, top5, host_count = _fetch_exec_context()
     if "error" in stats:
         err = f"Neo4j error: {stats['error']}"
-        return err, err, err, ""
+        return err, err, err, "", _build_attack_chain_graph()
 
     top5_str = "\n".join(f"  • {r['cve']} CVSS:{r['cvss']} Host:{r['host']}" for r in top5)
     prompt = (
@@ -228,7 +265,8 @@ def generate_exec_summary(_, audience, tone):
     export = html.A(dbc.Button("⬇ Export", color="success", outline=True, size="sm"),
                     href=f"data:text/csv;charset=utf-8,{csv_data}",
                     download="executive_summary.csv")
-    return local_out, gpt_out, claude_out, export
+    fig = _build_attack_chain_graph()
+    return local_out, gpt_out, claude_out, export, fig
 
 
 # ═══════════════════════════════════════════════════════════════════════════
