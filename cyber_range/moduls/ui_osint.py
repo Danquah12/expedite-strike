@@ -828,6 +828,64 @@ def _run_osint_bg(target: str, target_type: str, scope: list[str]):
         _CMD_OUTPUTS["done"]  = "1"
 
 
+def _parse_osint_target_items(raw_input: str) -> list[dict]:
+    """Parse comma/newline/semicolon separated input into clean target descriptors."""
+    import re
+    from urllib.parse import urlparse
+    import ipaddress
+
+    raw_items = [t.strip() for t in re.split(r'[,;\n\r]+', raw_input) if t.strip()]
+    parsed = []
+
+    for item in raw_items[:10]:
+        clean = item
+        # Strip scheme and path if URL
+        if clean.startswith(("http://", "https://", "ftp://", "ws://", "wss://")):
+            try:
+                parsed_url = urlparse(clean)
+                clean = parsed_url.hostname or parsed_url.netloc or clean
+            except Exception:
+                clean = re.sub(r'^https?://', '', clean).split('/')[0]
+        else:
+            clean = clean.split('/')[0] if ('/' in clean and not re.search(r'/\d{1,2}$', clean)) else clean
+
+        # Detect type
+        is_cidr = False
+        is_ip = False
+        is_private_ip = False
+        try:
+            if '/' in clean:
+                net = ipaddress.ip_network(clean, strict=False)
+                is_cidr = True
+                is_private_ip = net.is_private
+            else:
+                ip_obj = ipaddress.ip_address(clean)
+                is_ip = True
+                is_private_ip = ip_obj.is_private
+        except ValueError:
+            pass
+
+        if is_cidr:
+            t_type = "subnet"
+        elif is_ip:
+            t_type = "ip"
+        elif "@" in clean:
+            t_type = "email"
+        elif "." in clean:
+            t_type = "domain"
+        else:
+            t_type = "username"
+
+        parsed.append({
+            "raw": item,
+            "target": clean,
+            "type": t_type,
+            "is_private": is_private_ip,
+        })
+
+    return parsed
+
+
 @callback(
     Output("osint-results",      "data",     allow_duplicate=True),
     Output("osint-status",       "children", allow_duplicate=True),
@@ -859,8 +917,12 @@ def run_osint(n, target, target_type, scope):
     }
     if not n or not target:
         raise PreventUpdate
-    target = target.strip()
-    scope  = scope or ["passive"]
+    target_raw = target.strip()
+    scope = scope or ["passive"]
+
+    target_items = _parse_osint_target_items(target_raw)
+    if not target_items:
+        raise PreventUpdate
 
     import uuid
     scan_id = str(uuid.uuid4())[:8]
@@ -879,120 +941,130 @@ def run_osint(n, target, target_type, scope):
     # ── Background worker ─────────────────────────────────────────
     def _do_scan():
         results: dict[str, Any] = {k: [] for k in _OSINT_RESULTS}
-        dns_data:  dict = {}
-        whois_raw: str  = ""
+        all_dns: dict = {}
+        all_whois: list[str] = []
 
         try:
-            # DNS
-            if target_type in ("domain", "ip") and "passive" in scope:
-                _log_step("🌐", f"Resolving DNS records for {target}…")
-                dns_data = _fetch_dns(target)
-                n_dns = sum(len(v) for v in dns_data.values())
-                _log_step("🌐", f"DNS complete — {n_dns} records found", ok=True)
+            total_targets = len(target_items)
+            _log_step("🚀", f"Starting Multi-Target OSINT Recon across {total_targets} target(s)…")
 
-            # WHOIS
-            if target_type in ("domain", "ip") and "passive" in scope:
-                _log_step("📝", f"Fetching WHOIS for {target}…")
-                whois_raw = _fetch_whois(target)
-                _log_step("📝", "WHOIS retrieved", ok=True)
+            for idx, item_info in enumerate(target_items, 1):
+                tgt = item_info["target"]
+                tgt_type = item_info["type"]
+                is_private = item_info["is_private"]
+                tag = f"[{idx}/{total_targets}] {tgt}"
 
-            # Subdomains via crt.sh
-            if target_type == "domain" and "passive" in scope:
-                _log_step("📡", f"Enumerating subdomains via crt.sh…")
-                try:
-                    r = requests.get(
-                        f"https://crt.sh/?q=%.{target}&output=json",
-                        timeout=20, headers={"User-Agent": "OSINT-Dashboard/1.0"}
-                    )
-                    if r.status_code == 200:
-                        data = r.json()
-                        subs = sorted({
-                            entry.get("name_value", "").replace("*.", "").lower()
-                            for entry in data
-                            if target in entry.get("name_value", "")
-                        })
-                        results["subdomains"] = subs[:100]
-                        _log_step("📡", f"Subdomains: {len(results['subdomains'])} found", ok=True)
-                    else:
-                        _log_step("📡", "crt.sh returned no results", ok=False)
-                except Exception as e:
-                    results["subdomains"] = []
-                    _log_step("📡", f"Subdomain enum failed: {e}", ok=False)
+                # DNS
+                if tgt_type in ("domain", "ip") and "passive" in scope:
+                    _log_step("🌐", f"{tag} — Resolving DNS records…")
+                    try:
+                        t_dns = _fetch_dns(tgt)
+                        for k, vals in t_dns.items():
+                            if k not in all_dns: all_dns[k] = []
+                            all_dns[k].extend(vals)
+                        n_dns = sum(len(v) for v in t_dns.values())
+                        _log_step("🌐", f"{tag} — DNS complete ({n_dns} records)", ok=True)
+                    except Exception as e_dns:
+                        _log_step("🌐", f"{tag} — DNS failed: {e_dns}", ok=False)
 
-            # Wayback Machine
-            if target_type == "domain" and "passive" in scope:
-                _log_step("📁", "Querying Wayback Machine for archived URLs…")
-                try:
-                    r = requests.get(
-                        f"http://web.archive.org/cdx/search/cdx?url=*.{target}/*"
-                        f"&output=json&fl=original&collapse=urlkey&limit=50",
-                        timeout=15
-                    )
-                    if r.status_code == 200:
-                        data = r.json()
-                        results["ips"] = [row[0] for row in data[1:] if row][:50]
-                        _log_step("📁", f"Wayback: {len(results['ips'])} archived URLs", ok=True)
-                    else:
-                        _log_step("📁", "Wayback returned no results", ok=False)
-                except Exception:
-                    results["ips"] = []
-                    _log_step("📁", "Wayback query failed", ok=False)
+                # WHOIS
+                if tgt_type in ("domain", "ip") and not is_private and "passive" in scope:
+                    _log_step("📝", f"{tag} — Fetching WHOIS…")
+                    try:
+                        w_raw = _fetch_whois(tgt)
+                        if w_raw: all_whois.append(f"=== WHOIS FOR {tgt} ===\n" + w_raw)
+                        _log_step("📝", f"{tag} — WHOIS retrieved", ok=True)
+                    except Exception:
+                        _log_step("📝", f"{tag} — WHOIS not available", ok=False)
 
-            # InternetDB
-            if target_type == "domain" and "passive" in scope:
-                a_ips = dns_data.get("A", []) + dns_data.get("AAAA", [])
-                if a_ips:
-                    _log_step("🖥️", f"InternetDB scan for {len(a_ips)} IP(s)…")
-                    results["internetdb"] = _fetch_internetdb(a_ips)
-                    _log_step("🖥️", f"InternetDB: {len(results['internetdb'])} hosts with data", ok=True)
+                # Subdomains via crt.sh (Public domains only)
+                if tgt_type == "domain" and not is_private and "passive" in scope:
+                    _log_step("📡", f"{tag} — Enumerating subdomains via crt.sh…")
+                    try:
+                        r = requests.get(
+                            f"https://crt.sh/?q=%.{tgt}&output=json",
+                            timeout=5, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+                        )
+                        if r.status_code == 200:
+                            data = r.json()
+                            subs = sorted({
+                                entry.get("name_value", "").replace("*.", "").lower()
+                                for entry in data
+                                if tgt in entry.get("name_value", "")
+                            })
+                            results["subdomains"].extend(subs[:50])
+                            _log_step("📡", f"{tag} — Subdomains: {len(subs[:50])} found", ok=True)
+                        else:
+                            _log_step("📡", f"{tag} — crt.sh returned no results", ok=False)
+                    except Exception:
+                        _log_step("📡", f"{tag} — crt.sh lookup timed out or unavailable", ok=False)
 
-            # Email harvest
-            if target_type == "domain" and "passive" in scope:
-                _log_step("📧", "Harvesting email addresses…")
-                dns_txt = dns_data.get("TXT", [])
-                results["emails"] = _fetch_hunter_emails(target, whois_raw, dns_txt)
-                n_e = len([e for e in results["emails"] if "@" in e.get("email", "")])
-                _log_step("📧", f"Emails: {n_e} addresses found", ok=True)
+                # Wayback Machine
+                if tgt_type == "domain" and not is_private and "passive" in scope:
+                    _log_step("📁", f"{tag} — Querying Wayback Machine…")
+                    try:
+                        r = requests.get(
+                            f"http://web.archive.org/cdx/search/cdx?url=*.{tgt}/*&output=json&fl=original&collapse=urlkey&limit=30",
+                            timeout=6
+                        )
+                        if r.status_code == 200:
+                            data = r.json()
+                            urls = [row[0] for row in data[1:] if row][:30]
+                            results["ips"].extend(urls)
+                            _log_step("📁", f"{tag} — Wayback: {len(urls)} archived URLs", ok=True)
+                    except Exception:
+                        pass
 
-            # Breach check
-            if target_type == "email" and "breach" in scope:
-                _log_step("🔓", f"Checking {target} against HaveIBeenPwned…")
-                results["breaches"] = _fetch_hibp(target)
-                _log_step("🔓", f"Breach check: {len(results['breaches'])} records", ok=True)
-            elif target_type == "domain" and "breach" in scope:
-                _log_step("🔓", f"Searching breach databases for @{target}…")
-                results["breaches"] = _fetch_domain_breaches(target)
-                n_br = len([b for b in results["breaches"] if b.get("count", 0) > 0])
-                _log_step("🔓", f"Breach DB: {len(results['breaches'])} sources checked, {n_br} hits", ok=True)
+                # InternetDB / Shodan
+                if tgt_type in ("domain", "ip") and not is_private and "passive" in scope:
+                    _log_step("🖥️", f"{tag} — Querying Shodan & InternetDB…")
+                    try:
+                        shod = _shodan_lookup(tgt)
+                        results["shodan"].extend(shod)
+                    except Exception:
+                        pass
 
-            # Shodan
-            if target_type in ("domain", "ip") and "passive" in scope:
-                _log_step("🔍", "Querying Shodan for exposed services…")
-                results["shodan"] = _shodan_lookup(target)
-                _log_step("🔍", f"Shodan: {len(results['shodan'])} service(s)", ok=True)
+                # Email harvesting
+                if tgt_type == "domain" and "passive" in scope:
+                    _log_step("📧", f"{tag} — Harvesting email addresses…")
+                    try:
+                        e_list = _fetch_hunter_emails(tgt, "\n".join(all_whois), all_dns.get("TXT", []))
+                        results["emails"].extend(e_list)
+                        n_e = len([e for e in e_list if "@" in e.get("email", "")])
+                        _log_step("📧", f"{tag} — Emails: {n_e} addresses discovered", ok=True)
+                    except Exception:
+                        pass
 
-            # Social checks
-            if target_type == "username" and "social" in scope:
-                _log_step("👥", f"Checking username '{target}' across platforms…")
-                results["social"] = _username_check(target)
-                n_s = len([s for s in results["social"] if s.get("found")])
-                _log_step("👥", f"Social: {n_s} profiles confirmed", ok=True)
-            elif target_type == "domain" and "social" in scope:
-                _log_step("👥", "Checking organisation social media presence…")
-                results["social"] = _fetch_org_social(target)
-                n_s = len([s for s in results["social"] if s.get("found")])
-                _log_step("👥", f"Social: {n_s} platforms confirmed", ok=True)
+                # Breach check
+                if "breach" in scope:
+                    if tgt_type == "email":
+                        results["breaches"].extend(_fetch_hibp(tgt))
+                    elif tgt_type == "domain":
+                        results["breaches"].extend(_fetch_domain_breaches(tgt))
 
+                # Social media
+                if "social" in scope:
+                    if tgt_type == "username":
+                        results["social"].extend(_username_check(tgt))
+                    elif tgt_type == "domain":
+                        _log_step("👥", f"{tag} — Checking organisation social media…")
+                        results["social"].extend(_fetch_org_social(tgt))
+
+            # Deduplicate
+            results["subdomains"] = list(dict.fromkeys(results["subdomains"]))
+            results["ips"]        = list(dict.fromkeys(results["ips"]))
+            
             # Persist
+            whois_str = "\n\n".join(all_whois)
             with _LOCK:
                 _OSINT_RESULTS.update(results)
-                _CMD_OUTPUTS["dns"]   = json.dumps(dns_data, indent=2)
-                _CMD_OUTPUTS["whois"] = whois_raw
+                _CMD_OUTPUTS["dns"]   = json.dumps(all_dns, indent=2)
+                _CMD_OUTPUTS["whois"] = whois_str
 
-            results["_dns_raw"]   = json.dumps(dns_data, indent=2)
-            results["_whois_raw"] = whois_raw
+            results["_dns_raw"]   = json.dumps(all_dns, indent=2)
+            results["_whois_raw"] = whois_str
 
-            _log_step("✅", f"OSINT complete for {target}")
+            _log_step("✅", f"OSINT reconnaissance complete across {total_targets} target(s)!")
 
         except Exception as ex:
             _log_step("❌", f"Scan error: {ex}", ok=False)
@@ -1005,15 +1077,15 @@ def run_osint(n, target, target_type, scope):
 
     threading.Thread(target=_do_scan, daemon=True).start()
 
-    # Return immediately — interval will poll for updates
+    summary_label = ", ".join([item["target"] for item in target_items[:3]]) + ("…" if len(target_items)>3 else "")
     return (
-        {},          # results (empty until done)
-        f"🔄 Scanning {target}…",  # status
-        html.Div(),  # stats bar (empty until done)
-        target,      # target store
+        {},
+        f"🔄 Scanning {summary_label}…",
+        html.Div(),
+        target_raw,
         _LIGHT_RUNNING,
-        f"🔴 Running — {target}",
-        False,       # interval disabled=False
+        f"🔴 Running — {summary_label}",
+        False,
     )
 
 
