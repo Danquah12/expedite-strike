@@ -9822,7 +9822,7 @@ def _build_mega_nav():
         ]),
         _cta_col([
             _cta("Start Recon", "🔭", "menu-osint-recon-cta"),
-            _cta("Run Pen Test", "🎯", "menu-ext-pentest-0"),
+            _cta("Run Pen Test", "🎯", "menu-ext-pentest-cta"),
             html.Div([
                 html.Span("LIVE FEEDS CONNECTED", className="mega-badge-title"),
                 html.Div("Dark Web · CISA KEV · NVD · Shodan", className="mega-badge-body"),
