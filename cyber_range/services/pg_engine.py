@@ -68,9 +68,12 @@ def get_pg():
         conn.commit()
     except Exception as e:
         if conn:
-            conn.rollback()
-        log.error("[PG] Error: %s", e)
-        raise
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        log.warning("[PG] Could not connect to PostgreSQL: %s", e)
+        yield None
     finally:
         if conn:
             conn.close()
