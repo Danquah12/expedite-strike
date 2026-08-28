@@ -501,36 +501,29 @@ def load_neo4j_preset_graph(b1, b2, b3, b4, b5, feed_source):
     # Preset queries — all filtered through Finding.source when a source is selected
     cypher_map = {
         "btn-assets": f"""
-            MATCH (a:Host)-[:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
-            OPTIONAL MATCH (s)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
-            WHERE 1=1 {src_filter}
-            OPTIONAL MATCH (a)-[r]->(b)
-            RETURN a, r, b LIMIT 150
+            MATCH (a:Host)
+            OPTIONAL MATCH (a)-[r:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
+            RETURN a, r, s LIMIT 150
         """,
         "btn-vuln": f"""
-            MATCH (s:Service)-[:HAS_FINDING|HAS_VULN]->(f)
-            WHERE (f:Finding OR f:Vulnerability) {src_filter}
-            OPTIONAL MATCH (h:Host)-[:RUNS_SERVICE|EXPOSES|HasService]->(s)
-            OPTIONAL MATCH (h)-[r]->(s)
-            OPTIONAL MATCH (s)-[r2]->(f)
-            RETURN h, r, s, r2, f LIMIT 150
+            MATCH (h:Host)-[r1:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY]->(f:Finding)
+            WHERE 1=1 {src_filter}
+            RETURN h, r1, f LIMIT 150
         """,
         "btn-tech-tac": """
-            MATCH (t:Technique)
-            OPTIONAL MATCH (t)-[r]->(ta:Tactic)
-            RETURN t, r, ta LIMIT 120
+            MATCH (t:Technique)-[r:PART_OF|SUBTECHNIQUE_OF*1..2]->(ta:Tactic)
+            RETURN t, r, ta LIMIT 150
         """,
         "btn-subtech": """
-            MATCH (t:Technique)
-            OPTIONAL MATCH (t)-[r]->(s:SubTechnique)
-            RETURN t, r, s LIMIT 120
+            MATCH (t:Technique)-[r:SUBTECHNIQUE_OF]->(p:Technique)
+            RETURN t, r, p LIMIT 150
         """,
         "btn-attack-path": f"""
-            MATCH (s:Service)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
+            MATCH (h:Host)-[r1:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY]->(f:Finding)
             WHERE 1=1 {src_filter}
-            MATCH (h:Host)-[:RUNS_SERVICE|EXPOSES|HasService]->(s)
-            OPTIONAL MATCH (f)-[r]->(tgt)
-            RETURN h, s, f, r, tgt LIMIT 120
+            OPTIONAL MATCH (f)-[r2:MAPS_TO_TECHNIQUE|USES_TECHNIQUE]->(t:Technique)
+            OPTIONAL MATCH (t)-[r3:PART_OF]->(tac:Tactic)
+            RETURN h, r1, f, r2, t, r3, tac LIMIT 150
         """,
     }
 
