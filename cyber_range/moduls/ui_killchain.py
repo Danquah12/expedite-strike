@@ -247,7 +247,7 @@ def _render_standalone_killchain(selected_phase=None) -> html.Div:
                 for t in p["tactics"]
             ]),
 
-        ], id={"type": "kc-phase-btn", "index": p_name}, style={
+        ], id=f"kc-btn-{i}", style={
             "background":    f"linear-gradient(160deg, {color}15 0%, {_CARD} 100%)" if is_sel else f"linear-gradient(160deg, {color}08 0%, {_CARD} 100%)",
             "border":        f"2px solid {color}" if is_sel else f"1px solid {color}33",
             "boxShadow":     f"0 0 12px {color}44" if is_sel else "none",
@@ -507,9 +507,8 @@ def killchain_tab() -> html.Div:
             html.Div([
                 html.Span("ℹ️ ", style={"marginRight": "6px"}),
                 html.Span(
-                    "This board reads the live SimulationEngine. "
-                    "Below is the static Kill Chain anatomy from your Neo4j graph. "
-                    "Load a scenario in Attack Chain Modeler to overlay simulation state.",
+                    "This board reads the live SimulationEngine and correlates all real vulnerability findings across the 7 Kill Chain phases. "
+                    "Click on any phase block above to inspect active target findings and prioritized defensive countermeasures.",
                     style={"color": _DIM, "fontSize": "11px"},
                 ),
             ]),
@@ -532,13 +531,17 @@ def register_callbacks(app):
 
     @app.callback(
         Output("kc-selected-phase", "data"),
-        Input({"type": "kc-phase-btn", "index": ALL}, "n_clicks"),
+        [Input(f"kc-btn-{i}", "n_clicks") for i in range(7)],
         prevent_initial_call=True,
     )
-    def set_selected_phase(clicks):
+    def set_selected_phase(*btn_clicks):
         from dash import ctx
-        if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
-            return ctx.triggered_id.get("index", "Reconnaissance")
+        if ctx.triggered_id:
+            try:
+                idx = int(ctx.triggered_id.replace("kc-btn-", ""))
+                return _KILL_CHAIN[idx]["phase"]
+            except Exception:
+                pass
         return no_update
 
     @app.callback(
