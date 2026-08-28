@@ -1021,15 +1021,15 @@ def _build_scan_diff():
 def _build_scan_diff_graph(rows):
     """
     Build dual-panel high-impact visual charts for Scan Diff:
-    1. Host vs Findings distribution
-    2. CVSS Severity profile breakdown
+    1. Host vs Findings distribution with full visible hostnames
+    2. Clean CVSS Severity profile donut chart with legend
     """
     if not rows:
         return go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
 
     from collections import Counter
     # Count findings per host
-    host_counts = Counter(r.get("host", "unknown") for r in rows)
+    host_counts = Counter(r.get("host", "unknown") for r in rows if r.get("host") not in (None, "", "?"))
     hosts = list(host_counts.keys())
     counts = list(host_counts.values())
 
@@ -1043,40 +1043,72 @@ def _build_scan_diff_graph(rows):
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("🖥️ Findings Discovered per Host Endpoint", "🛡️ Vulnerability Severity Profile"),
-        specs=[[{"type": "bar"}, {"type": "pie"}]]
+        specs=[[{"type": "bar"}, {"type": "pie"}]],
+        horizontal_spacing=0.15
     )
 
     # Subplot 1: Bar chart of hosts
     fig.add_trace(go.Bar(
         x=hosts, y=counts,
-        marker_color="#00d6b4",
-        text=counts,
+        marker=dict(
+            color=counts,
+            colorscale="Teal",
+            line=dict(color="#00d6b4", width=1.5)
+        ),
+        text=[f"<b>{c}</b>" for c in counts],
         textposition="outside",
-        textfont=dict(color="#ffffff", size=11),
+        textfont=dict(color="#ffffff", size=12),
         name="Findings"
     ), row=1, col=1)
 
     # Subplot 2: Donut pie of CVSS severity
+    labels = ["Critical (≥9.0)", "High (7.0-8.9)", "Medium (4.0-6.9)", "Low (<4.0)"]
+    values = [crit, high, med, low]
+    colors = ["#ff3355", "#ff8c00", "#ffcc00", "#00d6b4"]
+
     fig.add_trace(go.Pie(
-        labels=["Critical (≥9.0)", "High (7.0-8.9)", "Medium (4.0-6.9)", "Low (<4.0)"],
-        values=[crit, high, med, low],
-        hole=0.5,
-        marker=dict(colors=["#ff3355", "#ff8c00", "#ffcc00", "#00d6b4"]),
-        textinfo="label+percent",
-        textfont=dict(color="#ffffff", size=10),
-        name="Severity"
+        labels=labels,
+        values=values,
+        hole=0.55,
+        marker=dict(colors=colors, line=dict(color="#0b0f19", width=2)),
+        textinfo="percent",
+        textfont=dict(color="#ffffff", size=11, family="monospace"),
+        name="Severity",
+        showlegend=True
     ), row=1, col=2)
 
     fig.update_layout(
         paper_bgcolor="#0b0f19",
-        plot_bgcolor="#111",
-        height=280,
-        margin=dict(t=50, b=30, l=30, r=30),
-        showlegend=False,
+        plot_bgcolor="#070a13",
+        height=380,
+        margin=dict(t=60, b=70, l=40, r=40),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.15,
+            xanchor="center",
+            x=0.75,
+            font=dict(color="#cbd5e1", size=10),
+            bgcolor="rgba(0,0,0,0)"
+        ),
         font=dict(color="#cbd5e1")
     )
-    fig.update_xaxes(color="#aaa", gridcolor="#222", row=1, col=1)
-    fig.update_yaxes(color="#aaa", gridcolor="#222", row=1, col=1)
+    fig.update_xaxes(
+        color="#cbd5e1",
+        gridcolor="#1e293b",
+        tickangle=-20,
+        tickfont=dict(size=11, family="monospace"),
+        row=1, col=1
+    )
+    fig.update_yaxes(
+        color="#cbd5e1",
+        gridcolor="#1e293b",
+        title="Count",
+        row=1, col=1
+    )
+    # Style subplot titles
+    for annotation in fig['layout']['annotations']:
+        annotation['font'] = dict(size=13, color='#00d6b4', family='sans-serif')
     return fig
 
 
