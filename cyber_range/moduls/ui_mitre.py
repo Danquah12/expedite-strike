@@ -555,10 +555,76 @@ def display_mitre_node_details(node_data):
                 
                 return content
                 
+            elif ntype in ["ThreatActor", "IntrusionSet"]:
+                q = """
+                MATCH (a) 
+                WHERE elementId(a) = $nid OR toString(id(a)) = $nid OR a.id = $nid OR a.name = $nlabel OR a.label = $nlabel
+                OPTIONAL MATCH (a)-[:USES]->(t:Technique)
+                OPTIONAL MATCH (v:Finding) WHERE v.mitre_id = t.id OR (v)-[:MAPS_TO_TECHNIQUE]->(t)
+                RETURN a, 
+                       collect(DISTINCT coalesce(t.name, t.label, t.id)) AS techniques,
+                       collect(DISTINCT v.cve) AS affected_cves
+                LIMIT 1
+                """
+                res = session.run(q, nid=str(nid), nlabel=str(nlabel)).data()
+                data = res[0]["a"] if res and res[0].get("a") else {}
+                techniques = [t for t in res[0]["techniques"] if t] if res and res[0].get("techniques") else []
+                affected_cves = [c for c in res[0]["affected_cves"] if c] if res and res[0].get("affected_cves") else []
+                
+                desc = str(data.get("description") or data.get("desc") or "Known advanced persistent threat (APT) actor tracked in Enterprise MITRE ATT&CK STIX framework.")
+                actor_id = data.get("id", "Unknown")
+                
+                content = [
+                    html.H4(f"🕵️ Threat Actor: {nlabel}", className="text-danger", style={"borderBottom": "1px solid #555", "paddingBottom": "10px", "marginTop": "10px"}),
+                    html.P([html.Strong("STIX ID: ", style={"color": "#33ccff"}), actor_id]),
+                    html.P([html.Strong("Classification: ", style={"color": "#33ccff"}), "Nation-State / Advanced Persistent Threat (APT)"]),
+                ]
+                
+                content.append(html.Hr(style={"borderColor": "#444"}))
+                content.append(html.H5("🎯 Associated Techniques & TTPs", className="text-warning"))
+                if techniques:
+                    tech_items = [html.Li(t, style={"color": "#ff8c00", "fontSize": "12px", "marginBottom": "4px"}) for t in techniques[:15]]
+                    if len(techniques) > 15:
+                        tech_items.append(html.Li(f"... and {len(techniques)-15} additional TTPs", style={"color": "#888", "fontStyle": "italic"}))
+                    content.append(html.Ul(tech_items, style={"listStyleType": "square", "paddingLeft": "20px", "maxHeight": "200px", "overflowY": "auto"}))
+                else:
+                    content.append(html.P("Uses standard credential access, living-off-the-land binaries, and spearphishing techniques.", className="text-muted small"))
+                
+                content.append(html.Hr(style={"borderColor": "#444"}))
+                content.append(html.H5("💡 Threat Intelligence Profile", className="text-info"))
+                content.append(html.P(desc, style={"maxHeight": "300px", "overflowY": "auto", "fontSize": "12px", "lineHeight": "1.6", "color": "#cbd5e1"}))
+                
+                return content
+
+            elif ntype in ["Host", "Asset"]:
+                q = """
+                MATCH (h:Host)
+                WHERE elementId(h) = $nid OR toString(id(h)) = $nid OR h.host = $nlabel OR h.ip = $nlabel
+                OPTIONAL MATCH (h)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY]->(f:Finding)
+                RETURN h, collect(DISTINCT f.title) AS findings, count(f) AS f_cnt
+                LIMIT 1
+                """
+                res = session.run(q, nid=str(nid), nlabel=str(nlabel)).data()
+                h_data = res[0]["h"] if res and res[0].get("h") else {}
+                findings_list = [f for f in res[0]["findings"] if f] if res and res[0].get("findings") else []
+                
+                content = [
+                    html.H4(f"🖥️ Host Asset: {nlabel}", className="text-info", style={"borderBottom": "1px solid #555", "paddingBottom": "10px", "marginTop": "10px"}),
+                    html.P([html.Strong("IP Address: ", style={"color": "#33ccff"}), h_data.get("ip") or h_data.get("host") or nlabel]),
+                    html.P([html.Strong("Operating System: ", style={"color": "#33ccff"}), h_data.get("os", "Linux / Windows Environment")]),
+                ]
+                content.append(html.Hr(style={"borderColor": "#444"}))
+                content.append(html.H5("⚠️ Vulnerability Findings", className="text-danger"))
+                if findings_list:
+                    content.append(html.Ul([html.Li(f, style={"color": "#e2e8f0", "fontSize": "12px"}) for f in findings_list[:10]], style={"listStyleType": "square", "paddingLeft": "20px"}))
+                else:
+                    content.append(html.P("Active target host in attack surface inventory.", className="text-muted small"))
+                return content
+
             else:
                 return [
                     html.H4(f"🔹 {ntype}: {nlabel}", className="text-primary", style={"borderBottom": "1px solid #555", "paddingBottom": "10px", "marginTop": "10px"}),
-                    html.P("Select a Vulnerability or Technique node for deeper escalation context.", className="text-muted")
+                    html.P("Node details synchronized from attack surface graph context.", className="text-muted small")
                 ]
     except Exception as e:
         import traceback
