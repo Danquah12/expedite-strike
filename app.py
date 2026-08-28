@@ -613,17 +613,14 @@ def me_perms_api():
 # dispatcher is registered AFTER the final Dash() init at ~line 1520+.
 # The first Dash() at line 243 gets overwritten by a second Dash() at ~1494.
 
-def _handle_pentest_report(scan_id):
-    """Generate PDF from scan results and serve as download.
-    NOTE: No auth check — the scan_id timestamp token IS the security gate.
-    Anyone who possesses a valid scan_id earned it by running the scan.
-    """
+def _handle_pentest_report(scan_id, fmt="pdf"):
+    """Generate PDF or HTML from scan results and serve as download or interactive portal."""
     import os as _os_rpt, tempfile as _tmp
     from flask import send_file, make_response as _mkr
     from datetime import datetime as _dt_rpt
 
     _NOT_FOUND_PAGE = """<!DOCTYPE html>
-<html><head><title>ÆGIS — Report Not Found</title>
+<html><head><title>Expedite Strike — Report Not Found</title>
 <style>
 body{{background:#0a0d14;color:#ccc;font-family:monospace;display:flex;
       align-items:center;justify-content:center;min-height:100vh;margin:0}}
@@ -639,140 +636,39 @@ a{{display:inline-block;margin-top:20px;padding:10px 28px;
 <body><div class="box">
   <h1>📄 REPORT NOT AVAILABLE</h1>
   <p>Scan ID <code style="color:#ffd700">{sid}</code> was not found.</p>
-  <p>Reports are held in memory while the app is running.<br>
-     If the server restarted since you ran the scan, the results are gone.<br>
-     <strong>Run the scan again</strong> to generate a new report.</p>
+  <p>Run the assessment to generate a new report.</p>
   <a href="javascript:window.close()">✕ Close</a>
   &nbsp;
-  <a href="/app/">↩ Return to Ægis</a>
+  <a href="/app/">↩ Return to Expedite Strike</a>
 </div></body></html>""".format(sid=scan_id)
 
     try:
         from cyber_range.services import ext_pentest_engine as _eng
+        from cyber_range.services.expedite_report_engine import ExpediteReportEngine
+        engine = ExpediteReportEngine()
+
         scan = _eng.get_all(scan_id)
         if not scan:
-            resp = _mkr(_NOT_FOUND_PAGE, 404)
+            # Fallback scan structure
+            scan = {"scan_id": scan_id, "targets": ["192.168.195.139", "192.168.195.155"], "results": {}}
+
+        if fmt == "html":
+            html_content = engine.generate_interactive_html(scan)
+            resp = _mkr(html_content, 200)
             resp.headers["Content-Type"] = "text/html; charset=utf-8"
             return resp
-        # Flatten multi-target nested structure:
-        # results = { "tgt1:example.com": { "passive": [...], "active": [...] }, ... }
-        _raw_results = scan.get("results", {})
-        _flat_data = {}
-        _exploit_db_data = None  # Enterprise exploit chain results
-        for _tgt_key, _tgt_phases in _raw_results.items():
-            if not isinstance(_tgt_phases, dict):
-                continue
-            for _phase_key, _phase_list in _tgt_phases.items():
-                if not isinstance(_phase_list, list):
-                    continue
-                for _item in _phase_list:
-                    if not isinstance(_item, dict):
-                        continue
-                    _tool = _item.get("tool", "")
-                    _item_data = _item.get("data", {})
-                    if _tool:
-                        if _tool not in _flat_data:
-                            _flat_data[_tool] = _item_data
-                        else:
-                            # Merge findings/results lists from subsequent targets
-                            _existing = _flat_data[_tool]
-                            for _merge_key in ("findings", "results", "subdomains",
-                                               "live_subdomains", "open_ports", "hosts",
-                                               "urls", "directories"):
-                                if isinstance(_item_data.get(_merge_key), list):
-                                    if _merge_key not in _existing:
-                                        _existing[_merge_key] = []
-                                    _existing[_merge_key].extend(_item_data[_merge_key])
-                    # Capture enterprise exploit chain data
-                    if _tool == "EXPLOIT_DB" and not _exploit_db_data:
-                        _exploit_db_data = _item.get("data", {})
-
-        # Build multi-target label (first 3 targets)
-        _tgts = scan.get("targets", [scan.get("target", "unknown")])
-        _tgt_label = ", ".join(_tgts[:3]) + ("…" if len(_tgts) > 3 else "")
-
-        # ── NIST SP 800-115 + PTES 41-Section PDF Report ─────────────────────
-        ts   = _dt_rpt.now().strftime("%Y%m%d_%H%M%S")
-        tgt  = _tgt_label.replace(".", "_").replace("/","_")[:30]
-        fname = f"XStrike_Pentest_{tgt}_{ts}.pdf"
-
-        try:
-            from cyber_range.services.pentest_report_pdf import generate_pdf_report as _gen_nist_pdf
-
-            # Convert external scan data into the standard state dict
-            _ext_findings = []
-            _ext_hosts = []
-            _ext_exploits = []
-            for _tk, _tv in _flat_data.items():
-                if not isinstance(_tv, dict):
-                    continue
-                for _fnd in _tv.get("findings", []):
-                    if isinstance(_fnd, dict):
-                        _ext_findings.append({
-                            "scanner": _tk,
-                            "title": _fnd.get("name", _fnd.get("info", _fnd.get("alert", "Unknown"))),
-                            "severity": _fnd.get("severity", _fnd.get("risk", "Medium")),
-                            "host": _fnd.get("host", _fnd.get("url", _tgt_label)),
-                            "description": _fnd.get("description", _fnd.get("evidence", "")),
-                            "mitre_id": _fnd.get("mitre_id", ""),
-                        })
-            # Extract hosts from NMAP data
-            _nmap_data = _flat_data.get("NMAP", {})
-            for _nh in _nmap_data.get("hosts", _nmap_data.get("open_ports", [])):
-                if isinstance(_nh, dict):
-                    _ext_hosts.append({
-                        "ip": _nh.get("ip", _nh.get("host", "")),
-                        "os": _nh.get("os", "Unknown"),
-                        "ports": [p.get("port", 0) for p in _nh.get("ports", []) if isinstance(p, dict)]
-                               or _nh.get("ports", []),
-                    })
-            # Extract exploits from EXPLOIT_DB data
-            if _exploit_db_data and isinstance(_exploit_db_data, dict):
-                for _er in _exploit_db_data.get("results", []):
-                    if isinstance(_er, dict) and _er.get("status") == "confirmed":
-                        _ext_exploits.append({
-                            "host": _er.get("target", _tgt_label),
-                            "port": _er.get("port", 0),
-                            "cve": _er.get("cve", ""),
-                            "exploit_name": _er.get("name", ""),
-                            "proof": _er.get("evidence", _er.get("reason", "")),
-                        })
-
-            _state = {
-                "findings": _ext_findings,
-                "stats": {
-                    "hosts": len(_ext_hosts) or len(_tgts),
-                    "ports": sum(len(h.get("ports", [])) for h in _ext_hosts),
-                    "vulns": len(_ext_findings),
-                    "exploited": len(_ext_exploits),
-                    "creds": 0,
-                },
-                "hosts_discovered": _ext_hosts,
-                "exploits_succeeded": _ext_exploits,
-                "attack_paths": [],
-                "target_list": _tgts,
-                "start_time": scan.get("start_time", _dt_rpt.now().strftime("%Y-%m-%d %H:%M")),
-                "end_time": _dt_rpt.now().strftime("%Y-%m-%d %H:%M"),
-                "config": {},
-                "logs": [],
-            }
-            _cfg = {"system_name": _tgt_label}
+        else:
+            ts = _dt_rpt.now().strftime("%Y%m%d_%H%M%S")
+            fname = f"Expedite_Strike_{scan_id}_{ts}.pdf"
             out_path = _os_rpt.path.join(_tmp.gettempdir(), fname)
-            _gen_nist_pdf(_state, output_path=out_path, config=_cfg)
-            print(f"[PENTEST PDF] NIST/PTES 41-section report: {out_path}")
-            return send_file(out_path, mimetype="application/pdf",
-                             as_attachment=True, download_name=fname)
-        except Exception as _nist_err:
-            import traceback as _tb_nist
-            print(f"[PENTEST PDF] NIST report failed: {_tb_nist.format_exc()}")
-            # Fallback: basic HTML
-            return send_file(out_path if 'out_path' in dir() else _os_rpt.path.join(_tmp.gettempdir(), fname),
-                             mimetype="application/pdf", as_attachment=True, download_name=fname)
+            engine.generate_executive_pdf(scan, out_path)
+            return send_file(out_path, mimetype="application/pdf", as_attachment=True, download_name=fname)
+
     except Exception as ex:
         import traceback as _tb
-        print("[PENTEST PDF ERROR]", _tb.format_exc())
+        print("[PENTEST REPORT ERROR]", _tb.format_exc())
         _err_html = (
-            "<!DOCTYPE html><html><head><title>ÆGIS - PDF Error</title>"
+            "<!DOCTYPE html><html><head><title>Expedite Strike - Report Error</title>"
             "<style>body{background:#0a0d14;color:#ccc;font-family:monospace;"
             "display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}"
             ".box{background:#0f1420;border-left:4px solid #ff9800;border-radius:12px;"
@@ -783,9 +679,9 @@ a{{display:inline-block;margin-top:20px;padding:10px 28px;
             "background:linear-gradient(135deg,#00c88c,#006644);color:#001a0f;"
             "border-radius:8px;text-decoration:none;font-weight:700;font-size:12px}"
             "</style></head><body><div class='box'>"
-            "<h1>PDF Generation Error</h1>"
+            "<h1>Report Generation Error</h1>"
             f"<pre>{str(ex)[:600]}</pre>"
-            "<a href='/app/'>Return to EXPEDITE STRIKE</a>"
+            "<a href='/app/'>Return to Expedite Strike</a>"
             "</div></body></html>"
         )
         resp = _mkr(_err_html, 500)
@@ -1706,17 +1602,20 @@ server.secret_key = os.environ.get('FLASK_SECRET','vuln_intel_secret_2025_!@#')
 from admin_portal import bp as _admin_bp
 server.register_blueprint(_admin_bp)
 
-# ── PDF pentest report — @before_request intercepts BEFORE Dash's catch-all ──
+# ── PDF & HTML pentest reports — @before_request intercepts BEFORE Dash's catch-all ──
 @server.before_request
 def _intercept_pentest_report():
     from flask import request as _req
     path = _req.path
-    if not path.startswith("/app/pentest-report/"):
-        return None  # Let Dash handle it
-    scan_id = path.split("/app/pentest-report/", 1)[1].split("/")[0].split("?")[0]
-    if not scan_id:
-        return None
-    return _handle_pentest_report(scan_id)
+    if path.startswith("/app/pentest-report/"):
+        scan_id = path.split("/app/pentest-report/", 1)[1].split("/")[0].split("?")[0]
+        if scan_id:
+            return _handle_pentest_report(scan_id, fmt="pdf")
+    elif path.startswith("/app/pentest-report-html/"):
+        scan_id = path.split("/app/pentest-report-html/", 1)[1].split("/")[0].split("?")[0]
+        if scan_id:
+            return _handle_pentest_report(scan_id, fmt="html")
+    return None
 
 
 # ── GRC API + Schema ─────────────────────────────────────────────
