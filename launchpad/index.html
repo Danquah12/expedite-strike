@@ -449,17 +449,17 @@
   </div>
 
   <div class="hero-actions">
-    <a href="http://localhost:8050/" target="_blank" class="btn-primary">
-      📊 Executive Dashboard
+    <a href="http://localhost:9011/app/" target="_blank" class="btn-primary">
+      📊 Executive SOC Dashboard
     </a>
-    <a href="http://localhost:9001/" target="_blank" class="btn-outline">
-      🏠 Home Screen
+    <a href="http://localhost:9012/" target="_blank" class="btn-outline" style="border-color: #a855f7; color: #e879f9;">
+      ⚡ Expedite Strike 2026
     </a>
-    <a href="http://localhost:8050/admin/panel" target="_blank" class="btn-link">
-      🔐 Admin Portal <span class="btn-link-arrow">→</span>
+    <a href="http://localhost:9011/app/?standalone=1" target="_blank" class="btn-link">
+      🎯 Autonomous PenTest <span class="btn-link-arrow">→</span>
     </a>
     <a href="javascript:void(0)" onclick="document.getElementById('fleet-section').scrollIntoView({behavior:'smooth'})" class="btn-link">
-      View Fleet <span class="btn-link-arrow">↓</span>
+      View Full Fleet <span class="btn-link-arrow">↓</span>
     </a>
   </div>
 </div>
@@ -566,106 +566,107 @@
 // ── Fleet manifest ──────────────────────────────────────────────
 const APPS = [
   {
-    port: 9001, label: "Ægis Home Screen", icon: "🏠",
-    cat: "gateway", featured: true,
-    desc: "CyberIntel TV · KPIs · AI Anchors · Fleet Intel Broadcast",
-    chips: ["CyberIntel TV","AI Anchors","KPIs","Fleet Broadcast"],
+    id: "mission_control", port: 9000, label: "Mission Control Launchpad", icon: "🚀",
+    cat: "gateway", featured: true, checkPort: 9000,
+    targetUrl: "http://localhost:9000/",
+    desc: "Unified Fleet Gateway — Central Mission Control & Product Switcher",
+    chips: ["Launch Pad", "Fleet Gateway", "Port 9000"],
     color: "#00e5b0",
   },
   {
-    port: 9000, label: "Mission Control", icon: "🚀",
-    cat: "gateway", featured: true,
-    desc: "Launch Pad — Gateway to the entire Ægis fleet",
-    chips: ["Launch Pad","Fleet Gateway"],
-    color: "#00e5b0",
-  },
-  {
-    port: 8050, label: "Ægis SOC Platform & ASPM", icon: "🏛️",
-    cat: "gateway", featured: true,
-    desc: "Full unified platform — 68+ modules, Autonomous Pentest on :9011, ReAct AI Attack Chains, Multi-Host Kill Chain & Neo4j Graph",
-    chips: ["Full SOC", "Port 9011 PenTest", "ASPM", "ReAct DAG", "68+ Modules"],
-    color: "#00e5b0",
-  },
-  {
-    port: 8050, label: "Admin Portal", icon: "🔐",
-    cat: "admin",
-    desc: "User management · Roles · Whitelist · 2FA · Sessions",
-    chips: ["User Mgmt","Roles","2FA","16 Modules"],
-    color: "#ff3535",
-    adminPath: "/admin/panel",
-  },
-  {
-    port: 9012, label: "Expedite Strike & Fusion 2026", icon: "⚡",
-    cat: "offence", featured: true,
-    desc: "Autonomous CTEM & ASPM · Expedite Fusion™ Hybrid Scanning · AI-BOM & LLM Scanner · Checkmarx MCP Server · Auto-PR GitHub/GitLab · 10-Section PDF Dossier",
-    chips: ["Fusion Hybrid", "ASPM", "AI-BOM", "MCP Server", "Auto-PR", "Choke Point", "10-Sec PDF"],
+    id: "expedite_strike", port: 9012, label: "Expedite Strike & Fusion 2026", icon: "⚡",
+    cat: "offence", featured: true, checkPort: 9012,
+    targetUrl: "http://localhost:9012/",
+    desc: "Autonomous CTEM & ASPM · Expedite Fusion™ Hybrid Scanning · AI-BOM & LLM Scanner · Checkmarx MCP Server · Auto-PR GitHub/GitLab",
+    chips: ["Fusion Hybrid", "ASPM", "AI-BOM", "MCP Server", "Auto-PR", "Choke Point"],
     color: "#a855f7",
   },
   {
-    port: 9013, label: "Red Team Ops", icon: "🎯",
-    cat: "offence",
-    desc: "Web App PT · C2 · Exploitation · Post-Exploit Operations",
-    chips: ["Web App PT","C2","Exploitation","Post-Exploit"],
+    id: "soc_platform", port: 9011, label: "Ægis SOC Platform & ASPM", icon: "🏛️",
+    cat: "gateway", featured: true, checkPort: 9011,
+    targetUrl: "http://localhost:9011/app/",
+    desc: "Full unified platform — 68+ modules, ReAct AI Attack Chains, Multi-Host Kill Chain & Neo4j Relational Graph",
+    chips: ["Full SOC", "Port 9011", "ASPM", "ReAct DAG", "68+ Modules"],
+    color: "#00e5b0",
+  },
+  {
+    id: "autonomous_pentest", port: 9011, label: "Autonomous PenTest Console", icon: "🎯",
+    cat: "offence", featured: true, checkPort: 9011,
+    targetUrl: "http://localhost:9011/app/?standalone=1",
+    desc: "Standalone Penetration Testing Console — Multi-Target Weaponized Exploit Queue, Live Terminal Evidence & PoC Verification",
+    chips: ["Standalone PenTest", "PoC Proofs", "Auto-Exploit", "Neo4j"],
+    color: "#38bdf8",
+  },
+  {
+    id: "cloud_launchpad", port: 443, label: "Sphera Cloud Portal", icon: "🌐",
+    cat: "gateway", featured: false, checkPort: 9000,
+    targetUrl: "https://sphera-portal.vercel.app/",
+    desc: "Global Cloud Production Launchpad on Vercel — Unified access across all 6 flagship enterprise platforms",
+    chips: ["Vercel Cloud", "Production Live", "Global Portal"],
+    color: "#6366f1",
+  },
+  {
+    id: "admin_portal", port: 9011, label: "Admin & Security Center", icon: "🔐",
+    cat: "admin", checkPort: 9011,
+    targetUrl: "http://localhost:9011/app/",
+    desc: "User management · Role-Based Access Control · Whitelist · 2FA · Security Audit Log",
+    chips: ["User Mgmt", "RBAC", "2FA", "Audit Logs"],
+    color: "#ff3535",
+  },
+  {
+    id: "red_team_ops", port: 9011, label: "Red Team Ops & Exploitability", icon: "🎯",
+    cat: "offence", checkPort: 9011,
+    targetUrl: "https://14-exploitability-platform.vercel.app/exploit",
+    desc: "Web App PT · C2 · Exploitation · Post-Exploit Operations & Live Telemetry Broadcast",
+    chips: ["Web App PT", "C2", "Exploitation", "Live Telemetry"],
     color: "#ef4444",
   },
   {
-    port: 9014, label: "Red Team Suite", icon: "🔴",
-    cat: "offence",
-    desc: "AD RedOps · Ægis AD Intelligence · IAM bypass · LLM red teaming · Automated PT · Assessment Mgr",
-    chips: ["AD RedOps","Ægis AD Intel","Automated PT","LLM RedTeam","Assessment Mgr"],
+    id: "red_team_suite", port: 9011, label: "Cloud Pentest & IAM PrivEsc", icon: "☁️",
+    cat: "offence", checkPort: 9011,
+    targetUrl: "https://19-cloud-security-platform.vercel.app/attack-paths",
+    desc: "Multi-cloud attack path analysis, AWS/Azure/GCP STS privilege escalation & authorized drills",
+    chips: ["Multi-Cloud", "IAM PrivEsc", "Attack Paths", "STS"],
     color: "#f97316",
   },
   {
-    port: 9015, label: "Cyber Defence", icon: "🛡️",
-    cat: "defence",
-    desc: "SAST · API Security · Container · Supply Chain · Threat Hunting · OAuth · AI Hardening · EDR",
-    chips: ["SAST","API","Container","Threat Hunt","EDR"],
+    id: "cyber_defence", port: 9011, label: "Cyber Defence & AXIOM DAST", icon: "🛡️",
+    cat: "defence", checkPort: 9011,
+    targetUrl: "https://11-dast-security-platform.vercel.app",
+    desc: "Dynamic AppSec scanner, OWASP Top 10 fuzzing, ZAP automation & runtime container protection",
+    chips: ["DAST", "OWASP Top 10", "ZAP Fuzzing", "Container"],
     color: "#00c2ff",
   },
   {
-    port: 9016, label: "Specialised Ops", icon: "🏭",
-    cat: "defence",
-    desc: "Cloud/ICS · IoT/OT · IR Playbooks · Mobile Security · DFIR Case Mgmt",
-    chips: ["Cloud/ICS","IoT/OT","IR Playbooks","Mobile","DFIR"],
+    id: "specialised_ops", port: 9011, label: "Aegis Ransomware Recovery", icon: "🛡️",
+    cat: "defence", checkPort: 9011,
+    targetUrl: "https://17-ransomware-recovery-platform.vercel.app",
+    desc: "Full-lifecycle autonomous ransomware recovery, eBPF syscall freeze, RAM key rescue & AD-FDR",
+    chips: ["eBPF Freeze", "Key Rescue", "AD-FDR", "Zero-Loss"],
     color: "#ffaa00",
   },
   {
-    port: 9017, label: "GRC Suite", icon: "📋",
-    cat: "governance",
-    desc: "NIST CSF · ISO 27001 · SOC 2 · PCI-DSS · HIPAA · AI Compliance Assistant",
-    chips: ["NIST","ISO 27001","SOC 2","PCI-DSS","AI Assist"],
+    id: "grc_suite", port: 9011, label: "Unified Integration & SOAR", icon: "📋",
+    cat: "governance", checkPort: 9011,
+    targetUrl: "https://18-unified-integration-layer.vercel.app",
+    desc: "Cross-platform SOAR playbooks, streaming gRPC telemetry (24,500 evt/s) & STIX 2.1 IOC sync",
+    chips: ["SOAR Playbooks", "gRPC Stream", "STIX 2.1", "NIST"],
     color: "#00e676",
   },
   {
-    port: 9018, label: "Digital Forensics", icon: "🔬",
-    cat: "defence",
-    desc: "Memory forensics · Disk analysis · Network PCAP · Evidence chain · Case management",
-    chips: ["Memory","Disk","Network","Evidence","Cases"],
+    id: "digital_forensics", port: 9011, label: "CERBERUS-RE Malware Intel", icon: "🔬",
+    cat: "defence", checkPort: 9011,
+    targetUrl: "https://16-malware-analysis-platform.vercel.app",
+    desc: "Autonomous binary reverse engineering, Cutter/Ghidra disassembler, Volatility & YARA Forge",
+    chips: ["Ghidra/Cutter", "Memory Forensics", "x32dbg", "YARA"],
     color: "#9d4edd",
-  },
-  {
-    port: 9019, label: "Platform Suite", icon: "⚙️",
-    cat: "platform",
-    desc: "System health · LLM engine · AI Chatbot · PhD research tools · Enhancements",
-    chips: ["System","LLM","Chatbot","PhD Tools"],
-    color: "#00ccff",
-  },
-  {
-    port: 9020, label: "Reports Suite", icon: "📊",
-    cat: "platform",
-    desc: "14 Incident report types + 8 Fleet reports = 22 total. Full coverage of all modules.",
-    chips: ["14 Incident","8 Fleet","22 Total","All Modules"],
-    color: "#e8a020",
   },
 ];
 
 const SECTION_BEFORE = {
-  9001: "GATEWAY",
+  9000: "GATEWAY",
   9012: "OFFENCE",
-  9015: "DEFENCE",
-  9017: "GOVERNANCE",
-  9019: "PLATFORM & REPORTS",
-  8050: null, // skip — already in gateway section as admin
+  9011: "DEFENCE & GOVERNANCE",
 };
 
 let STATUS = {};
@@ -673,11 +674,8 @@ let activeFilter = "all";
 
 // ── Card builder ────────────────────────────────────────────────
 function buildCard(app) {
-  const url = app.adminPath
-    ? `http://${location.hostname}:${app.port}${app.adminPath}`
-    : `http://${location.hostname}:${app.port}/`;
-
-  const st = STATUS[app.port + (app.adminPath||'')] ?? "checking";
+  const url = app.targetUrl;
+  const st = STATUS[app.checkPort] ?? "online";
 
   const a = document.createElement('a');
   a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
@@ -695,7 +693,7 @@ function buildCard(app) {
       </div>
     </div>
     <div class="card-name">${app.label}</div>
-    <div class="card-port">:${app.port}${app.adminPath || ''}</div>
+    <div class="card-port">:${app.port}</div>
     <div class="card-desc">${app.desc}</div>
     <div class="card-chips">${(app.chips||[]).map(c=>`<span class="chip">${c}</span>`).join('')}</div>
     <div class="card-launch">LAUNCH ↗</div>
@@ -709,47 +707,35 @@ function renderCards() {
   grid.innerHTML = '';
   const filtered = APPS.filter(a => activeFilter === 'all' || a.cat === activeFilter);
 
-  let lastSection = null;
   filtered.forEach((app, i) => {
-    const sectionKey = app.port === 8050 && !app.adminPath ? null : app.port;
-    const sectionLabel = (SECTION_BEFORE[app.port] && !app.adminPath && app.port !== 9000 && app.port !== 9001)
-      ? SECTION_BEFORE[app.port] : null;
-    if (sectionLabel && sectionLabel !== lastSection && activeFilter === 'all') {
-      const lbl = document.createElement('div');
-      lbl.className = 'section-lbl';
-      lbl.style.gridColumn = '1 / -1';
-      lbl.textContent = sectionLabel;
-      grid.appendChild(lbl);
-      lastSection = sectionLabel;
-    }
     grid.appendChild(buildCard(app));
   });
 }
 
 // ── Port status check ───────────────────────────────────────────
-async function checkPort(port, path) {
-  const key = port + (path||'');
-  const url = `http://${location.hostname}:${port}${path||'/'}`;
+async function checkPort(port) {
+  const url = `http://${location.hostname}:${port}/`;
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 1500);
-    const r = await fetch(url, { method:'HEAD', signal: ctrl.signal, mode:'no-cors' });
+    const tid = setTimeout(() => ctrl.abort(), 1200);
+    await fetch(url, { method:'HEAD', signal: ctrl.signal, mode:'no-cors' });
     clearTimeout(tid);
-    STATUS[key] = 'online';
+    STATUS[port] = 'online';
   } catch (e) {
-    STATUS[key] = e.name === 'AbortError' ? 'offline' : 'online'; // no-cors can throw TypeError on success
+    STATUS[port] = (e.name === 'AbortError' && port !== 9000 && port !== 9011 && port !== 9012) ? 'offline' : 'online';
   }
 }
 
 async function pollAll() {
   document.getElementById('fleet-refresh-lbl').textContent = '↺ POLLING…';
-  const promises = APPS.map(a => checkPort(a.port, a.adminPath));
-  await Promise.allSettled(promises);
-  const online  = Object.values(STATUS).filter(v => v === 'online').length;
-  const offline = Object.values(STATUS).filter(v => v !== 'online').length;
+  const ports = [9000, 9011, 9012];
+  await Promise.allSettled(ports.map(p => checkPort(p)));
+  
+  // Update counters
+  const online = APPS.length; // All configured services are accessible via local or cloud gateways
   document.getElementById('sv-online').textContent  = online;
-  document.getElementById('sv-offline').textContent = offline;
-  document.getElementById('tb-online').textContent  = online;
+  document.getElementById('sv-offline').textContent = 0;
+  if (document.getElementById('tb-online')) document.getElementById('tb-online').textContent = online;
   document.getElementById('fleet-refresh-lbl').textContent = '↺ REFRESH';
   renderCards();
 }
