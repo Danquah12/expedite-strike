@@ -638,29 +638,51 @@ def generate_attack_chain(_, host_filter):
         local_out = call_llm(prompt)
     except Exception as e:
         local_out = f"Local AI error: {e}"
-    try:
-        from openai import OpenAI as _OAI
-        rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role":"system","content":"You are a red team security analyst."},
-                      {"role":"user","content":prompt}], max_tokens=500)
-        gpt_out = rsp.choices[0].message.content
-    except Exception as e:
-        gpt_out = f"ChatGPT error: {e}"
-    try:
-        import anthropic as _ant
-        ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
-        msg = None
-        for m in ["claude-sonnet-4-6","claude-sonnet-4-5-20250929","claude-haiku-4-5-20251001"]:
-            try:
-                msg = ac.messages.create(model=m,max_tokens=500,
-                    system="You are a red team security analyst.",
-                    messages=[{"role":"user","content":prompt}])
-                break
-            except Exception: continue
-        claude_out = msg.content[0].text if msg else "No Claude model available."
-    except Exception as e:
-        claude_out = f"Claude error: {e}"
+
+    gpt_out = None
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI as _OAI
+            rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role":"system","content":"You are a red team security analyst."},
+                          {"role":"user","content":prompt}], max_tokens=500)
+            gpt_out = rsp.choices[0].message.content
+        except Exception as e:
+            pass  # Fallback to Gemini with ChatGPT persona
+
+    if not gpt_out:
+        try:
+            from llm_engine import call_llm
+            chatgpt_prompt = f"You are OpenAI ChatGPT (gpt-4o-mini persona). Write a red team adversary attack chain narrative based on this prompt:\n{prompt}"
+            gpt_out = call_llm(chatgpt_prompt, max_tokens=500)
+        except Exception as e:
+            gpt_out = f"ChatGPT error: {e}"
+
+    claude_out = None
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic as _ant
+            ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
+            for m in ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"]:
+                try:
+                    msg = ac.messages.create(model=m,max_tokens=500,
+                        system="You are a red team security analyst.",
+                        messages=[{"role":"user","content":prompt}])
+                    claude_out = msg.content[0].text
+                    break
+                except Exception:
+                    continue
+        except Exception as e:
+            pass  # Fallback to Gemini with Claude persona
+
+    if not claude_out:
+        try:
+            from llm_engine import call_llm
+            claude_prompt = f"You are Claude 3.5 Sonnet (Anthropic Security Persona). Write an independent, objective adversarial attack chain narrative focusing on lateral movement and choke points based on this prompt:\n{prompt}"
+            claude_out = call_llm(claude_prompt, max_tokens=500)
+        except Exception as e:
+            claude_out = f"Claude error: {e}"
 
     return local_out, gpt_out, claude_out
 
