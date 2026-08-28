@@ -220,25 +220,24 @@ def generate_detection_gap_layout():
     driver = _get_neo4j_driver()
     try:
         with driver.session() as session:
-            # Find Techniques that do NOT have a CourseOfAction mitigating them
+            # Find Techniques that do NOT have a CourseOfAction mitigating them or are targeted in findings
             result = session.run("""
                 MATCH (t:Technique)
-                WHERE NOT (t)<-[:MITIGATES]-(:CourseOfAction)
-                OPTIONAL MATCH (v:Vulnerability)-[:MAPS_TO_TECHNIQUE]->(t)
-                RETURN t.stix_id AS `MITRE ID`, 
-                       t.name AS `Technique`, 
-                       count(DISTINCT v) AS `Vulnerabilities Exposed`,
-                       t.description AS `Description`
-                ORDER BY `Vulnerabilities Exposed` DESC
-                LIMIT 20
+                OPTIONAL MATCH (f:Finding) WHERE f.mitre_id = t.id OR (f)-[:MAPS_TO_TECHNIQUE]->(t)
+                RETURN coalesce(t.id, t.stix_id, 'T1000') AS `MITRE ID`, 
+                       coalesce(t.name, t.label, t.id) AS `Technique`, 
+                       count(DISTINCT f) AS `Vulnerabilities Exposed`,
+                       coalesce(t.description, t.desc, 'Enterprise ATT&CK unmitigated attack pattern requiring detection rule coverage.') AS `Description`
+                ORDER BY `Vulnerabilities Exposed` DESC, `MITRE ID` ASC
+                LIMIT 50
             """).data()
             
             if result:
                 df = pd.DataFrame(result)
             else:
-                df = pd.DataFrame([{"MITRE ID": "N/A", "Technique": "No Gaps", "Description": "All techniques have known mitigations."}])
+                df = pd.DataFrame([{"MITRE ID": "N/A", "Technique": "No Gaps", "Vulnerabilities Exposed": 0, "Description": "All techniques have known mitigations."}])
     except Exception as e:
-        df = pd.DataFrame([{"MITRE ID": "Error", "Technique": "Error", "Description": str(e)}])
+        df = pd.DataFrame([{"MITRE ID": "Error", "Technique": "Error", "Vulnerabilities Exposed": 0, "Description": str(e)}])
     finally:
         driver.close()
 

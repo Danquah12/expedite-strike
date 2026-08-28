@@ -34,7 +34,8 @@ def generate_mitre_layout():
                             dcc.Dropdown(
                                 id="mitre-tactic-dropdown",
                                 placeholder="Select an actively targeted Tactic...",
-                                className="mb-3 text-dark"
+                                className="dash-dropdown-dark mb-3",
+                                style={"backgroundColor": "#111827", "color": "#fff"}
                             )
                         ], width=6),
                         dbc.Col([
@@ -42,7 +43,8 @@ def generate_mitre_layout():
                             dcc.Dropdown(
                                 id="mitre-technique-dropdown",
                                 placeholder="Select a specific Technique...",
-                                className="mb-3 text-dark"
+                                className="dash-dropdown-dark mb-3",
+                                style={"backgroundColor": "#111827", "color": "#fff"}
                             )
                         ], width=6)
                     ]),
@@ -295,40 +297,41 @@ def load_detected_techniques(tactic_id):
     Input("mitre-load-btn", "n_clicks"),
     State("mitre-tactic-dropdown", "value"),
     State("mitre-technique-dropdown", "value"),
-    prevent_initial_call=True
+    prevent_initial_call=False
 )
 def render_mitre_graph(n_clicks, tactic_id, technique_id):
     if not tactic_id and not technique_id:
-        # Load the macro view of all impacted assets
+        # Load the macro view of all impacted assets and techniques
         query = """
-        MATCH p=(h:Host)-[*1..2]->(v)-[:MAPS_TO_TECHNIQUE]->(tech:Technique)-[:PART_OF]->(tac:Tactic)
-        WHERE v:Vulnerability OR v:Finding
-        OPTIONAL MATCH p2=(tech)<-[:USES]-(actor:ThreatActor)
-        RETURN p, p2 LIMIT 150
+        MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY|RUNS_SERVICE*1..2]->(v:Finding)
+        OPTIONAL MATCH (tech:Technique) WHERE tech.id = v.mitre_id OR (v)-[:MAPS_TO_TECHNIQUE]->(tech)
+        OPTIONAL MATCH (tech)-[:PART_OF]->(tac:Tactic)
+        OPTIONAL MATCH (tech)<-[:USES]-(actor:ThreatActor)
+        RETURN h, v, tech, tac, actor LIMIT 150
         """
         title = "Full Environment Attack Surface Chain"
         params = {}
 
     elif tactic_id and not technique_id:
         query = """
-        MATCH ptac=(tac:Tactic {id: $tac_id})
-        OPTIONAL MATCH p1=(tech:Technique)-[:PART_OF]->(tac)
-        OPTIONAL MATCH p2=(v)-[:MAPS_TO_TECHNIQUE]->(tech) WHERE v:Vulnerability OR v:Finding
-        OPTIONAL MATCH p3=(h:Host)-[*1..2]->(v)
-        OPTIONAL MATCH p4=(tech)<-[:USES]-(actor:ThreatActor)
-        RETURN ptac, p1, p2, p3, p4 LIMIT 150
+        MATCH (tac:Tactic {id: $tac_id})
+        OPTIONAL MATCH (tech:Technique)-[:PART_OF]->(tac)
+        OPTIONAL MATCH (v:Finding) WHERE v.mitre_id = tech.id OR (v)-[:MAPS_TO_TECHNIQUE]->(tech)
+        OPTIONAL MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY*1..2]->(v)
+        OPTIONAL MATCH (tech)<-[:USES]-(actor:ThreatActor)
+        RETURN h, v, tech, tac, actor LIMIT 150
         """
         title = f"Attack Chains Targeting Tactic: {tactic_id}"
         params = {"tac_id": tactic_id}
 
     else:
         query = """
-        MATCH ptech=(tech:Technique {id: $tech_id})
-        OPTIONAL MATCH p1=(tech)-[:PART_OF]->(tac:Tactic)
-        OPTIONAL MATCH p2=(v)-[:MAPS_TO_TECHNIQUE]->(tech) WHERE v:Vulnerability OR v:Finding
-        OPTIONAL MATCH p3=(h:Host)-[*1..2]->(v)
-        OPTIONAL MATCH p4=(tech)<-[:USES]-(actor:ThreatActor)
-        RETURN ptech, p1, p2, p3, p4 LIMIT 150
+        MATCH (tech:Technique {id: $tech_id})
+        OPTIONAL MATCH (tech)-[:PART_OF]->(tac:Tactic)
+        OPTIONAL MATCH (v:Finding) WHERE v.mitre_id = tech.id OR (v)-[:MAPS_TO_TECHNIQUE]->(tech)
+        OPTIONAL MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY*1..2]->(v)
+        OPTIONAL MATCH (tech)<-[:USES]-(actor:ThreatActor)
+        RETURN h, v, tech, tac, actor LIMIT 150
         """
         title = f"Contextual Threat Path for Technique: {technique_id}"
         params = {"tech_id": technique_id}
@@ -342,39 +345,41 @@ def render_mitre_graph(n_clicks, tactic_id, technique_id):
         with driver.session() as session:
             results = session.run(query, **params)
             for record in results:
-                for k in record.keys():
-                    path = record[k]
-                    if not path:
+                for val in record.values():
+                    if not val:
                         continue
                     
-                    # Parse Nodes
-                    for node in path.nodes:
-                        nid = str(node.id)
+                    if hasattr(val, "nodes") and hasattr(val, "relationships"):
+                        # Path
+                        for node in val.nodes:
+                            nid = str(node.element_id if hasattr(node, "element_id") else node.id)
+                            if nid not in added_nodes:
+                                node_type = list(node.labels)[0] if node.labels else "Unknown"
+                                label = node.get("name") or node.get("label") or node.get("id") or node.get("ip") or node.get("title") or "Unknown"
+                                elements.append({"data": {"id": nid, "label": str(label)[:30], "type": node_type}})
+                                added_nodes.add(nid)
+                        for rel in val.relationships:
+                            eid = str(rel.element_id if hasattr(rel, "element_id") else rel.id)
+                            if eid not in added_edges:
+                                sid = str(rel.start_node.element_id if hasattr(rel.start_node, "element_id") else rel.start_node.id)
+                                tid = str(rel.end_node.element_id if hasattr(rel.end_node, "element_id") else rel.end_node.id)
+                                elements.append({"data": {"id": eid, "source": sid, "target": tid, "relation": rel.type}})
+                                added_edges.add(eid)
+                    elif hasattr(val, "labels"):
+                        # Node
+                        nid = str(val.element_id if hasattr(val, "element_id") else val.id)
                         if nid not in added_nodes:
-                            node_type = list(node.labels)[0]
-                            label = node.get("name") or node.get("label") or node.get("id") or node.get("ip") or node.get("cve") or "Unknown"
-                            
-                            elements.append({
-                                "data": {
-                                    "id": nid,
-                                    "label": str(label),
-                                    "type": node_type
-                                }
-                            })
+                            node_type = list(val.labels)[0] if val.labels else "Unknown"
+                            label = val.get("name") or val.get("label") or val.get("id") or val.get("ip") or val.get("title") or "Unknown"
+                            elements.append({"data": {"id": nid, "label": str(label)[:30], "type": node_type}})
                             added_nodes.add(nid)
-                    
-                    # Parse Relationships
-                    for rel in path.relationships:
-                        eid = str(rel.id)
+                    elif hasattr(val, "start_node") and hasattr(val, "end_node"):
+                        # Relationship
+                        eid = str(val.element_id if hasattr(val, "element_id") else val.id)
                         if eid not in added_edges:
-                            elements.append({
-                                "data": {
-                                    "id": eid,
-                                    "source": str(rel.start_node.id),
-                                    "target": str(rel.end_node.id),
-                                    "relation": rel.type
-                                }
-                            })
+                            sid = str(val.start_node.element_id if hasattr(val.start_node, "element_id") else val.start_node.id)
+                            tid = str(val.end_node.element_id if hasattr(val.end_node, "element_id") else val.end_node.id)
+                            elements.append({"data": {"id": eid, "source": sid, "target": tid, "relation": val.type}})
                             added_edges.add(eid)
         driver.close()
         

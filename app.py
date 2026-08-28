@@ -5018,19 +5018,26 @@ def update_vuln_dashboard(n_intervals, refresh_clicks, graph_filters, active_tab
     high_or_critical_found = 0
 
     # ======================================================
-    # PRIMARY AUTHORITATIVE QUERY — VERIFIED WORKING
+    # PRIMARY AUTHORITATIVE QUERY — MATCH DIRECT & SERVICE FINDINGS
     # ======================================================
     q_main = """
     MATCH (a:Host)
     WHERE (a.host IS NOT NULL OR a.ip IS NOT NULL)
     OPTIONAL MATCH (a)-[:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
-    OPTIONAL MATCH (s)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
+    OPTIONAL MATCH (a)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY|RUNS_SERVICE*1..2]->(f:Finding)
     RETURN
       CASE WHEN a.host IS NOT NULL AND trim(a.host) <> "" THEN a.host ELSE a.ip END AS asset,
-      toLower(s.name) AS service,
-      s.port          AS port,
-      coalesce(f.cve, f.name, f.id) AS vuln_key,
-      toFloat(f.cvss) AS cvss
+      coalesce(toLower(s.name), toLower(f.service), 'service') AS service,
+      coalesce(s.port, f.port, 0) AS port,
+      coalesce(f.title, f.name, f.cve, f.id) AS vuln_key,
+      CASE
+        WHEN f.cvss IS NOT NULL AND toString(f.cvss) <> '' THEN toFloat(f.cvss)
+        WHEN toLower(toString(f.severity)) = 'critical' THEN 9.5
+        WHEN toLower(toString(f.severity)) = 'high'     THEN 7.5
+        WHEN toLower(toString(f.severity)) = 'medium'   THEN 5.0
+        WHEN toLower(toString(f.severity)) = 'low'      THEN 2.5
+        ELSE 1.0
+      END AS cvss
     """
 
     # ======================================================
@@ -5039,11 +5046,10 @@ def update_vuln_dashboard(n_intervals, refresh_clicks, graph_filters, active_tab
     q_paths = """
     MATCH (a:Host)
     WHERE (a.host IS NOT NULL OR a.ip IS NOT NULL)
-    OPTIONAL MATCH (a)-[:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
-    OPTIONAL MATCH (s)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
+    OPTIONAL MATCH (a)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY|RUNS_SERVICE*1..2]->(f:Finding)
     WHERE f.cvss IS NOT NULL AND toFloat(f.cvss) >= 7
     OPTIONAL MATCH p = shortestPath(
-      (a)-[:RUNS_SERVICE|EXPOSES|HasService|HAS_FINDING|HAS_VULN*1..3]->(f)
+      (a)-[:RUNS_SERVICE|EXPOSES|HasService|HAS_FINDING|HAS_VULN|HAS_VULNERABILITY*1..3]->(f)
     )
     RETURN nodes(p) AS path_nodes
     LIMIT 50
