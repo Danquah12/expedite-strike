@@ -639,37 +639,56 @@ def generate_phd_advanced_layout():
 # ===========================================================================
 
 def _call_gpt(question):
-    """Call ChatGPT for a single question. Returns html component."""
+    """Call ChatGPT for a single question with Gemini fallback. Returns html component."""
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI as _OAI
+            rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role":"system","content":"You are a concise cybersecurity analyst."},
+                          {"role":"user","content":question}],
+                max_tokens=400,
+            )
+            return html.P(rsp.choices[0].message.content,
+                           style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
+        except Exception as e:
+            pass  # Fallback to Gemini with ChatGPT persona
+
     try:
-        from openai import OpenAI as _OAI
-        rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role":"system","content":"You are a concise cybersecurity analyst."},
-                      {"role":"user","content":question}],
-            max_tokens=400,
-        )
-        return html.P(rsp.choices[0].message.content,
-                       style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
+        from llm_engine import call_llm
+        prompt = f"You are OpenAI ChatGPT (gpt-4o-mini persona). Provide a concise, clear cybersecurity answer to this question:\n{question}"
+        ans = call_llm(prompt, max_tokens=500)
+        return html.P(ans, style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
     except Exception as e:
         return html.P(f"⚠️ {e}", className="text-danger small")
 
 
 def _call_claude(question):
-    """Call Claude for a single question. Returns html component."""
+    """Call Claude for a single question with Gemini fallback. Returns html component."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic as _ant
+            ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
+            msg = None
+            for _m in ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"]:
+                try:
+                    msg = ac.messages.create(model=_m, max_tokens=400,
+                        system="You are Claude 3.5 Sonnet, an objective cybersecurity analyst.",
+                        messages=[{"role":"user","content":question}])
+                    break
+                except Exception:
+                    continue
+            if msg:
+                return html.P(msg.content[0].text,
+                              style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
+        except Exception as e:
+            pass  # Fallback to Gemini with Claude persona
+
     try:
-        import anthropic as _ant
-        ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
-        msg = None
-        for _m in ["claude-sonnet-4-6","claude-sonnet-4-5-20250929","claude-haiku-4-5-20251001"]:
-            try:
-                msg = ac.messages.create(model=_m, max_tokens=400,
-                    system="You are a concise cybersecurity analyst.",
-                    messages=[{"role":"user","content":question}])
-                break
-            except Exception:
-                continue
-        return html.P(msg.content[0].text if msg else "No model available.",
-                      style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
+        from llm_engine import call_llm
+        prompt = f"You are Claude 3.5 Sonnet (Anthropic Security Persona). Provide an independent, objective analysis focusing on attack paths and risk for this question:\n{question}"
+        ans = call_llm(prompt, max_tokens=500)
+        return html.P(ans, style={"fontSize":"12px","color":"#ddd","whiteSpace":"pre-wrap"})
     except Exception as e:
         return html.P(f"⚠️ {e}", className="text-danger small")
 
