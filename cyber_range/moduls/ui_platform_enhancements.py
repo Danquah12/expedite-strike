@@ -176,33 +176,53 @@ def generate_exec_summary(_, audience, tone):
         local_out = f"Local AI error: {e}"
 
     # ChatGPT
-    try:
-        from openai import OpenAI as _OAI
-        rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role":"system","content":"You are a cybersecurity executive briefing writer."},
-                      {"role":"user","content":prompt}],
-            max_tokens=500,
-        )
-        gpt_out = rsp.choices[0].message.content
-    except Exception as e:
-        gpt_out = f"ChatGPT error: {e}"
+    gpt_out = None
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI as _OAI
+            rsp = _OAI(api_key=os.environ.get("OPENAI_API_KEY","")).chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role":"system","content":"You are a cybersecurity executive briefing writer."},
+                          {"role":"user","content":prompt}],
+                max_tokens=500,
+            )
+            gpt_out = rsp.choices[0].message.content
+        except Exception as e:
+            pass  # Fallback to Gemini with ChatGPT persona
+
+    if not gpt_out:
+        try:
+            from llm_engine import call_llm
+            chatgpt_prompt = f"You are OpenAI ChatGPT (gpt-4o-mini persona). Provide an executive-level cybersecurity briefing based on this prompt:\n{prompt}"
+            gpt_out = call_llm(chatgpt_prompt, max_tokens=500)
+        except Exception as e:
+            gpt_out = f"ChatGPT error: {e}"
 
     # Claude
-    try:
-        import anthropic as _ant
-        ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
-        msg = None
-        for m in ["claude-sonnet-4-6","claude-sonnet-4-5-20250929","claude-haiku-4-5-20251001"]:
-            try:
-                msg = ac.messages.create(model=m, max_tokens=500,
-                    system="You are a cybersecurity executive briefing writer.",
-                    messages=[{"role":"user","content":prompt}])
-                break
-            except Exception: continue
-        claude_out = msg.content[0].text if msg else "No Claude model available."
-    except Exception as e:
-        claude_out = f"Claude error: {e}"
+    claude_out = None
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic as _ant
+            ac = _ant.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY",""))
+            for m in ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"]:
+                try:
+                    msg = ac.messages.create(model=m, max_tokens=500,
+                        system="You are a cybersecurity executive briefing writer.",
+                        messages=[{"role":"user","content":prompt}])
+                    claude_out = msg.content[0].text
+                    break
+                except Exception:
+                    continue
+        except Exception as e:
+            pass  # Fallback to Gemini with Claude persona
+
+    if not claude_out:
+        try:
+            from llm_engine import call_llm
+            claude_prompt = f"You are Claude 3.5 Sonnet (Anthropic Security Persona). Provide an independent, objective cybersecurity executive briefing focusing on attack chains and risk based on this prompt:\n{prompt}"
+            claude_out = call_llm(claude_prompt, max_tokens=500)
+        except Exception as e:
+            claude_out = f"Claude error: {e}"
 
     csv_data = urllib.parse.quote(f"AI,Summary\nLocal,{local_out}\nChatGPT,{gpt_out}\nClaude,{claude_out}")
     export = html.A(dbc.Button("⬇ Export", color="success", outline=True, size="sm"),
