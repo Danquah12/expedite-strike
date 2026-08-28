@@ -226,13 +226,16 @@ def generate_neo4j_intelligence_layout():
                                 page_size=15,
                                 sort_action="native",
                                 filter_action="native",
-                                style_table={"overflowX": "auto", "border": "1px solid #333", "borderRadius": "5px"},
+                                style_table={"overflowX": "auto", "border": "1px solid #2d3748", "borderRadius": "8px"},
                                 style_cell={
-                                    "backgroundColor": "#0d0d0d", "color": "#eee", "border": "1px solid #222",
-                                    "fontSize": "13px", "padding": "8px", "whiteSpace": "normal", "textAlign": "left"
+                                    "backgroundColor": "#0b0f19", "color": "#e2e8f0", "border": "1px solid #1a2234",
+                                    "fontSize": "12px", "padding": "10px 12px", "whiteSpace": "normal", "textAlign": "left"
                                 },
                                 style_header={
-                                    "backgroundColor": "#222", "fontWeight": "bold", "border": "1px solid #444", "color": "#ffcc00"
+                                    "backgroundColor": "#162032", "fontWeight": "bold", "border": "1px solid #2d3748", "color": "#00d6b4", "textTransform": "uppercase", "fontSize": "11px", "letterSpacing": "1px"
+                                },
+                                style_filter={
+                                    "backgroundColor": "#131c2b", "color": "#ffffff", "border": "1px solid #2d3748"
                                 },
                                 style_data_conditional=[
                                     {"if": {"filter_query": "{cvss} >= 9"}, "backgroundColor": "#4a0000", "color": "white"},
@@ -544,9 +547,11 @@ def load_neo4j_preset_graph(b1, b2, b3, b4, b5, feed_source):
             """
         else:
             cypher = """
-                MATCH (n)
-                OPTIONAL MATCH (n)-[r]->(m)
-                RETURN n, r, m LIMIT 80
+                MATCH (h:Host)
+                OPTIONAL MATCH (h)-[r1:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
+                OPTIONAL MATCH (h)-[r2:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY]->(f:Finding)
+                OPTIONAL MATCH (s)-[r3:HAS_FINDING|HAS_VULN]->(f2:Finding)
+                RETURN h, r1, s, r2, f, r3, f2 LIMIT 120
             """
     else:
         cypher = cypher_map[clicked]
