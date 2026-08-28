@@ -477,6 +477,8 @@ def killchain_tab() -> html.Div:
 
         dcc.Interval(id="kc-auto-refresh", interval=5000, n_intervals=0),
 
+        dcc.Store(id="kc-selected-phase", data="Reconnaissance"),
+
         # ── Header ───────────────────────────────────────────────────────────
         html.Div([
             html.Div([
@@ -529,19 +531,28 @@ def killchain_tab() -> html.Div:
 def register_callbacks(app):
 
     @app.callback(
+        Output("kc-selected-phase", "data"),
+        Input({"type": "kc-phase-btn", "index": ALL}, "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def set_selected_phase(clicks):
+        from dash import ctx
+        if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
+            return ctx.triggered_id.get("index", "Reconnaissance")
+        return no_update
+
+    @app.callback(
         Output("killchain-output", "children"),
         Output("kc-sim-badge",     "children"),
         Input("killchain-run",     "n_clicks"),
         Input("kc-auto-refresh",   "n_intervals"),
-        Input({"type": "kc-phase-btn", "index": ALL}, "n_clicks"),
+        Input("kc-selected-phase", "data"),
         prevent_initial_call=False,
     )
-    def update_killchain(refresh_clicks, interval_ticks, phase_btn_clicks):
-        from dash import ctx
+    def update_killchain(refresh_clicks, interval_ticks, selected_phase):
         try:
-            selected_phase = "Reconnaissance"
-            if ctx.triggered_id and isinstance(ctx.triggered_id, dict):
-                selected_phase = ctx.triggered_id.get("index", "Reconnaissance")
+            if not selected_phase:
+                selected_phase = "Reconnaissance"
 
             chain = _map_engine_to_killchain()
 
