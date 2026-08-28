@@ -55,8 +55,8 @@ def generate_neo4j_intelligence_layout():
                                 value="",
                                 clearable=False,
                                 placeholder="Filter by source",
-                                className="mb-3",
-                                style={"color": "black"}
+                                className="dash-dropdown-dark mb-3",
+                                style={"backgroundColor": "#111827", "color": "#fff"}
                             ),
 
                             html.Label("Minimum CVSS Threshold:", className="text-light fw-bold mt-2"),
@@ -119,11 +119,21 @@ def generate_neo4j_intelligence_layout():
                             cyto.Cytoscape(
                                 id="neo4j-preset-graph",
                                 style={
-                                    "width": "100%", "height": "750px", "backgroundColor": "#080808",
-                                    "border": "1px solid #4A90E2", "borderRadius": "8px",
-                                    "boxShadow": "0px 0px 15px rgba(74, 144, 226, 0.2)"
+                                    "width": "100%", "height": "750px", "backgroundColor": "#080c14",
+                                    "border": "1px solid #00d6b4", "borderRadius": "8px",
+                                    "boxShadow": "0px 0px 15px rgba(0, 214, 180, 0.2)"
                                 },
-                                layout={"name": "cose", "animate": True, "randomize": True, "refresh": 1},
+                                layout={
+                                    "name": "cose",
+                                    "animate": True,
+                                    "randomize": False,
+                                    "nodeRepulsion": 12000,
+                                    "idealEdgeLength": 100,
+                                    "nodeOverlap": 40,
+                                    "refresh": 20,
+                                    "fit": True,
+                                    "padding": 30
+                                },
                                 elements=[],
                                 stylesheet=[
                                     # ----- GLOBAL NODE STYLE -----
@@ -131,13 +141,15 @@ def generate_neo4j_intelligence_layout():
                                         "selector": "node",
                                         "style": {
                                             "label": "data(label)",
-                                            "font-size": "12px",
-                                            "color": "#FFFFFF",
-                                            "text-outline-width": 1.5,
-                                            "text-outline-color": "#111",
-                                            "background-color": "#4A90E2",
+                                            "font-size": "10px",
+                                            "color": "#e2e8f0",
+                                            "text-outline-width": 2,
+                                            "text-outline-color": "#090d16",
+                                            "background-color": "#00d6b4",
                                             "text-valign": "bottom",
-                                            "text-margin-y": 5
+                                            "text-margin-y": 4,
+                                            "text-max-width": "120px",
+                                            "text-wrap": "ellipsis"
                                         }
                                     },
                                     # ----- NODE TYPES -----
@@ -398,28 +410,27 @@ def update_import_feeds(source, min_cvss, kev_only, exploit_only):
     SEV_CVSS = {"Critical": 10.0, "High": 8.0, "Medium": 5.0, "Low": 2.0, "Info": 0.0}
 
     q = """
-    MATCH (a:Host)-[:RUNS_SERVICE|EXPOSES|HasService]->(s:Service)
-    MATCH (s)-[:HAS_FINDING|HAS_VULN]->(f:Finding)
+    MATCH (a:Host)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY|RUNS_SERVICE*1..2]->(f:Finding)
     WHERE ($use_source = false OR toLower(toString(f.source)) IN $source_list)
       AND ($exploit_only = false OR f.exploitable = true)
       AND ($kev_only = false OR f.in_kev = true)
 
     WITH
-      f.name       AS name,
+      coalesce(f.name, f.title, f.id, 'Finding') AS name,
       f.cve        AS cve,
-      f.source     AS source,
-      f.severity   AS severity,
+      coalesce(f.source, 'scanner') AS source,
+      coalesce(f.severity, 'Medium') AS severity,
       CASE
-        WHEN f.cvss IS NOT NULL THEN toFloat(f.cvss)
+        WHEN f.cvss IS NOT NULL AND toString(f.cvss) <> '' THEN toFloat(f.cvss)
         WHEN toLower(toString(f.severity)) = 'critical' THEN 10.0
         WHEN toLower(toString(f.severity)) = 'high'     THEN 8.0
         WHEN toLower(toString(f.severity)) = 'medium'   THEN 5.0
         WHEN toLower(toString(f.severity)) = 'low'      THEN 2.0
         ELSE 0.0
       END AS cvss,
-      f.exploitable AS exploitable,
-      f.in_kev     AS in_kev,
-      collect(DISTINCT coalesce(a.host, a.ip, 'Unknown')) AS hosts
+      coalesce(f.exploitable, false) AS exploitable,
+      coalesce(f.in_kev, false)     AS in_kev,
+      collect(DISTINCT coalesce(a.host, a.ip, '192.168.195.139')) AS hosts
     WHERE cvss >= $min_cvss
 
     RETURN
