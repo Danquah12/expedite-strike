@@ -618,23 +618,34 @@ def render_neo4j_node_details(node_data):
         with driver.session() as session:
             # Universal lookup to get root node properties and its immediate neighbors to derive context
             q = """
-            MATCH (n) WHERE id(n) = toInteger($nid) OR n.id = $nid
-            OPTIONAL MATCH (h:Host)-[*1..2]->(n)
-            OPTIONAL MATCH (n)-[*1..2]->(v:Vulnerability)
+            MATCH (n) 
+            WHERE elementId(n) = $nid 
+               OR toString(id(n)) = $nid 
+               OR n.id = $nid
+               OR n.title = $nlabel
+               OR n.name = $nlabel
+               OR n.host = $nlabel
+               OR n.cve = $nlabel
+            OPTIONAL MATCH (h:Host)-[:HAS_FINDING|HAS_VULN|HAS_VULNERABILITY|RUNS_SERVICE*1..2]->(n)
             OPTIONAL MATCH (n)-[:MAPS_TO_TECHNIQUE|HAS_SUBTECHNIQUE|PART_OF*1..3]->(tac:Tactic)
             RETURN n, 
-                   collect(DISTINCT h.host) AS affected_hosts,
-                   collect(DISTINCT v.cve) AS vulnerabilities,
+                   collect(DISTINCT coalesce(h.host, h.ip)) AS affected_hosts,
+                   collect(DISTINCT coalesce(n.cve, n.title)) AS vulnerabilities,
                    collect(DISTINCT tac.name) AS escalation_tactics
+            LIMIT 1
             """
-            res = session.run(q, nid=nid).data()
-            if not res:
-                return html.P("Node not found in DB.", className="text-danger")
-            
-            data = res[0]["n"]
-            affected_hosts = [h for h in res[0]["affected_hosts"] if h]
-            vulnerabilities = [v for v in res[0]["vulnerabilities"] if v]
-            escalation_tactics = [t for t in res[0]["escalation_tactics"] if t]
+            res = session.run(q, nid=str(nid), nlabel=str(nlabel)).data()
+            if not res or not res[0].get("n"):
+                # Fallback: display node data directly from tapNodeData
+                data = dict(node_data)
+                affected_hosts = [data.get("host")] if data.get("host") else []
+                vulnerabilities = [data.get("cve")] if data.get("cve") else []
+                escalation_tactics = []
+            else:
+                data = res[0]["n"]
+                affected_hosts = [h for h in res[0]["affected_hosts"] if h]
+                vulnerabilities = [v for v in res[0]["vulnerabilities"] if v]
+                escalation_tactics = [t for t in res[0]["escalation_tactics"] if t]
             
             content = [
                 html.H5(f"{ntype}: {nlabel}", className="text-warning", style={"borderBottom": "1px solid #555", "paddingBottom": "8px", "marginTop": "0px"}),
