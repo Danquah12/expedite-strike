@@ -383,11 +383,129 @@ CYPHER_PRESETS = {
 }
 
 
+def _build_cypher_result_graph(rows, cols):
+    """
+    Dynamically build a high-impact interactive visualization (Network Graph,
+    Host-to-CVE bipartite mapping, or CVSS distribution) matching whatever the Cypher query returned.
+    """
+    if not rows:
+        return go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
+
+    # Case 1: Host & CVE present -> Build Interactive Host-to-Finding Network Graph
+    has_host = any("host" in c.lower() for c in cols)
+    has_cve = any("cve" in c.lower() or "finding" in c.lower() or "vuln" in c.lower() for c in cols)
+    has_cvss = any("cvss" in c.lower() or "score" in c.lower() for c in cols)
+
+    if has_host and has_cve:
+        host_col = next(c for c in cols if "host" in c.lower())
+        cve_col = next(c for c in cols if "cve" in c.lower() or "finding" in c.lower() or "vuln" in c.lower())
+        cvss_col = next((c for c in cols if "cvss" in c.lower() or "score" in c.lower()), None)
+
+        hosts = list(set(str(r.get(host_col, "unknown")) for r in rows if r.get(host_col)))
+        cves = list(set(str(r.get(cve_col, "vulnerability")) for r in rows if r.get(cve_col)))
+
+        # Position hosts on left (x=0.2), CVEs on right (x=0.8)
+        fig = go.Figure()
+
+        # Connect edges between host and CVE
+        edge_x, edge_y = [], []
+        for r in rows:
+            h = str(r.get(host_col, ""))
+            c = str(r.get(cve_col, ""))
+            if h in hosts and c in cves:
+                h_y = (hosts.index(h) + 0.5) / max(len(hosts), 1)
+                c_y = (cves.index(c) + 0.5) / max(len(cves), 1)
+                edge_x.extend([0.2, 0.8, None])
+                edge_y.extend([h_y, c_y, None])
+
+        fig.add_trace(go.Scatter(
+            x=edge_x, y=edge_y,
+            mode="lines",
+            line=dict(width=2, color="rgba(0, 214, 180, 0.4)"),
+            hoverinfo="none"
+        ))
+
+        # Host nodes
+        host_y = [(i + 0.5) / max(len(hosts), 1) for i in range(len(hosts))]
+        fig.add_trace(go.Scatter(
+            x=[0.2] * len(hosts), y=host_y,
+            mode="markers+text",
+            marker=dict(size=24, color="#3b82f6", line=dict(width=2, color="#ffffff")),
+            text=[f"🖥️ {h}" for h in hosts],
+            textposition="middle left",
+            textfont=dict(color="#ffffff", size=11, family="monospace"),
+            hovertext=[f"<b>Host Endpoint:</b> {h}" for h in hosts],
+            hoverinfo="text",
+            name="Hosts"
+        ))
+
+        # CVE nodes
+        cve_y = [(i + 0.5) / max(len(cves), 1) for i in range(len(cves))]
+        cve_colors = []
+        cve_texts = []
+        for c in cves:
+            # Match score if possible
+            match_row = next((r for r in rows if str(r.get(cve_col)) == c), {})
+            score = float(match_row.get(cvss_col, 5.0)) if cvss_col and match_row.get(cvss_col) not in (None, "", "unknown") else 7.0
+            color = "#ff3355" if score >= 9.0 else ("#ff8c00" if score >= 7.0 else "#ffcc00")
+            cve_colors.append(color)
+            cve_texts.append(f"⚠️ {c} (CVSS {score})")
+
+        fig.add_trace(go.Scatter(
+            x=[0.8] * len(cves), y=cve_y,
+            mode="markers+text",
+            marker=dict(size=20, color=cve_colors, line=dict(width=2, color="#ffffff")),
+            text=cve_texts,
+            textposition="middle right",
+            textfont=dict(color="#ffd700", size=10, family="monospace"),
+            hovertext=cve_texts,
+            hoverinfo="text",
+            name="Vulnerabilities"
+        ))
+
+        fig.update_layout(
+            paper_bgcolor="#0b0f19",
+            plot_bgcolor="#0b0f19",
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.15, 1.35]),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.05, 1.05]),
+            height=320,
+            margin=dict(l=20, r=20, t=30, b=20),
+            showlegend=False,
+            title=dict(text="Interactive Host ➔ Finding Topology Correlation", font=dict(color="#00d6b4", size=13), x=0.5)
+        )
+        return fig
+
+    # Case 2: Numerical column (count, cvss, avg) -> Bar/Distribution Chart
+    num_col = next((c for c in cols if any(isinstance(r.get(c), (int, float)) or str(r.get(c, "")).replace(".", "").isdigit() for r in rows)), None)
+    cat_col = next((c for c in cols if c != num_col), cols[0])
+
+    if num_col:
+        xs = [str(r.get(cat_col, "Item")) for r in rows]
+        ys = [float(r.get(num_col, 0)) if str(r.get(num_col, "")).replace(".", "").isdigit() else 0 for r in rows]
+        fig = go.Figure(go.Bar(
+            x=xs, y=ys,
+            marker_color="#00d6b4",
+            text=[f"{y:.1f}" for y in ys],
+            textposition="outside",
+            textfont=dict(color="#ffffff")
+        ))
+        fig.update_layout(
+            paper_bgcolor="#0b0f19", plot_bgcolor="#111",
+            xaxis=dict(color="#aaa", tickangle=-30),
+            yaxis=dict(color="#aaa", gridcolor="#222", title=num_col),
+            height=300, margin=dict(t=40, b=60, l=40, r=20),
+            title=dict(text=f"Query Metrics Distribution ({num_col})", font=dict(color="#00d6b4", size=13), x=0.5)
+        )
+        return fig
+
+    return go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
+
+
 def cypher_builder_layout():
     preset_opts = [{"label": k, "value": v} for k, v in CYPHER_PRESETS.items()]
     return html.Div([
         html.H3("🔢 Custom Cypher Query Builder", className="text-info mb-1",style={"fontWeight":"bold"}),
-        html.P("Run live Cypher queries against your Neo4j graph — no Neo4j Browser needed.",
+        html.P("Run live Cypher queries against your Neo4j graph with real-time dynamic graph visualization.",
                className="text-muted mb-3",style={"fontSize":"13px"}),
 
         dbc.Row([
@@ -398,13 +516,13 @@ def cypher_builder_layout():
                              style={"backgroundColor":"#111","color":"#fff","border":"1px solid #333"}),
             ], md=6),
             dbc.Col([
-                dbc.Button("▶ Run Query", id="cypher-run-btn", color="success",
+                dbc.Button("▶ Run Query & Build Graph", id="cypher-run-btn", color="success",
                            className="fw-bold w-100 mt-3"),
-            ], md=2),
+            ], md=3),
             dbc.Col([
                 dbc.Button("🗑 Clear", id="cypher-clear-btn", color="secondary",
                            outline=True, className="w-100 mt-3"),
-            ], md=2),
+            ], md=1),
             dbc.Col([
                 html.Div(id="cypher-export-link", className="mt-3"),
             ], md=2),
@@ -412,11 +530,26 @@ def cypher_builder_layout():
 
         dcc.Textarea(id="cypher-query-input",
                      value="MATCH (f:Finding) WHERE f.cve IS NOT NULL\nRETURN f.cve AS cve, toString(f.cvss) AS cvss, f.host AS host\nORDER BY toFloat(coalesce(toString(f.cvss),'0')) DESC LIMIT 10",
-                     style={"width":"100%","height":"110px","backgroundColor":"#0a0a0a",
+                     style={"width":"100%","height":"100px","backgroundColor":"#0a0a0a",
                             "color":"#00ff88","border":"1px solid #00ff8844",
                             "borderRadius":"4px","padding":"10px",
                             "fontFamily":"monospace","fontSize":"13px"}),
         html.Div(id="cypher-status", className="mt-2 mb-2"),
+
+        # Visual Result Graph Container
+        dbc.Card([
+            dbc.CardHeader(
+                html.Div([
+                    html.Span("📊 DYNAMIC QUERY VISUALIZATION — GRAPH / TOPOLOGY MIMIC", style={"fontWeight": "bold", "color": "#00d6b4", "fontSize": "12px", "fontFamily": "monospace"}),
+                    dbc.Badge("LIVE CYPHER MIMIC", color="info", className="float-end")
+                ]),
+                style={"backgroundColor": "#0f172a", "borderBottom": "1px solid #00d6b444"}
+            ),
+            dbc.CardBody([
+                dcc.Graph(id="cypher-result-fig", figure=go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19", height=240), config={"displayModeBar": False})
+            ])
+        ], style={"backgroundColor": "#0d111a", "border": "1px solid #1e293b", "borderRadius": "8px", "marginBottom": "20px"}),
+
         html.Div(id="cypher-result-table"),
     ],style={"padding":"25px","backgroundColor":"#0d0d0d"})
 
@@ -437,20 +570,22 @@ def load_preset(preset_val, _):
     Output("cypher-result-table", "children"),
     Output("cypher-status",       "children"),
     Output("cypher-export-link",  "children"),
+    Output("cypher-result-fig",   "figure"),
     Input("cypher-run-btn",       "n_clicks"),
     State("cypher-query-input",   "value"),
     prevent_initial_call=True,
 )
 def run_cypher(_, query):
     if not query or not query.strip():
-        return "", dbc.Alert("Please enter a query.", color="warning",style={"fontSize":"11px"}), ""
+        return "", dbc.Alert("Please enter a query.", color="warning",style={"fontSize":"11px"}), "", go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
     try:
         t0 = time.time()
         rows = _neo(query.strip())
         elapsed = round((time.time()-t0)*1000)
         if not rows:
             return (html.P("Query returned no results.", className="text-muted small"),
-                    dbc.Alert(f"✅ 0 rows  ({elapsed}ms)", color="success",style={"fontSize":"11px"}), "")
+                    dbc.Alert(f"✅ 0 rows  ({elapsed}ms)", color="success",style={"fontSize":"11px"}), "",
+                    go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19"))
         cols = list(rows[0].keys())
         header = html.Thead(html.Tr([html.Th(c,style=_th()) for c in cols]))
         body   = html.Tbody([
@@ -471,9 +606,10 @@ def run_cypher(_, query):
                         download="cypher_result.csv")
         status = dbc.Alert(f"✅ {len(rows)} rows  ({elapsed}ms)", color="success",
                            style={"fontSize":"11px","padding":"4px 12px"})
-        return table, status, export
+        fig = _build_cypher_result_graph(rows, cols)
+        return table, status, export, fig
     except Exception as e:
-        return "", dbc.Alert(f"❌ {e}", color="danger",style={"fontSize":"11px"}), ""
+        return "", dbc.Alert(f"❌ {e}", color="danger",style={"fontSize":"11px"}), "", go.Figure().update_layout(paper_bgcolor="#0b0f19", plot_bgcolor="#0b0f19")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
