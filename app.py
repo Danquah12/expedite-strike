@@ -9797,20 +9797,36 @@ def _build_mega_nav():
 
     # ── EXTERNAL ASSESSMENT ──────────────────────────────────────────────────
     recon = _group("🔎  EXTERNAL ASSESSMENT", "recon-nav-dropdown", [
-        _col("Intelligence Gathering", [
-            _item("🔭", "OSINT Intelligence",   "Footprinting, domain recon & passive intel", "menu-osint-0",       primary=True),
-            _item("🕵️", "Threat Intelligence",  "Live feeds, CVE enrichment & IOC correlation","menu-ti-0",          primary=True),
-            _item("🌑", "Dark Web Monitor",     "Breach data, credential leaks & forums",      "menu-darkweb-0"),
+        _col("External Threat Exposure & Attack Simulation", [
+            _sec("🌐 EXTERNAL THREAT EXPOSURE & ADVERSARY SIMULATION"),
+            _item("🔭", "OSINT Intelligence",   "Footprinting, domain recon & passive perimeter discovery", "menu-osint-0",       primary=True),
+            _item("🕵️", "Threat Intelligence",  "Live adversary feeds, CVE enrichment & IOC correlation",    "menu-ti-0",          primary=True),
+            _item("🌑", "Dark Web Monitor",     "Breached credentials, darknet forums & leak intelligence",  "menu-darkweb-0",     primary=True),
+            _divider(),
+            _item("🎯", "External Pen Test",    "Full-scope automated external perimeter attack simulation",  "menu-ext-pentest-0", primary=True),
         ]),
-        _col("Penetration Testing", [
-            _item("🎯", "External Pen Test",    "Full-scope external attack simulation",        "menu-ext-pentest-0", primary=True),
+        _col("Capabilities & Scope", [
+            html.Div([
+                html.H6("🛡️ External Threat Posture", style={"color": "#00d6b4", "fontWeight": "bold", "fontSize": "12px", "marginBottom": "8px"}),
+                html.P(
+                    "Unified external exposure management: automated OSINT reconnaissance, proactive dark web breach monitoring, real-time threat intelligence enrichment, and end-to-end perimeter penetration testing against target attack surfaces.",
+                    style={"color": "#94a3b8", "fontSize": "11px", "lineHeight": "1.5", "marginBottom": "12px"}
+                ),
+                html.Div([
+                    dbc.Badge("🌐 Active OSINT", color="info", className="me-1 mb-1"),
+                    dbc.Badge("🌑 Dark Web Feeds", color="dark", className="me-1 mb-1", style={"border":"1px solid #334155"}),
+                    dbc.Badge("⚡ Live Threat Intel", color="warning", className="me-1 mb-1"),
+                    dbc.Badge("🎯 External Exploitation", color="danger", className="me-1 mb-1"),
+                ])
+            ], style={"padding": "12px", "backgroundColor": "#070a13", "borderRadius": "6px", "border": "1px solid #1e293b"})
         ]),
         _cta_col([
             _cta("Start Recon", "🔭", "menu-osint-recon-cta"),
+            _cta("Run Pen Test", "🎯", "menu-ext-pentest-0"),
             html.Div([
-                html.Span("ACTIVE FEEDS", className="mega-badge-title"),
+                html.Span("LIVE FEEDS CONNECTED", className="mega-badge-title"),
                 html.Div("Dark Web · CISA KEV · NVD · Shodan", className="mega-badge-body"),
-            ], className="mega-badge-block"),
+            ], className="mega-badge-block mt-2"),
         ]),
     ])
 
