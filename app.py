@@ -1700,13 +1700,6 @@ def _intercept_admin():
     path   = _req.path.rstrip('/')
     method = _req.method
 
-    # Direct dispatch table — maps path → (function, allowed_methods)
-    routes = {
-        '/admin':           (_ap.login_page,  ['GET']),
-        '/admin/auth':      (_ap.auth,        ['POST']),
-        '/admin/panel':     (_ap.panel,       ['GET']),
-        '/admin/save':      (_ap.save_perms,  ['POST']),
-        '/admin/restart':   (lambda: _hot_restart(), ['GET']),
     # Intercept Expedite Strike Dual Report Routes
     if path.startswith('/app/pentest-report-html'):
         parts = path.split('/app/pentest-report-html')
@@ -1717,6 +1710,18 @@ def _intercept_admin():
         parts = path.split('/app/pentest-report')
         sid = parts[1].lstrip('/') if len(parts) > 1 and parts[1].strip('/') else 'latest'
         return _handle_pentest_report(sid, fmt='pdf')
+
+    # Direct dispatch table — maps path → (function, allowed_methods)
+    routes = {
+        '/admin':           (_ap.login_page,  ['GET']),
+        '/admin/auth':      (_ap.auth,        ['POST']),
+        '/admin/panel':     (_ap.panel,       ['GET']),
+        '/admin/save':      (_ap.save_perms,  ['POST']),
+        '/admin/restart':   (lambda: _hot_restart(), ['GET']),
+        '/admin/adduser':   (_ap.add_user,    ['POST']),
+        '/admin/deluser':   (_ap.del_user,    ['POST']),
+        '/admin/logout':    (_ap.logout,      ['GET']),
+    }
 
     if path in routes:
         func, methods = routes[path]
