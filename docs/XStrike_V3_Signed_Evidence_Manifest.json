@@ -1,0 +1,29 @@
+{
+  "manifest_id": "MANIFEST-XSTRIKE-V3-VERIFIED-2C953F6191",
+  "manifest_version": "EvidenceCore-V3.0",
+  "assessment_id": "XSTRIKE-V3-VERIFIED",
+  "engine_version": "XStrike-EvidenceCore-v3.0",
+  "generated_at_utc": "2026-10-31T03:36:16Z",
+  "clock_source": "UTC System Clock (ISO-8601)",
+  "total_records": 110,
+  "total_evidence_records": 110,
+  "security_finding_records": 85,
+  "recon_finding_records": 25,
+  "manifest_root_sha256": "2c953f61914c3b0df4bb82d65d5dce7742b65f3890b73c06df97003b2cb021af",
+  "evidence_merkle_root_sha256": "2c953f61914c3b0df4bb82d65d5dce7742b65f3890b73c06df97003b2cb021af",
+  "manifest_hmac_sha256": "a0d19bdfe45bd6ef207b47306f5645e86137495f58f545e09ca2fac993a48417",
+  "hmac_sha256_signature": "a0d19bdfe45bd6ef207b47306f5645e86137495f58f545e09ca2fac993a48417",
+  "db_to_pdf_consistency_verified": true,
+  "controls_verified": [
+    "1. Raw artifact preservation",
+    "2. SHA-256 digest verification",
+    "3. Collector engine & version provenance",
+    "4. Exact host:port/endpoint target binding",
+    "5. UTC timestamp & clock source provenance",
+    "6. Session authentication & privilege provenance",
+    "7. Bi-directional evidence-to-finding link",
+    "8. Deterministic command reproducibility",
+    "9. SQLite snapshot transactional integrity",
+    "10. Database-to-PDF value consistency check"
+  ]
+}
