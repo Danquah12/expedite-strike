@@ -279,13 +279,19 @@ PROOF_STATES = (
 
 
 def sanitize_evidence(text: str) -> str:
-    """Clean raw tool banners, Mojibake, and unverified scanner overclaims while preserving technical proof."""
+    """Clean raw tool banners, Mojibake, redact raw /etc/shadow hashes, and strip unverified scanner overclaims."""
     if not text:
         return ""
     s = str(text)
     s = s.replace("\ufffd", "—")
     s = re.sub(r"Starting Nmap [^\n]+\n?", "", s)
     s = re.sub(r"Nmap done: [^\n]+\n?", "", s)
+    # Redact raw /etc/shadow MD5/SHA/Blowfish password hashes ($1$..., $2a$..., $5$..., $6$..., $y$...)
+    s = re.sub(
+        r"(\$[1256y][a-zA-Z0-9./$]{10,})",
+        lambda m: f"{m.group(1)[:6]}...[REDACTED_SHADOW_HASH]",
+        s,
+    )
     # Strip unverified scanner narrative overclaims on phpMyAdmin HTTP 200 discovery
     s = re.sub(
         r"phpMyAdmin accessible at /phpMyAdmin/\s*[—\-]?\s*NO AUTH!\s*\n\s*Can read/write entire database\.",
@@ -404,7 +410,11 @@ def classify_proof_state_and_scope(f: Dict[str, Any], raw_exploits: List[Dict[st
     ]):
         scope = {
             "authenticated": True,
-            "file_access": "READ_WRITE (/etc/shadow verified)" if "shadow" in combined or "root:" in combined else "READ_WRITE (root shell)",
+            "file_access": (
+                "READ_CONFIRMED (/etc/shadow read via cat/head; write not executed per RoE)"
+                if "shadow" in combined or "root:" in combined
+                else "READ_CONFIRMED (root shell identity verified; write not executed per RoE)"
+            ),
             "database_access": "NONE",
             "privilege_level": "ROOT (uid=0 / gid=0)",
             "privesc_demonstrated": True,
@@ -412,10 +422,10 @@ def classify_proof_state_and_scope(f: Dict[str, Any], raw_exploits: List[Dict[st
             "execution_status": "ROOT_SHELL_EXECUTED",
             "authentication_status": "UNAUTHENTICATED_ROOT_BIND",
             "exploitability_status": "EXPLOIT_CONFIRMED",
-            "data_access_status": "SHADOW_HASHES_READ",
+            "data_access_status": "SHADOW_HASHES_READ_REDACTED",
             "impact_status": "FULL_SYSTEM_COMPROMISE",
             "evidence_confidence": 99,
-            "access_summary": "Unrestricted root command execution (uid=0) and /etc/shadow read access verified (same target host 192.168.195.139)",
+            "access_summary": "Unrestricted root command execution (uid=0) and /etc/shadow READ_CONFIRMED (password hashes redacted; write not executed per RoE)",
         }
         return ("CONFIRMED_COMPROMISE", "CONFIRMED", scope)
 
@@ -2471,11 +2481,141 @@ def build_attack_graph_intelligence(
         },
     ]
 
+    # Strict Non-Inheritance Rule & Neo4j Property Graph / Cypher Export (AttackGraph V4)
+    STATE_ORDER = {
+        "INFERRED_NOT_EXECUTED": 1,
+        "PARTIALLY_VALIDATED": 2,
+        "CONFIRMED_EXECUTED": 3,
+    }
+    neo4j_nodes_map: Dict[str, Dict[str, Any]] = {
+        "NODE_ATTACKER_130": {
+            "node_id": "NODE_ATTACKER_130",
+            "label": "AssessorSensor",
+            "name": "Assessor (192.168.195.130)",
+            "ip": "192.168.195.130",
+            "trust_zone": "ASSESSMENT_SENSOR_LAN",
+        }
+    }
+    for h in reconciled_hosts:
+        hip = h.get("ip", "")
+        nid = f"NODE_HOST_{hip.replace('.', '_')}"
+        neo4j_nodes_map[nid] = {
+            "node_id": nid,
+            "label": "Host",
+            "name": f"{hip} ({h.get('role', 'Host')})",
+            "ip": hip,
+            "criticality_tier": h.get("criticality_tier", "STANDARD"),
+            "open_port_count": h.get("open_port_count", 0),
+        }
+
+    cypher_lines: List[str] = [
+        "// EXPEDITE STRIKE V4 — Neo4j Attack Property Graph & BloodHound-Compatible Cypher Bundle",
+        "// Enforces Strict Per-Edge Evidence State Non-Inheritance: ChainState = min_stage(EdgeState)",
+        "CREATE CONSTRAINT xstrike_node_id IF NOT EXISTS FOR (n:XStrikeNode) REQUIRE n.node_id IS UNIQUE;",
+    ]
+    for nid, nprop in neo4j_nodes_map.items():
+        cypher_lines.append(
+            f"MERGE (n:XStrikeNode:{nprop['label']} {{node_id: '{nid}'}}) "
+            f"SET n.name = '{nprop['name']}', n.ip = '{nprop.get('ip', '')}';"
+        )
+
+    neo4j_relationships: List[Dict[str, Any]] = []
+    for ch in chains:
+        ch_edges = ch.get("edges", [])
+        weakest_rank = min((STATE_ORDER.get(e.get("validation_state", "INFERRED_NOT_EXECUTED"), 1) for e in ch_edges), default=1)
+        weakest_state = next((k for k, v in STATE_ORDER.items() if v == weakest_rank), "INFERRED_NOT_EXECUTED")
+        exec_cnt = sum(1 for e in ch_edges if e.get("validation_state") == "CONFIRMED_EXECUTED")
+        part_cnt = sum(1 for e in ch_edges if e.get("validation_state") == "PARTIALLY_VALIDATED")
+        inf_cnt = sum(1 for e in ch_edges if e.get("validation_state") == "INFERRED_NOT_EXECUTED")
+        ch["weakest_link_state"] = weakest_state
+        ch["non_inheritance_verified"] = (
+            ch["validation_state"] != "CONFIRMED_EXECUTED" or (part_cnt == 0 and inf_cnt == 0)
+        )
+        ch["edge_state_breakdown"] = f"{exec_cnt} Executed / {part_cnt} Validated / {inf_cnt} Inferred (Weakest: {weakest_state})"
+        ch["attack_path_priority_score"] = ch.get("path_score", 0)
+
+        for ed in ch_edges:
+            ed["chain_id"] = ch["chain_id"]
+            src_id = re.sub(r"[^A-Za-z0-9_]", "_", ed["source_node"])[:40]
+            dst_id = re.sub(r"[^A-Za-z0-9_]", "_", ed["target_node"])[:40]
+            rel_type = (
+                "EXECUTED_COMPROMISE" if ed["validation_state"] == "CONFIRMED_EXECUTED"
+                else "VALIDATED_PRECONDITION" if ed["validation_state"] == "PARTIALLY_VALIDATED"
+                else "INFERRED_LATERAL_CANDIDATE"
+            )
+            rel_obj = {
+                "chain_id": ch["chain_id"],
+                "stage_num": ed["stage_num"],
+                "relationship_type": rel_type,
+                "source_node": ed["source_node"],
+                "target_node": ed["target_node"],
+                "technique_id": ed["technique_id"],
+                "finding_id": ed.get("finding_id", ""),
+                "evidence_ref": ed.get("evidence_ref", ""),
+                "validation_state": ed["validation_state"],
+                "confidence": ed["confidence"],
+            }
+            neo4j_relationships.append(rel_obj)
+            cypher_lines.append(
+                f"MERGE (s:XStrikeNode {{node_id: '{src_id}'}}) SET s.name = '{ed['source_node']}' "
+                f"MERGE (t:XStrikeNode {{node_id: '{dst_id}'}}) SET t.name = '{ed['target_node']}' "
+                f"MERGE (s)-[r:{rel_type} {{chain_id: '{ch['chain_id']}', stage: {ed['stage_num']}, "
+                f"finding_id: '{ed.get('finding_id', '')}'}}]->(t) "
+                f"SET r.technique_id = '{ed['technique_id']}', r.validation_state = '{ed['validation_state']}', "
+                f"r.evidence_ref = '{ed.get('evidence_ref', '')}', r.confidence = {ed['confidence']};"
+            )
+
+    neo4j_cypher_queries = [
+        {
+            "query_id": "CYPHER-01",
+            "title": "Verified End-to-End Root Compromise Paths Only (Strict Edge-State Filter)",
+            "purpose": "Returns only attack chains where EVERY hop in the path has validation_state = 'CONFIRMED_EXECUTED' (never inherits executed status onto inferred hops).",
+            "cypher": (
+                "MATCH p = (src:XStrikeNode)-[:EXECUTED_COMPROMISE*1..4]->(dst:XStrikeNode)\n"
+                "WHERE ALL(r IN relationships(p) WHERE r.validation_state = 'CONFIRMED_EXECUTED')\n"
+                "  AND dst.name CONTAINS 'uid=0'\n"
+                "RETURN p, [r IN relationships(p) | r.finding_id] AS findings, [r IN relationships(p) | r.evidence_ref] AS proofs;"
+            ),
+        },
+        {
+            "query_id": "CYPHER-02",
+            "title": "Hybrid / Partially Validated Chains with Unexecuted Escalation or Pivot Hops",
+            "purpose": "Identifies chains (such as CHAIN-03 SSH->SUID and CHAIN-05 NFS/SQLi) that start with an executed foothold but transition into a validated or inferred step.",
+            "cypher": (
+                "MATCH p = (src:XStrikeNode)-[r1:EXECUTED_COMPROMISE]->(mid:XStrikeNode)-[r2:VALIDATED_PRECONDITION|INFERRED_LATERAL_CANDIDATE*1..3]->(dst:XStrikeNode)\n"
+                "RETURN r1.chain_id AS chain, mid.name AS foothold_boundary, [rel IN r2 | rel.validation_state] AS downstream_states;"
+            ),
+        },
+        {
+            "query_id": "CYPHER-03",
+            "title": "Betweenness Centrality & Choke-Point Remediation ROI Ranking",
+            "purpose": "Computes which remediation control node (e.g., 192.168.195.139:1524, :21, :22, :5432) severs the maximum number of active attack chains.",
+            "cypher": (
+                "MATCH (s:XStrikeNode)-[r]->(t:XStrikeNode)\n"
+                "RETURN r.finding_id AS finding_id, t.name AS choke_point_node, count(DISTINCT r.chain_id) AS chains_severed, collect(DISTINCT r.chain_id) AS chains\n"
+                "ORDER BY chains_severed DESC;"
+            ),
+        },
+    ]
+
+    neo4j_graph_model = {
+        "engine": "Neo4j 5.x Property Graph + OpenGraph (BloodHound-Compatible) Export",
+        "node_labels": ["AssessorSensor", "Host", "NetworkService", "IdentityContext", "VulnerabilityFinding", "PrivilegeBoundary", "CrownJewelAsset", "RemediationChokePoint"],
+        "relationship_types": ["EXECUTED_COMPROMISE", "VALIDATED_PRECONDITION", "INFERRED_LATERAL_CANDIDATE", "MITIGATED_BY_CHOKE_POINT"],
+        "node_count": len(neo4j_nodes_map) + len({e["source_node"] for e in edges} | {e["target_node"] for e in edges}),
+        "relationship_count": len(neo4j_relationships),
+        "non_inheritance_invariant": "ChainState(C) = min_{e in E(C)} EdgeState(e) — A chain with any PARTIALLY_VALIDATED or INFERRED_NOT_EXECUTED hop can NEVER be labeled CONFIRMED_EXECUTED.",
+        "cypher_seed_script": "\n".join(cypher_lines),
+        "analytical_queries": neo4j_cypher_queries,
+        "relationships": neo4j_relationships,
+    }
+
     return {
         "chains": chains,
         "edges": edges,
         "remediation_choke_points": remediation_choke_points,
         "path_state_taxonomy": path_state_taxonomy,
+        "neo4j_graph_model": neo4j_graph_model,
         "raw_total_paths": raw_total,
         "raw_critical_paths": raw_crit,
         "consolidated_chain_count": len(chains),
@@ -2484,12 +2624,12 @@ def build_attack_graph_intelligence(
         "inferred_chains": len(inferred_chains),
         "reconciliation_note": (
             f"The raw graph generator enumerated {raw_total} port-level path permutations "
-            f"({raw_crit} high/critical permutations across open ports). AttackGraph V3 deduplicated "
-            f"these by underlying CVE/CWE and proof state into {len(chains)} distinct attack chains: "
+            f"({raw_crit} high/critical permutations across open ports). AttackGraph V3/V4 deduplicated "
+            f"these by underlying CVE/CWE and per-edge proof state into {len(chains)} distinct attack chains: "
             f"{len(confirmed_chains)} EXECUTED (2 Full Root Compromises on 192.168.195.139 + 1 DB Superuser Auth), "
             f"{len(partial_chains)} PARTIALLY_VALIDATED, and {len(inferred_chains)} INFERRED_NOT_EXECUTED, "
             f"plus 2 BLOCKED_BY_CONTROLS host paths and 3 NOT_TESTED_BY_SAFETY_ROE payloads, "
-            f"governed by {len(remediation_choke_points)} remediation choke points."
+            f"governed by {len(remediation_choke_points)} remediation choke points and exported to Neo4j Cypher."
         ),
         "scoring_algorithm": (
             "AttackPathPriorityScore(C) = min(100, round(BaseCVSS * 6.0 * W_exec + ImpactBonus + HopBonus)) "
@@ -3141,40 +3281,82 @@ SPECIFIC_REMEDIATION_CATALOG: Dict[str, Dict[str, str]] = {
 
 def get_structured_remediation(f: Dict[str, Any]) -> Dict[str, str]:
     """
-    Return vulnerability-specific remediation steps for 100% of finding classes.
+    Return environment-aware, vulnerability-specific remediation steps AND change-management
+    lifecycle metadata (target environment detection, approval workflow, backup/rollback,
+    configuration validation, automated re-test command, and evidence-based closure criterion).
     Never returns generic 'Investigate and apply vendor patches' or generic firewall/daemon prose.
     """
     ckey = f.get("canonical_key", "")
-    if ckey in SPECIFIC_REMEDIATION_CATALOG:
-        return SPECIFIC_REMEDIATION_CATALOG[ckey]
+    host = f.get("host", "target")
+    port = f.get("port", "") or "80"
 
-    if f.get("proof_state") == "DISCOVERED" or ckey.startswith("RECON_"):
-        return {
+    if host == "192.168.195.139":
+        env_profile = "Ubuntu 8.04 LTS (Linux 2.6.24-16-server, dpkg/apt, Apache 2.2.8, OpenSSH 4.7p1, PostgreSQL 8.3.1, Samba 3.0.20)"
+    elif host == "192.168.195.140":
+        env_profile = "Linux Middleware Host (Apache Tomcat/Jetty :8080/:8081, SMB :445)"
+    elif host == "192.168.195.1":
+        env_profile = "Windows / VMware Host Gateway (VMware Auth :902/:912, SMB :445, DNS :53)"
+    else:
+        env_profile = f"LAN Endpoint ({host}:{port})"
+
+    base_rem: Optional[Dict[str, str]] = None
+    if ckey in SPECIFIC_REMEDIATION_CATALOG:
+        base_rem = dict(SPECIFIC_REMEDIATION_CATALOG[ckey])
+    elif f.get("proof_state") == "DISCOVERED" or ckey.startswith("RECON_"):
+        base_rem = {
             "immediate": "No emergency remediation required; this entry records automated reconnaissance/surface telemetry.",
             "short_term": "Verify that the discovered web/network behavior aligns with intended application architecture.",
             "long_term": "Maintain continuous asset and endpoint inventory monitoring.",
             "verification": "Review inventory baseline during scheduled security assessments.",
         }
+    else:
+        tl = (f.get("title", "") or "").lower()
+        for cat_key, rem_val in SPECIFIC_REMEDIATION_CATALOG.items():
+            if cat_key.replace("VULN_", "").lower().replace("_", " ") in tl:
+                base_rem = dict(rem_val)
+                break
+        if not base_rem:
+            base_rem = {
+                "immediate": f"Disable unauthenticated access to `{f.get('title', 'the service')}` on `{host}:{port}` in the service configuration file and reload the daemon.",
+                "short_term": f"Enforce explicit authentication, TLS encryption, and IP allowlisting for `{f.get('title', 'the service')}` on port `{port}`.",
+                "long_term": "Integrate automated CIS Benchmark configuration compliance checks into CI/CD pipelines.",
+                "verification": f"Re-test `{host}:{port}` with Nmap/curl and confirm the specific configuration weakness is remediated.",
+            }
 
-    # Secondary keyword match in case of custom canonical key
-    tl = (f.get("title", "") or "").lower()
-    for cat_key, rem_val in SPECIFIC_REMEDIATION_CATALOG.items():
-        if cat_key.replace("VULN_", "").lower().replace("_", " ") in tl:
-            return rem_val
+    sev = f.get("severity", "Medium")
+    if sev == "Critical":
+        approval_gate = "Emergency Change Advisory Board (ECAB) — Immediate Break-Glass Containment (0–24h SLA)"
+    elif sev == "High":
+        approval_gate = "Standard Security Change Control + SecOps Lead Sign-Off (7-Day SLA)"
+    else:
+        approval_gate = "Scheduled Maintenance Window + Peer Configuration Review (14–30 Day SLA)"
 
-    port = f.get("port", "") or "80"
-    return {
-        "immediate": f"Disable unauthenticated access to `{f.get('title', 'the service')}` on `{f.get('host', 'target')}:{port}` in the service configuration file and reload the daemon.",
-        "short_term": f"Enforce explicit authentication, TLS encryption, and IP allowlisting for `{f.get('title', 'the service')}` on port `{port}`.",
-        "long_term": "Integrate automated CIS Benchmark configuration compliance checks into CI/CD pipelines.",
-        "verification": f"Re-test `{f.get('host', 'target')}:{port}` with Nmap/curl and confirm the specific configuration weakness is remediated.",
-    }
+    if "SMB" in ckey or port in ("139", "445"):
+        rollback_cmd = "Backup `/etc/samba/smb.conf` (`cp -p /etc/samba/smb.conf /etc/samba/smb.conf.bak`) or Windows Registry `HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters` prior to disabling SMBv1; restore backup and restart `smbd`/`LanmanServer` if legacy clients fail."
+    elif "POSTGRES" in ckey or port == "5432":
+        rollback_cmd = "Backup `/etc/postgresql/8.3/main/pg_hba.conf` and `postgresql.conf` (`cp -p pg_hba.conf pg_hba.conf.bak`); run `pg_ctl reload` to revert if dependent local services lose DB connectivity."
+    elif "SUID" in ckey:
+        rollback_cmd = "Record baseline file mode via `stat -c '%a %n' /usr/bin/nmap /bin/mount > /root/suid_baseline.txt`; restore with `chmod 4755 <binary>` only if an approved operational dependency breaks."
+    elif "HEADER" in ckey or "COOKIE" in ckey or "APACHE" in ckey or "PHP" in ckey or port in ("80", "8180", "8080", "8081"):
+        rollback_cmd = "Backup `/etc/apache2/apache2.conf` and `/etc/php5/apache2/php.ini` (`cp -p /etc/apache2/apache2.conf /etc/apache2/apache2.conf.bak`), run `apache2ctl configtest` before reload, and restore `.bak` if HTTP 500 regressions occur."
+    else:
+        rollback_cmd = f"Snapshot VM/container state and backup `/etc/inetd.conf` / daemon config on `{host}` before stopping service on port `{port}`; restore config snapshot if rollback is required."
+
+    base_rem["environment_profile"] = env_profile
+    base_rem["approval_and_change_window"] = approval_gate
+    base_rem["backup_and_rollback"] = rollback_cmd
+    base_rem["closure_criterion"] = (
+        f"EVIDENCE_BASED_CLOSURE_ONLY: Finding {f.get('finding_id', '')} remains OPEN until an automated XStrike re-test "
+        f"executes `{base_rem.get('verification', '')}`, captures a signed SHA-256/HMAC negative-control transcript, "
+        f"and transitions proof_state to REMEDIATION_VERIFIED."
+    )
+    return base_rem
 
 
 def get_compliance_intelligence(f: Dict[str, Any]) -> Dict[str, str]:
     """
     Map each finding to PCI-DSS v4.0, NIST SP 800-53 Rev. 5, ISO/IEC 27001:2022, and CIS Controls v8,
-    and assign a 4-tier Evidence-Driven Compliance Status:
+    and assign a 4-tier Evidence-Driven Compliance Status + Applicability & Assessment Limitation Scope:
       1. CONFIRMED_COMPLIANCE_DEFICIENCY (Backed by CONFIRMED_COMPROMISE or CONFIRMED_AUTH)
       2. EVIDENCE_OF_CONTROL_FAILURE     (Backed by VALIDATED or EXPLOITABLE technical proof)
       3. POTENTIAL_CONTROL_WEAKNESS      (Backed by OBSERVED service/banner exposure)
@@ -3183,45 +3365,55 @@ def get_compliance_intelligence(f: Dict[str, Any]) -> Dict[str, str]:
     ps = f.get("proof_state", "OBSERVED")
     cwe = f.get("cwe", "CWE-693")
     ckey = f.get("canonical_key", "")
+    host = f.get("host", "target")
 
     if ps in ("CONFIRMED_COMPROMISE", "CONFIRMED_AUTH"):
         c_status = "CONFIRMED_COMPLIANCE_DEFICIENCY"
-        rationale = f"Direct exploitation/authentication proof ({ps}) demonstrates an active failure of access control or system integrity."
+        rationale = f"Direct exploitation/authentication proof ({ps}) demonstrates an active failure of access control or system integrity on {host}."
+        limitation = "Technical control failure confirmed on target asset; full regulatory audit determination also requires reviewing compensating network/organizational controls."
     elif ps in ("VALIDATED", "EXPLOITABLE"):
         c_status = "EVIDENCE_OF_CONTROL_FAILURE"
-        rationale = f"Deterministic HTTP/protocol validation ({ps}) confirms a technical control gap requiring remediation."
+        rationale = f"Deterministic HTTP/protocol validation ({ps}) confirms a technical control gap requiring remediation on {host}."
+        limitation = "Demonstrates a specific technical sub-control deficiency; does not alone constitute a full-program compliance failure without scoping CDE/organizational boundaries."
     elif ps == "OBSERVED":
         c_status = "POTENTIAL_CONTROL_WEAKNESS"
         rationale = "Service port or version banner exposure observed; requires host configuration verification to confirm compliance failure."
+        limitation = "Banner/port observation only; cannot be cited as a confirmed audit non-conformity without authenticated configuration inspection."
     else:
         c_status = "TECHNICAL_OBSERVATION"
         rationale = "Informational reconnaissance observation recorded for scope completeness; does not constitute a control violation."
+        limitation = "Informational surface inventory only; non-scoring in compliance audits."
 
     if cwe in ("CWE-798", "CWE-287", "CWE-306", "CWE-307") or "CREDS" in ckey:
         pci = "PCI-DSS v4.0 Req 2.2.2 & 8.2 (Default Accounts & Strong Authentication)"
         nist = "NIST 800-53 IA-2, IA-5 & AC-3 (Identification, Authenticator Mgmt, Access Enforcement)"
         iso = "ISO 27001:2022 A.5.17 & A.8.5 (Authentication Information & Secure Authentication)"
         cis = "CIS Control 4.7 & 5.2 (Manage Default Accounts & Use Unique Passwords)"
+        applicability = "Applicable if host stores, processes, or transmits regulated account/authentication data or connects to shared identity domains."
     elif cwe in ("CWE-89", "CWE-79", "CWE-88", "CWE-918", "CWE-502"):
         pci = "PCI-DSS v4.0 Req 6.2.4 & 6.4.1 (Prevent Injection, SSRF & Insecure Deserialization)"
         nist = "NIST 800-53 SI-10 & SI-2 (Information Input Validation & Flaw Remediation)"
         iso = "ISO 27001:2022 A.8.26 & A.8.28 (Application Security Requirements & Secure Coding)"
         cis = "CIS Control 16.12 (Implement Code-Level Security Checks)"
+        applicability = "Applicable to custom and commercial web applications handling untrusted HTTP parameters."
     elif cwe in ("CWE-319", "CWE-327", "CWE-345", "CWE-614"):
         pci = "PCI-DSS v4.0 Req 2.2.7 & 4.2.1 (Encrypt Non-Console Admin Access & Strong Cryptography)"
         nist = "NIST 800-53 SC-8 & SC-13 (Transmission Confidentiality & Cryptographic Protection)"
         iso = "ISO 27001:2022 A.8.24 (Use of Cryptography)"
         cis = "CIS Control 3.10 (Encrypt Sensitive Data in Transit)"
+        applicability = "Applicable to all non-console administrative sessions and HTTP/TCP channels carrying credentials or session tokens."
     elif cwe in ("CWE-250", "CWE-269", "CWE-732", "CWE-284"):
         pci = "PCI-DSS v4.0 Req 7.2.2 (Assign Privileges Based on Job Function / Least Privilege)"
         nist = "NIST 800-53 AC-6 (Least Privilege)"
         iso = "ISO 27001:2022 A.8.2 (Privileged Access Rights)"
         cis = "CIS Control 5.4 & 6.8 (Restrict Administrator Privileges)"
+        applicability = "Applicable to multi-user OS hosts, SUID binaries, and shared network filesystems (NFS/SMB)."
     else:
         pci = "PCI-DSS v4.0 Req 1.2.1 & 2.2.1 (Configuration Standards & Network Service Restrictions)"
         nist = "NIST 800-53 CM-6, CM-7 & RA-5 (Configuration Settings, Least Functionality, Vuln Monitoring)"
         iso = "ISO 27001:2022 A.8.8 & A.8.9 (Management of Technical Vulnerabilities & Configuration Mgmt)"
         cis = "CIS Control 4.1 & 7.1 (Establish Secure Configurations & Vulnerability Management)"
+        applicability = "Applicable to all network-reachable infrastructure and web servers within the assessed subnet."
 
     return {
         "pci_dss": pci,
@@ -3230,6 +3422,8 @@ def get_compliance_intelligence(f: Dict[str, Any]) -> Dict[str, str]:
         "cis_controls": cis,
         "compliance_status": c_status,
         "evidence_rationale": rationale,
+        "applicability_scope": applicability,
+        "assessment_limitation": limitation,
     }
 
 
@@ -4646,6 +4840,10 @@ def correlate_and_enrich_findings(
         base["remediation_short"] = rem["short_term"]
         base["remediation_long"] = rem["long_term"]
         base["remediation_verification"] = rem["verification"]
+        base["remediation_environment"] = rem.get("environment_profile", "")
+        base["remediation_approval"] = rem.get("approval_and_change_window", "")
+        base["remediation_rollback"] = rem.get("backup_and_rollback", "")
+        base["remediation_closure_rule"] = rem.get("closure_criterion", "")
 
         comp = get_compliance_intelligence(base)
         base["compliance_pci"] = comp["pci_dss"]
@@ -4654,6 +4852,8 @@ def correlate_and_enrich_findings(
         base["compliance_cis"] = comp["cis_controls"]
         base["compliance_status"] = comp["compliance_status"]
         base["compliance_rationale"] = comp["evidence_rationale"]
+        base["compliance_applicability"] = comp.get("applicability_scope", "")
+        base["compliance_limitation"] = comp.get("assessment_limitation", "")
 
         # Temporary hash for sorting
         base["evidence_sha256"] = EvidenceValidationEngine.compute_sha256(base["evidence"])

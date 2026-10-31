@@ -171,14 +171,19 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
             elif sev == "Low":
                 self.assertTrue(0.1 <= sc <= 3.9, f"{f.get('finding_id')} Low has CVSS {sc}")
 
-    def test_ac11_attack_graph_v3_metrics_and_choke_points(self):
+    def test_ac11_attack_graph_v3_metrics_choke_points_and_neo4j_cypher(self):
         ag = self.v2["attack_graph"]
         self.assertEqual(ag["consolidated_chain_count"], 6)
         self.assertGreaterEqual(len(ag["edges"]), 20)
         self.assertGreaterEqual(len(ag.get("remediation_choke_points", [])), 3)
         for ch in ag["chains"]:
-            for k in ("path_feasibility", "path_confidence", "privilege_reached", "asset_impact", "path_length", "remediation_leverage", "path_priority"):
+            for k in ("path_feasibility", "path_confidence", "privilege_reached", "asset_impact", "path_length", "remediation_leverage", "path_priority", "weakest_link_state", "non_inheritance_verified"):
                 self.assertIn(k, ch)
+            self.assertTrue(ch["non_inheritance_verified"])
+        neo4j = ag.get("neo4j_graph_model", {})
+        self.assertIn("Neo4j", neo4j.get("engine", ""))
+        self.assertIn("CREATE CONSTRAINT", neo4j.get("cypher_seed_script", ""))
+        self.assertEqual(len(neo4j.get("analytical_queries", [])), 3)
 
     def test_ac12_endpoint_hygiene_zero_external_reference_urls(self):
         for f in self.v2["security_findings"] + self.v2["recon_findings"]:
@@ -203,11 +208,16 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertIn("F-09", tm["privesc_ids"])
         self.assertIn("F-18", tm["privesc_ids"])
 
-        # Verify 3-State Post-Exploitation Privesc Lifecycle on F-06, F-09, F-18
+        # Verify 3-State Post-Exploitation Privesc Lifecycle on F-06, F-09, F-18 & READ_CONFIRMED + Redaction on F-01, F-02
         sec_map = {f["finding_id"]: f for f in self.v2["security_findings"]}
+        self.assertIn("READ_CONFIRMED", sec_map["F-01"]["access_scope"]["file_access"])
+        self.assertIn("READ_CONFIRMED", sec_map["F-02"]["access_scope"]["file_access"])
+        self.assertIn("[REDACTED_SHADOW_HASH]", sec_map["F-01"]["evidence"])
         self.assertEqual(sec_map["F-06"]["access_scope"]["privesc_lifecycle_state"], "TECHNIQUE_VALIDATED")
         self.assertEqual(sec_map["F-09"]["access_scope"]["privesc_lifecycle_state"], "PRECONDITION_DISCOVERED")
         self.assertEqual(sec_map["F-18"]["access_scope"]["privesc_lifecycle_state"], "PRECONDITION_DISCOVERED")
+        self.assertIn("EVIDENCE_BASED_CLOSURE_ONLY", sec_map["F-01"]["remediation_closure_rule"])
+        self.assertTrue(bool(sec_map["F-01"]["compliance_limitation"]))
 
         # Verify Risk Model Residual Floor & Host vs Vector Compromise Distinction
         rm = self.v2["risk_model"]
