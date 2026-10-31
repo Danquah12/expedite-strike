@@ -217,11 +217,11 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
                 self.assertNotIn("nmap.org", ep_l)
                 self.assertFalse(ep_l.startswith("/"), f"Unbound relative path in endpoint: {ep}")
 
-    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_18_rule_quality_gate(self):
+    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_20_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 18)
-        self.assertEqual(qa["total_rules"], 18)
+        self.assertEqual(qa["passed_rules"], 20)
+        self.assertEqual(qa["total_rules"], 20)
 
         # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
         tm = self.v2["transition_model"]
@@ -246,9 +246,9 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(rm["residual_risk_floor"], 1.5)
         self.assertIn("principal_calibrated_score", rm)
         self.assertEqual(rm["sla_projections"][0]["risk_measurement_state"], "MEASURED_RISK")
-        self.assertEqual(rm["sla_projections"][3]["active_vulnerability_score"], 0.0)
-        self.assertEqual(rm["sla_projections"][3]["projected_score"], 1.5)
-        self.assertEqual(rm["sla_projections"][4]["risk_measurement_state"], "REMEDIATION_VERIFIED_RISK")
+        self.assertEqual(rm["sla_projections"][1]["risk_measurement_state"], "REMEDIATION_VERIFIED_RISK")
+        self.assertEqual(rm["sla_projections"][4]["active_vulnerability_score"], 0.0)
+        self.assertEqual(rm["sla_projections"][4]["projected_score"], 1.5)
 
         # AC-18: Verify Independent Cryptographic (Ed25519 + SHA-256 + HMAC) & SQLite Snapshot Integrity
         iv = self.v2["integrity_verification"]
@@ -266,7 +266,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(len(em.get("manifest_ed25519_signature", "")), 128)
         self.assertEqual(len(em.get("ed25519_public_key_hex", "")), 64)
 
-        # Verify V3.1 Multi-Host Benchmark & 7-Step Retest Lifecycle
+        # Verify V3.2 Multi-Host Benchmark & 7-Step Retest Lifecycle
         v3_arch = self.v2["v3_architecture"]
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["hosts"]), 4)
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["remediation_retest_lifecycle"]), 7)
@@ -280,7 +280,43 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
         self.assertIn("EXPEDITE STRIKE V3", html_doc)
-        self.assertIn("18/18 PASSED", html_doc)
+        self.assertIn("20/20 PASSED", html_doc)
+
+    def test_ac19_ac20_v32_six_priorities_verification_retest_and_risk_recalculation(self):
+        # Priority 1: Standalone Database-Free Bundle Verifier (verify_manifest.py)
+        sv = self.v2["standalone_verification"]
+        self.assertTrue(sv["standalone_verified"])
+        self.assertEqual(sv["database_dependency"], "NONE (Verified 100% from exported JSON bundle + Ed25519 public key PEM)")
+        self.assertEqual(sv["record_sha256_verified_count"], 124)
+        self.assertTrue(sv["merkle_root_matched"])
+        self.assertTrue(sv["ed25519_public_key_verified"])
+        self.assertEqual(sv["remediation_records_verified"], "3/3")
+
+        # Priority 2 & 3: Exploitability Validation Gate & 4-State MITRE Execution Provenance
+        for f in self.v2["security_findings"]:
+            ev_gate = f.get("exploitability_validation", {})
+            self.assertEqual(ev_gate.get("exploitability_claimed"), ev_gate.get("promotion_criteria_met"))
+            self.assertIn(
+                f.get("mitre_execution_state"),
+                ("EXECUTED_WITH_PROOF", "TECHNIQUE_VALIDATED", "ATTEMPTED_BLOCKED_OR_UNVERIFIED", "MAPPED_ONLY"),
+            )
+
+        # Priority 4: Multi-Host Lateral Movement Succeeded vs. Blocked by Controls
+        lat_matrix = self.v2["attack_graph"].get("cross_host_lateral_movement_matrix", [])
+        self.assertEqual(len(lat_matrix), 5)
+        outcomes = [m["lateral_outcome"] for m in lat_matrix]
+        self.assertTrue(any("LATERAL_MOVEMENT_SUCCEEDED" in o for o in outcomes))
+        self.assertTrue(any("LATERAL_MOVEMENT_BLOCKED_BY_CONTROL" in o for o in outcomes))
+
+        # Priority 5 & 6: 7-Step Remediation Verification, Negative-Control Offline Host Rejection & Before/After Risk
+        rw = self.v2["remediation_workflow"]
+        self.assertEqual(rw["remediation_verified_count"], 2)
+        self.assertEqual(rw["negative_control_rejected_count"], 1)
+        self.assertEqual(self.v2["proof_state_counts"]["REMEDIATION_VERIFIED"], 2)
+        rm = self.v2["risk_model"]
+        self.assertEqual(rm["principal_calibrated_score"], 96.9)
+        self.assertEqual(rm["post_retest_calibrated_score"], 75.7)
+        self.assertLess(rm["post_retest_calibrated_score"], rm["principal_calibrated_score"])
 
 
 if __name__ == "__main__":
