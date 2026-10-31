@@ -188,11 +188,43 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
                 self.assertNotIn("nmap.org", ep_l)
                 self.assertFalse(ep_l.startswith("/"), f"Unbound relative path in endpoint: {ep}")
 
-    def test_ac13_to_ac16_manifest_sarif_and_16_rule_quality_gate(self):
+    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_18_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 16)
-        self.assertEqual(qa["total_rules"], 16)
+        self.assertEqual(qa["passed_rules"], 18)
+        self.assertEqual(qa["total_rules"], 18)
+
+        # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
+        tm = self.v2["transition_model"]
+        self.assertTrue(tm["reconciled"], f"Transition reconciliation errors: {tm.get('reconciliation_errors')}")
+        self.assertEqual(tm["confirmed_compromise_ids"], ["F-01", "F-02"])
+        self.assertEqual(tm["confirmed_auth_ids"], ["F-03", "F-04", "F-05", "F-17"])
+        self.assertIn("F-06", tm["privesc_ids"])
+        self.assertIn("F-09", tm["privesc_ids"])
+        self.assertIn("F-18", tm["privesc_ids"])
+
+        # Verify 3-State Post-Exploitation Privesc Lifecycle on F-06, F-09, F-18
+        sec_map = {f["finding_id"]: f for f in self.v2["security_findings"]}
+        self.assertEqual(sec_map["F-06"]["access_scope"]["privesc_lifecycle_state"], "TECHNIQUE_VALIDATED")
+        self.assertEqual(sec_map["F-09"]["access_scope"]["privesc_lifecycle_state"], "PRECONDITION_DISCOVERED")
+        self.assertEqual(sec_map["F-18"]["access_scope"]["privesc_lifecycle_state"], "PRECONDITION_DISCOVERED")
+
+        # Verify Risk Model Residual Floor & Host vs Vector Compromise Distinction
+        rm = self.v2["risk_model"]
+        self.assertEqual(rm["compromised_host_count"], 1)
+        self.assertEqual(rm["compromise_vector_count"], 2)
+        self.assertEqual(rm["residual_risk_floor"], 1.5)
+        self.assertEqual(rm["sla_projections"][-1]["active_vulnerability_score"], 0.0)
+        self.assertEqual(rm["sla_projections"][-1]["projected_score"], 1.5)
+
+        # AC-18: Verify Independent Cryptographic & SQLite Snapshot Integrity
+        iv = self.v2["integrity_verification"]
+        self.assertTrue(iv["verified"], f"Integrity verification mismatches: {iv.get('mismatches')}")
+        self.assertTrue(iv["sqlite_snapshot_verified"])
+        self.assertEqual(
+            iv["sha256_verified_count"],
+            len(self.v2["security_findings"]) + len(self.v2["recon_findings"]),
+        )
 
         em = self.v2["evidence_manifest"]
         self.assertEqual(len(em.get("manifest_root_sha256", "")), 64)
@@ -207,7 +239,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
         self.assertIn("EXPEDITE STRIKE V3", html_doc)
-        self.assertIn("16/16 PASSED", html_doc)
+        self.assertIn("18/18 PASSED", html_doc)
 
 
 if __name__ == "__main__":
