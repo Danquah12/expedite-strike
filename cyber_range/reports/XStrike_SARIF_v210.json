@@ -47,7 +47,7 @@
                 "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
                 "cwe": "CWE-506",
                 "cve": "CVE-2011-2523",
-                "mitreAttackId": "T1190",
+                "mitreAttackId": "T1210",
                 "taxonomyMapping": "OWASP-A06:2021 (Vulnerable and Outdated Components) | CWE-506 (Embedded Malicious Code)"
               }
             },
@@ -824,7 +824,7 @@
                 "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
                 "cwe": "CWE-502",
                 "cve": null,
-                "mitreAttackId": "T1190",
+                "mitreAttackId": "T1210",
                 "taxonomyMapping": "OWASP-A08:2021 (Software and Data Integrity Failures) | CWE-502 (Deserialization of Untrusted Data)"
               }
             },
@@ -1252,13 +1252,13 @@
         }
       },
       "automationDetails": {
-        "id": "XSTRIKE-V3-20261031"
+        "id": "XSTRIKE-V3.5-20261031"
       },
       "properties": {
         "signedEvidenceManifest": {
-          "manifestId": "MANIFEST-XSTRIKE-V3.4-20261031-B515B5637E",
+          "manifestId": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
           "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-          "manifestHmacSha256": "56c91e5642caafbb2ad2cd71253b30e3db6d918b0a075b2c3732bcb45a932ac8",
+          "manifestHmacSha256": "88673b7ccffc55e05383c989b5bd3bceb43b249760f8e5493486167da3823fe9",
           "recordCount": null
         }
       },
@@ -1551,7 +1551,7 @@
           "ruleId": "XSTRIKE-PRIVESC-SUID-NMAP",
           "level": "error",
           "message": {
-            "text": "[F-06] Local Privilege Escalation Vector: SUID Binary (/usr/bin/nmap) \u2014 ProofState=EXPLOITABLE | CVSS=7.8 | EvidenceConf=96%"
+            "text": "[F-06] Local Privilege Escalation Vector: SUID Binary (/usr/bin/nmap) \u2014 ProofState=PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED | CVSS=7.8 | EvidenceConf=96%"
           },
           "locations": [
             {
@@ -1578,7 +1578,7 @@
             "findingId": "F-06",
             "host": "192.168.195.139",
             "port": "22",
-            "proofState": "EXPLOITABLE",
+            "proofState": "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED",
             "accessScope": {
               "authenticated": true,
               "file_access": "READ_ONLY (/usr/bin/nmap SUID-root bit verified)",
