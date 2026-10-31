@@ -163,7 +163,7 @@
                 "text": "Web Application SQL Injection Indicator (Mutillidae)"
               },
               "fullDescription": {
-                "text": "Automated SQL injection testing against the Mutillidae web application matched a database table/error indicator in the HTTP 200 response. Classified as VALIDATED pending full request/response payload and controlled data dump verification."
+                "text": "Automated SQL injection testing against the Mutillidae web application matched a database table/error indicator in the HTTP 200 response. Classified as VALIDATED (VALIDATED_INDICATOR_ONLY): SQL error/table indicator verified, while controlled row extraction or database modification was withheld."
               },
               "help": {
                 "text": "Immediate: Disable or restrict the vulnerable Mutillidae PHP endpoint via Apache rewrite/location rules and enable ModSecurity OWASP CRS SQLi rules.\nShort-Term: Refactor all database queries in the PHP application to use parameterized prepared statements (`PDO::prepare()` with bound parameters) instead of string concatenation.\nVerification: Re-issue SQLi test payloads against the `192.168.195.139` parameter and verify HTTP responses contain zero database table leaks or SQL syntax error strings."
@@ -199,34 +199,13 @@
               }
             },
             {
-              "id": "XSTRIKE-SMBV1-ENABLED",
-              "name": "VULN_SMBV1_ENABLED",
-              "shortDescription": {
-                "text": "Deprecated SMBv1 Dialect Enabled on SMB Service"
-              },
-              "fullDescription": {
-                "text": "The SMB service negotiates the legacy SMBv1 protocol dialect, which lacks modern integrity protections and exposes the host to SMBv1 protocol attacks."
-              },
-              "help": {
-                "text": "Immediate: Disable SMBv1 protocol negotiation: in Samba `/etc/samba/smb.conf` set `server min protocol = SMB2`; on Windows run `Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol`.\nShort-Term: Enforce mandatory SMB packet signing (`server signing = mandatory` in `smb.conf`) and restart `smbd`.\nVerification: Run `nmap -p 445 --script smb-protocols` and verify dialect `NT LM 0.12 (SMBv1)` is no longer offered. [Target Endpoint: `192.168.195.139:445`]"
-              },
-              "properties": {
-                "security-severity": "7.5",
-                "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-                "cwe": "CWE-327",
-                "cve": "CVE-2017-0144",
-                "mitreAttackId": "T1210",
-                "taxonomyMapping": "OWASP-A02:2021 (Cryptographic Failures) | CWE-327"
-              }
-            },
-            {
               "id": "XSTRIKE-WEB-SSRF-MUTILLIDAE",
               "name": "VULN_WEB_SSRF_MUTILLIDAE",
               "shortDescription": {
                 "text": "Web Application Server-Side Request Forgery (SSRF) Indicator (Mutillidae)"
               },
               "fullDescription": {
-                "text": "The Mutillidae web application accepted a server-side URL fetch parameter without outbound destination allowlisting (consolidated from OWASP A10 SSRF validation)."
+                "text": "The Mutillidae web application accepted a server-side URL fetch parameter without outbound destination allowlisting (consolidated from OWASP A10 SSRF validation). Classified as VALIDATED (VALIDATED_INDICATOR_ONLY): server-side fetch indicator verified, while internal metadata or cross-host credential extraction was not executed."
               },
               "help": {
                 "text": "Immediate: Disable the vulnerable Mutillidae URL fetch endpoint or block outbound HTTP/TCP connections initiated by the `www-data` user via `iptables -m owner --uid-owner www-data -j DROP`.\nShort-Term: Implement strict URL parsing and domain/IP allowlisting that rejects RFC 1918 private addresses (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) and loopback (`127.0.0.0/8`).\nVerification: Attempt to fetch `http://127.0.0.1/` via the SSRF parameter and confirm the request is blocked and logged. [Target Endpoint: `192.168.195.139:80`]"
@@ -259,27 +238,6 @@
                 "cve": "CVE-2011-3192",
                 "mitreAttackId": "T1498",
                 "taxonomyMapping": "OWASP-A06:2021 (Vulnerable Components) | CWE-400 (Uncontrolled Resource Consumption)"
-              }
-            },
-            {
-              "id": "XSTRIKE-HTTP-SLOWLORIS",
-              "name": "VULN_HTTP_SLOWLORIS",
-              "shortDescription": {
-                "text": "HTTP Server Susceptible to Slowloris Connection Exhaustion (CVE-2007-6750)"
-              },
-              "fullDescription": {
-                "text": "Nmap NSE (http-slowloris-check) validated that the Apache HTTP server holds incomplete HTTP header connections open without strict request-rate timeouts (CVE-2007-6750)."
-              },
-              "help": {
-                "text": "Immediate: Enable and configure `mod_reqtimeout` (`RequestReadTimeout header=10-20,MinRate=500 body=20,MinRate=500`) and lower `Timeout 30` in Apache configuration on TCP port 80.\nShort-Term: Enforce per-IP concurrent connection limits (`mod_qos` / `mod_limitipconn` or reverse-proxy rate limiting).\nVerification: Run `nmap -p 80 --script http-slowloris-check 192.168.195.140` and confirm the server closes stalled partial-header connections within the configured timeout."
-              },
-              "properties": {
-                "security-severity": "7.5",
-                "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
-                "cwe": "CWE-400",
-                "cve": "CVE-2007-6750",
-                "mitreAttackId": "T1498",
-                "taxonomyMapping": "OWASP-A05:2021 (Security Misconfiguration) | CWE-400 (Uncontrolled Resource Consumption)"
               }
             },
             {
@@ -619,6 +577,27 @@
               }
             },
             {
+              "id": "XSTRIKE-SMBV1-ENABLED",
+              "name": "VULN_SMBV1_ENABLED",
+              "shortDescription": {
+                "text": "Deprecated SMBv1 Dialect Enabled on SMB Service (Protocol Hardening Weakness)"
+              },
+              "fullDescription": {
+                "text": "The SMB service negotiates the deprecated NT LM 0.12 (SMBv1) protocol dialect, which lacks modern pre-authentication integrity and encryption capabilities. Note: SMBv1 dialect negotiation is a protocol hardening weakness (CWE-327, Medium 5.3) and does NOT by itself prove MS17-010 / CVE-2017-0144 (EternalBlue) remote code execution."
+              },
+              "help": {
+                "text": "Immediate: Disable SMBv1 protocol negotiation: in Samba `/etc/samba/smb.conf` set `server min protocol = SMB2`; on Windows run `Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol`.\nShort-Term: Enforce mandatory SMB packet signing (`server signing = mandatory` in `smb.conf`) and restart `smbd`.\nVerification: Run `nmap -p 445 --script smb-protocols` and verify dialect `NT LM 0.12 (SMBv1)` is no longer offered. [Target Endpoint: `192.168.195.139:445`]"
+              },
+              "properties": {
+                "security-severity": "5.3",
+                "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+                "cwe": "CWE-327",
+                "cve": null,
+                "mitreAttackId": "T1210",
+                "taxonomyMapping": "OWASP-A02:2021 (Cryptographic Failures) | CWE-327"
+              }
+            },
+            {
               "id": "XSTRIKE-PHPMYADMIN-EXPOSED",
               "name": "VULN_PHPMYADMIN_EXPOSED",
               "shortDescription": {
@@ -763,6 +742,27 @@
                 "cve": "CVE-2015-4000",
                 "mitreAttackId": "T1557",
                 "taxonomyMapping": "OWASP-A02:2021 (Cryptographic Failures) | CWE-326 (Inadequate Encryption Strength)"
+              }
+            },
+            {
+              "id": "XSTRIKE-HTTP-SLOWLORIS",
+              "name": "VULN_HTTP_SLOWLORIS",
+              "shortDescription": {
+                "text": "HTTP Server Slowloris Timeout Heuristic Observed (CVE-2007-6750 Candidate)"
+              },
+              "fullDescription": {
+                "text": "Nmap NSE (http-slowloris-check) reported 'LIKELY VULNERABLE' based on a non-destructive partial-header timeout check on Apache 2.2.8 (CVE-2007-6750). Classified as OBSERVED (SCANNER_HEURISTIC_UNVERIFIED_BY_SAFETY_ROE) because active connection-exhaustion DoS is prohibited by the RoE safety policy."
+              },
+              "help": {
+                "text": "Immediate: Enable and configure `mod_reqtimeout` (`RequestReadTimeout header=10-20,MinRate=500 body=20,MinRate=500`) and lower `Timeout 30` in Apache configuration on TCP port 80.\nShort-Term: Enforce per-IP concurrent connection limits (`mod_qos` / `mod_limitipconn` or reverse-proxy rate limiting).\nVerification: Run `nmap -p 80 --script http-slowloris-check 192.168.195.140` and confirm the server closes stalled partial-header connections within the configured timeout."
+              },
+              "properties": {
+                "security-severity": "5.9",
+                "cvssV3_1Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "cwe": "CWE-400",
+                "cve": "CVE-2007-6750",
+                "mitreAttackId": "T1498",
+                "taxonomyMapping": "OWASP-A05:2021 (Security Misconfiguration) | CWE-400 (Uncontrolled Resource Consumption)"
               }
             },
             {
@@ -1252,13 +1252,13 @@
         }
       },
       "automationDetails": {
-        "id": "XSTRIKE-V3-ASSESSMENT"
+        "id": "XSTRIKE-V3-20261031"
       },
       "properties": {
         "signedEvidenceManifest": {
-          "manifestId": "MANIFEST-XSTRIKE-V3-ASSESSMENT-3FA51FAC8A",
-          "rootDigestSha256": "3fa51fac8a3421317a301848c5e1f42eddd588219fc5cfb33214b275508124c4",
-          "manifestHmacSha256": "32eb2790d788bd88677c3b53b0dabb2244dde9aaab9fd63c842519ef0e0ad964",
+          "manifestId": "MANIFEST-XSTRIKE-V3-20261031-B515B5637E",
+          "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
+          "manifestHmacSha256": "2d36fc4007048dd03f484433887ea596e50b498ac9683c2ed6403adb22ad1c45",
           "recordCount": null
         }
       },
@@ -1696,11 +1696,11 @@
               "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
               "execution_status": "SAFE_PROBE_EXECUTED",
               "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "INJECTION_INDICATOR_VALIDATED",
+              "exploitability_status": "VALIDATED_INDICATOR_ONLY",
               "data_access_status": "SQL_ERROR_OR_TABLE_INDICATOR",
               "impact_status": "DATABASE_INJECTION_EXPOSURE",
               "evidence_confidence": 92,
-              "access_summary": "Positive SQL injection response indicator on Mutillidae endpoint; controlled row extraction not executed"
+              "access_summary": "VALIDATED_INDICATOR_ONLY: Positive SQL injection response indicator on Mutillidae endpoint; controlled row extraction not executed"
             },
             "confidenceModel": {
               "detection_confidence": 96,
@@ -1835,65 +1835,10 @@
           }
         },
         {
-          "ruleId": "XSTRIKE-SMBV1-ENABLED",
-          "level": "error",
-          "message": {
-            "text": "[F-11] Deprecated SMBv1 Dialect Enabled on SMB Service \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.139:445"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "88610856038e2153a17fe7244e6b323dbb848733a014d69e17fae1e22e656215",
-            "hmacSha256Signature": "8aa046b4ef3179fd7b0f97cd0d49d873ce364a8f4f06759e350e97e11e46096f",
-            "provenanceId": "PROV-F-11-8861085603"
-          },
-          "properties": {
-            "findingId": "F-11",
-            "host": "192.168.195.139",
-            "port": "445",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 68,
-              "exploitability_confidence": 68,
-              "impact_confidence": 72,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=68% | ImpactConf=72%"
-            }
-          }
-        },
-        {
           "ruleId": "XSTRIKE-WEB-SSRF-MUTILLIDAE",
           "level": "error",
           "message": {
-            "text": "[F-12] Web Application Server-Side Request Forgery (SSRF) Indicator (Mutillidae) \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
+            "text": "[F-11] Web Application Server-Side Request Forgery (SSRF) Indicator (Mutillidae) \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -1907,10 +1852,10 @@
           "fingerprints": {
             "evidenceSha256": "c4797b356dc57200b78827d89d1363ab9254974aa883effc3e9efb9d24392468",
             "hmacSha256Signature": "cf3b981c3b5723ba89b090169eaa9e38d11cce632e95eeecf03b48e8dc01414d",
-            "provenanceId": "PROV-F-12-C4797B356D"
+            "provenanceId": "PROV-F-11-C4797B356D"
           },
           "properties": {
-            "findingId": "F-12",
+            "findingId": "F-11",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -1923,11 +1868,11 @@
               "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
               "execution_status": "SAFE_PROBE_EXECUTED",
               "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+              "exploitability_status": "VALIDATED_INDICATOR_ONLY",
+              "data_access_status": "HTTP_FETCH_INDICATOR_ONLY",
+              "impact_status": "INTERNAL_REQUEST_ROUTING_SURFACE",
+              "evidence_confidence": 91,
+              "access_summary": "VALIDATED_INDICATOR_ONLY: Mutillidae URL fetch indicator validated; internal metadata or cross-host credential extraction not executed"
             },
             "confidenceModel": {
               "detection_confidence": 96,
@@ -1948,7 +1893,7 @@
           "ruleId": "XSTRIKE-APACHE-CVE-2011-3192",
           "level": "error",
           "message": {
-            "text": "[F-13] Apache HTTP Server Byte-Range Filter Denial-of-Service (CVE-2011-3192) \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
+            "text": "[F-12] Apache HTTP Server Byte-Range Filter Denial-of-Service (CVE-2011-3192) \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -1962,127 +1907,10 @@
           "fingerprints": {
             "evidenceSha256": "da5dbfac16035e62345f91828d69648c1cd6026709de193a29871ce3b9714c60",
             "hmacSha256Signature": "33c6a2078bdc59536ad05ca03559db23ab9cc0d4929044ffac3160c17e6cd16f",
-            "provenanceId": "PROV-F-13-DA5DBFAC16"
+            "provenanceId": "PROV-F-12-DA5DBFAC16"
           },
           "properties": {
-            "findingId": "F-13",
-            "host": "192.168.195.140",
-            "port": "80",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 68,
-              "exploitability_confidence": 68,
-              "impact_confidence": 72,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=68% | ImpactConf=72%"
-            }
-          }
-        },
-        {
-          "ruleId": "XSTRIKE-SMBV1-ENABLED",
-          "level": "error",
-          "message": {
-            "text": "[F-14] Deprecated SMBv1 Dialect Enabled on SMB Service \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:445"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "c216181d9c3a10f56d50f75b9c8ac72e353749a20de81a80c2cdf72aeffd3853",
-            "hmacSha256Signature": "86a4151d8dac988f0b4a564258b9003f19aa0892437b7a23bd94008b6510dddd",
-            "provenanceId": "PROV-F-14-C216181D9C"
-          },
-          "properties": {
-            "findingId": "F-14",
-            "host": "192.168.195.140",
-            "port": "445",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 68,
-              "exploitability_confidence": 68,
-              "impact_confidence": 72,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=68% | ImpactConf=72%"
-            }
-          }
-        },
-        {
-          "ruleId": "XSTRIKE-HTTP-SLOWLORIS",
-          "level": "error",
-          "message": {
-            "text": "[F-15] HTTP Server Susceptible to Slowloris Connection Exhaustion (CVE-2007-6750) \u2014 ProofState=VALIDATED | CVSS=7.5 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:443"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:8080"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "8fb6eef88cd2d24508e24401720d901d2f92b3655d5a8d1ff6be3e45306896a3",
-            "hmacSha256Signature": "67c84d8ba80e7c80845dd0f6bf9738895bad90b2c315ed9ff240b84be7ac145d",
-            "provenanceId": "PROV-F-15-8FB6EEF88C"
-          },
-          "properties": {
-            "findingId": "F-15",
+            "findingId": "F-12",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
@@ -2120,7 +1948,7 @@
           "ruleId": "XSTRIKE-SMB-SIGNING-DISABLED",
           "level": "error",
           "message": {
-            "text": "[F-16] SMB Message Signing Not Required (NTLM Relay Exposure) \u2014 ProofState=VALIDATED | CVSS=7.4 | EvidenceConf=95%"
+            "text": "[F-13] SMB Message Signing Not Required (NTLM Relay Exposure) \u2014 ProofState=VALIDATED | CVSS=7.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2134,10 +1962,10 @@
           "fingerprints": {
             "evidenceSha256": "dd76b35a7afae32e3f2eb6965d36761ea032f893beede62dae2febe211af72f4",
             "hmacSha256Signature": "68d14ab27ba6b9916c97a01f6c4ea13197e44d558f96bdaa9d54168c092d5659",
-            "provenanceId": "PROV-F-16-DD76B35A7A"
+            "provenanceId": "PROV-F-13-DD76B35A7A"
           },
           "properties": {
-            "findingId": "F-16",
+            "findingId": "F-13",
             "host": "192.168.195.139",
             "port": "445",
             "proofState": "VALIDATED",
@@ -2175,7 +2003,7 @@
           "ruleId": "XSTRIKE-TLS-CCS-INJECTION",
           "level": "error",
           "message": {
-            "text": "[F-17] OpenSSL ChangeCipherSpec (CCS) Injection Vulnerability (CVE-2014-0224) \u2014 ProofState=VALIDATED | CVSS=7.4 | EvidenceConf=95%"
+            "text": "[F-14] OpenSSL ChangeCipherSpec (CCS) Injection Vulnerability (CVE-2014-0224) \u2014 ProofState=VALIDATED | CVSS=7.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2189,10 +2017,10 @@
           "fingerprints": {
             "evidenceSha256": "99629d8b4ea640fd4d8e7a674f51c0c5b89cef1775a0a50ce407560b647ff7db",
             "hmacSha256Signature": "79add01ae56ba9d56c9a70a019f223442c46c50af8182b4dc1f71277a20763e3",
-            "provenanceId": "PROV-F-17-99629D8B4E"
+            "provenanceId": "PROV-F-14-99629D8B4E"
           },
           "properties": {
-            "findingId": "F-17",
+            "findingId": "F-14",
             "host": "192.168.195.140",
             "port": "443",
             "proofState": "VALIDATED",
@@ -2230,7 +2058,7 @@
           "ruleId": "XSTRIKE-TELNET-CLEARTEXT-23",
           "level": "error",
           "message": {
-            "text": "[F-18] Cleartext Telnet Service Enabled on TCP Port 23 \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
+            "text": "[F-15] Cleartext Telnet Service Enabled on TCP Port 23 \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
           },
           "locations": [
             {
@@ -2244,10 +2072,10 @@
           "fingerprints": {
             "evidenceSha256": "461b7cbe7dd144a669693d576326afe4f2fe1de10d96869ca56074bcab30b749",
             "hmacSha256Signature": "3abb084b37b938909939a09272e88b089fed444c0bdfd5612a37e0497b741447",
-            "provenanceId": "PROV-F-18-461B7CBE7D"
+            "provenanceId": "PROV-F-15-461B7CBE7D"
           },
           "properties": {
-            "findingId": "F-18",
+            "findingId": "F-15",
             "host": "192.168.195.139",
             "port": "23",
             "proofState": "OBSERVED",
@@ -2285,7 +2113,7 @@
           "ruleId": "XSTRIKE-APACHE-EOL-228",
           "level": "error",
           "message": {
-            "text": "[F-19] End-of-Life Apache HTTP Server 2.2.8 Deployed (TCP Port 80) \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
+            "text": "[F-16] End-of-Life Apache HTTP Server 2.2.8 Deployed (TCP Port 80) \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
           },
           "locations": [
             {
@@ -2299,10 +2127,10 @@
           "fingerprints": {
             "evidenceSha256": "072ed84ece90de59c2a8914de6bf059cd86ab6849826f5c06565c12201b1e7f4",
             "hmacSha256Signature": "dc7669b39560cfa35d7c13d6a128a558578ac8552fa41d6b0acb27a7903033fa",
-            "provenanceId": "PROV-F-19-072ED84ECE"
+            "provenanceId": "PROV-F-16-072ED84ECE"
           },
           "properties": {
-            "findingId": "F-19",
+            "findingId": "F-16",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "OBSERVED",
@@ -2340,7 +2168,7 @@
           "ruleId": "XSTRIKE-APACHE-EOL-2214",
           "level": "error",
           "message": {
-            "text": "[F-20] End-of-Life Apache HTTP Server 2.2.14 Deployed (TCP Port 80) \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
+            "text": "[F-17] End-of-Life Apache HTTP Server 2.2.14 Deployed (TCP Port 80) \u2014 ProofState=OBSERVED | CVSS=7.5 | EvidenceConf=48%"
           },
           "locations": [
             {
@@ -2354,10 +2182,10 @@
           "fingerprints": {
             "evidenceSha256": "d072dca059d8090b94632c3e64722032827d1b8e43247ff122a4ee6fcd69f689",
             "hmacSha256Signature": "2abad47354ac0959be2d77e8dc9a23d33b1022e5a07a245c08910e9d23bc3313",
-            "provenanceId": "PROV-F-20-D072DCA059"
+            "provenanceId": "PROV-F-17-D072DCA059"
           },
           "properties": {
-            "findingId": "F-20",
+            "findingId": "F-17",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "OBSERVED",
@@ -2395,7 +2223,7 @@
           "ruleId": "XSTRIKE-PHP-CGI-1823",
           "level": "error",
           "message": {
-            "text": "[F-21] PHP 5.2.4-2ubuntu5.10 CGI Banner Heuristic \u2014 Unverified CVE-2012-1823 Candidate \u2014 ProofState=OBSERVED | CVSS=7.4 | EvidenceConf=48%"
+            "text": "[F-18] PHP 5.2.4-2ubuntu5.10 CGI Banner Heuristic \u2014 Unverified CVE-2012-1823 Candidate \u2014 ProofState=OBSERVED | CVSS=7.4 | EvidenceConf=48%"
           },
           "locations": [
             {
@@ -2416,10 +2244,10 @@
           "fingerprints": {
             "evidenceSha256": "9f7d0fd36125c120472c7f90f1a7f583b93d831102c3eb0c8aca33fa24822cc1",
             "hmacSha256Signature": "a32d3f4de1783c4d98058df91ec257bed0ec297152580fd272578fc592095e69",
-            "provenanceId": "PROV-F-21-9F7D0FD361"
+            "provenanceId": "PROV-F-18-9F7D0FD361"
           },
           "properties": {
-            "findingId": "F-21",
+            "findingId": "F-18",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "OBSERVED",
@@ -2457,7 +2285,7 @@
           "ruleId": "XSTRIKE-PHP-CGI-1823",
           "level": "error",
           "message": {
-            "text": "[F-22] PHP 5.3.2-1ubuntu4.30 CGI Banner Heuristic \u2014 Unverified CVE-2012-1823 Candidate \u2014 ProofState=OBSERVED | CVSS=7.4 | EvidenceConf=48%"
+            "text": "[F-19] PHP 5.3.2-1ubuntu4.30 CGI Banner Heuristic \u2014 Unverified CVE-2012-1823 Candidate \u2014 ProofState=OBSERVED | CVSS=7.4 | EvidenceConf=48%"
           },
           "locations": [
             {
@@ -2471,10 +2299,10 @@
           "fingerprints": {
             "evidenceSha256": "419939685df245c03f394e6b9e08f570d65f80b781b8632ac08e42f755bdcfce",
             "hmacSha256Signature": "ce82b9231037f84152d30a0d47034aadcccc04a2888094443b3f64301038f72f",
-            "provenanceId": "PROV-F-22-419939685D"
+            "provenanceId": "PROV-F-19-419939685D"
           },
           "properties": {
-            "findingId": "F-22",
+            "findingId": "F-19",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "OBSERVED",
@@ -2512,7 +2340,7 @@
           "ruleId": "XSTRIKE-FTP-ANONYMOUS",
           "level": "warning",
           "message": {
-            "text": "[F-23] FTP Anonymous Authentication Enabled \u2014 ProofState=CONFIRMED_AUTH | CVSS=5.3 | EvidenceConf=99%"
+            "text": "[F-20] FTP Anonymous Authentication Enabled \u2014 ProofState=CONFIRMED_AUTH | CVSS=5.3 | EvidenceConf=99%"
           },
           "locations": [
             {
@@ -2533,10 +2361,10 @@
           "fingerprints": {
             "evidenceSha256": "d246223315dfa903b932116767a862409c2214818849cf23668836e7ca7630de",
             "hmacSha256Signature": "3c14fef8435719fae4ceca6489ad547ad1de43f7b3b9ad6110e8ae2363c116f8",
-            "provenanceId": "PROV-F-23-D246223315"
+            "provenanceId": "PROV-F-20-D246223315"
           },
           "properties": {
-            "findingId": "F-23",
+            "findingId": "F-20",
             "host": "192.168.195.139",
             "port": "21",
             "proofState": "CONFIRMED_AUTH",
@@ -2574,7 +2402,7 @@
           "ruleId": "XSTRIKE-PRIVESC-SUID-MOUNT",
           "level": "warning",
           "message": {
-            "text": "[F-24] Local Privilege Escalation Vector: SUID Binary (/bin/mount) \u2014 ProofState=VALIDATED | CVSS=5.5 | EvidenceConf=95%"
+            "text": "[F-21] Local Privilege Escalation Vector: SUID Binary (/bin/mount) \u2014 ProofState=VALIDATED | CVSS=5.5 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2595,10 +2423,10 @@
           "fingerprints": {
             "evidenceSha256": "7dd3904640bcc1c9005f64351c9baf05223c0bb26c38664634fe2d621c3ac75d",
             "hmacSha256Signature": "c94cdfc283fa377616d6026d4f763551fd8fc85436770af32c3c5b421968119f",
-            "provenanceId": "PROV-F-24-7DD3904640"
+            "provenanceId": "PROV-F-21-7DD3904640"
           },
           "properties": {
-            "findingId": "F-24",
+            "findingId": "F-21",
             "host": "192.168.195.139",
             "port": "22",
             "proofState": "VALIDATED",
@@ -2636,7 +2464,7 @@
           "ruleId": "XSTRIKE-WEB-COOKIE-INTEGRITY",
           "level": "warning",
           "message": {
-            "text": "[F-25] Client-Manipulable Session/Tracking Cookie Parameters Set Without Integrity Binding \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-22] Client-Manipulable Session/Tracking Cookie Parameters Set Without Integrity Binding \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2650,10 +2478,10 @@
           "fingerprints": {
             "evidenceSha256": "7adbdfaa38811d7de159a4ba7cd71df773707c118c682839380ca891bc92535d",
             "hmacSha256Signature": "383d68130a51bfb68a52b9bfa3cd97e9d59f739cf265cca3da749110b0c00452",
-            "provenanceId": "PROV-F-25-7ADBDFAA38"
+            "provenanceId": "PROV-F-22-7ADBDFAA38"
           },
           "properties": {
-            "findingId": "F-25",
+            "findingId": "F-22",
             "host": "192.168.195.1",
             "port": "80",
             "proofState": "VALIDATED",
@@ -2691,7 +2519,7 @@
           "ruleId": "XSTRIKE-HDR-CSP-MISSING",
           "level": "warning",
           "message": {
-            "text": "[F-26] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-23] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2719,10 +2547,10 @@
           "fingerprints": {
             "evidenceSha256": "43ffefb79f795094c33963753b7040e0568e25e189f3a611229e4c9c73148e27",
             "hmacSha256Signature": "eb641af754ac11c1ea86ef9fa1edb865a1a3ea73e8360628b0fc76c84e5e9bc6",
-            "provenanceId": "PROV-F-26-43FFEFB79F"
+            "provenanceId": "PROV-F-23-43FFEFB79F"
           },
           "properties": {
-            "findingId": "F-26",
+            "findingId": "F-23",
             "host": "192.168.195.1",
             "port": "8000",
             "proofState": "VALIDATED",
@@ -2760,7 +2588,7 @@
           "ruleId": "XSTRIKE-HDR-XFO-MISSING",
           "level": "warning",
           "message": {
-            "text": "[F-27] Missing Anti-Clickjacking Protection (X-Frame-Options / frame-ancestors) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-24] Missing Anti-Clickjacking Protection (X-Frame-Options / frame-ancestors) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2781,10 +2609,10 @@
           "fingerprints": {
             "evidenceSha256": "75e6eb7f1a04ecb99dd3e538d345dc436dce2b18571c8aea8bc5cc0823ed9769",
             "hmacSha256Signature": "cbeb83110c8f8f9516d753bbdde7db33f536b8ad985dcad298b5b472fc7687a8",
-            "provenanceId": "PROV-F-27-75E6EB7F1A"
+            "provenanceId": "PROV-F-24-75E6EB7F1A"
           },
           "properties": {
-            "findingId": "F-27",
+            "findingId": "F-24",
             "host": "192.168.195.1",
             "port": "80",
             "proofState": "VALIDATED",
@@ -2822,7 +2650,7 @@
           "ruleId": "XSTRIKE-COOKIE-SECURE",
           "level": "warning",
           "message": {
-            "text": "[F-28] Session Cookie Missing 'Secure' Flag \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-25] Session Cookie Missing 'Secure' Flag \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2836,10 +2664,10 @@
           "fingerprints": {
             "evidenceSha256": "0c8b90016eaeb918da87c3a0ecbd392fcf4a532934a8794b11c85ca2013e502c",
             "hmacSha256Signature": "7fcc91cf43c838c795e6c9db99f129277129af290aff2a12763dbe4bbd546ebd",
-            "provenanceId": "PROV-F-28-0C8B90016E"
+            "provenanceId": "PROV-F-25-0C8B90016E"
           },
           "properties": {
-            "findingId": "F-28",
+            "findingId": "F-25",
             "host": "192.168.195.1",
             "port": "8000",
             "proofState": "VALIDATED",
@@ -2877,7 +2705,7 @@
           "ruleId": "XSTRIKE-ZAP-ERROR-DISCLOSURE",
           "level": "warning",
           "message": {
-            "text": "[F-29] Verbose Application / Database Error Message Disclosure \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-26] Verbose Application / Database Error Message Disclosure \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2891,10 +2719,10 @@
           "fingerprints": {
             "evidenceSha256": "0ecf0a8dfa7d7f34a5114dc028793ec4bb09760152af08e9517810db3ba9d40a",
             "hmacSha256Signature": "626d8a44e354dcc88a77ce8501f8eff644277d011f757ac1faa89fb24b1f7621",
-            "provenanceId": "PROV-F-29-0ECF0A8DFA"
+            "provenanceId": "PROV-F-26-0ECF0A8DFA"
           },
           "properties": {
-            "findingId": "F-29",
+            "findingId": "F-26",
             "host": "192.168.195.1",
             "port": "80",
             "proofState": "VALIDATED",
@@ -2932,7 +2760,7 @@
           "ruleId": "XSTRIKE-WEB-CSRF-BUNDLE",
           "level": "warning",
           "message": {
-            "text": "[F-30] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-27] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -2974,10 +2802,10 @@
           "fingerprints": {
             "evidenceSha256": "195609a7ac071b6d3b5dab43759a6695ecfe8c6fead90085e1d7368d69327e13",
             "hmacSha256Signature": "9cd8cf79165f49afec2c858aa2b0c67dd9bf11a82cd5a03c84236067e7d8bf9d",
-            "provenanceId": "PROV-F-30-195609A7AC"
+            "provenanceId": "PROV-F-27-195609A7AC"
           },
           "properties": {
-            "findingId": "F-30",
+            "findingId": "F-27",
             "host": "192.168.195.1",
             "port": "5357",
             "proofState": "VALIDATED",
@@ -3015,7 +2843,7 @@
           "ruleId": "XSTRIKE-HDR-CSP-MISSING",
           "level": "warning",
           "message": {
-            "text": "[F-31] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-28] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3029,10 +2857,10 @@
           "fingerprints": {
             "evidenceSha256": "3ec6dc8f79eada34464d2db8ffc8dc8a5eaa9124376281208faa542d550e2283",
             "hmacSha256Signature": "4aa5fff43dce5192fb6baed65a2387b29b0a18e50e7d165fc38e1b2104bed183",
-            "provenanceId": "PROV-F-31-3EC6DC8F79"
+            "provenanceId": "PROV-F-28-3EC6DC8F79"
           },
           "properties": {
-            "findingId": "F-31",
+            "findingId": "F-28",
             "host": "192.168.195.129",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3070,7 +2898,7 @@
           "ruleId": "XSTRIKE-WEB-CSRF-BUNDLE",
           "level": "warning",
           "message": {
-            "text": "[F-32] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-29] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3084,10 +2912,10 @@
           "fingerprints": {
             "evidenceSha256": "123fed81f2d10977cce080e5f4d80bbcb38af0c5191f0ad932d7b3dfdcf03c6d",
             "hmacSha256Signature": "95d292d3bcc9fa9ef673262267294fbfe9001dd1ff33bc516a99096659ade039",
-            "provenanceId": "PROV-F-32-123FED81F2"
+            "provenanceId": "PROV-F-29-123FED81F2"
           },
           "properties": {
-            "findingId": "F-32",
+            "findingId": "F-29",
             "host": "192.168.195.129",
             "port": "5357",
             "proofState": "VALIDATED",
@@ -3125,7 +2953,7 @@
           "ruleId": "XSTRIKE-HDR-CSP-MISSING",
           "level": "warning",
           "message": {
-            "text": "[F-33] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-30] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3139,10 +2967,10 @@
           "fingerprints": {
             "evidenceSha256": "728e837b93ac5891a255cbf53cc3b1f923571cb4ea4f426bac4508708cc7ba8e",
             "hmacSha256Signature": "f0fe29559442d954282ffb6b7dba32a4c943d64f84fd93f00417279b02914099",
-            "provenanceId": "PROV-F-33-728E837B93"
+            "provenanceId": "PROV-F-30-728E837B93"
           },
           "properties": {
-            "findingId": "F-33",
+            "findingId": "F-30",
             "host": "192.168.195.130",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3180,7 +3008,7 @@
           "ruleId": "XSTRIKE-WEB-CSRF-BUNDLE",
           "level": "warning",
           "message": {
-            "text": "[F-34] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-31] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3194,10 +3022,10 @@
           "fingerprints": {
             "evidenceSha256": "8a2ba0953cd9c8f375a60fce02051860f832b783cf133fff348f172a7f8d942d",
             "hmacSha256Signature": "0d67520597c4b8cce18954014361539a84eefe7eb339659fc01ff7d08d1ec24e",
-            "provenanceId": "PROV-F-34-8A2BA0953C"
+            "provenanceId": "PROV-F-31-8A2BA0953C"
           },
           "properties": {
-            "findingId": "F-34",
+            "findingId": "F-31",
             "host": "192.168.195.130",
             "port": "5985",
             "proofState": "VALIDATED",
@@ -3235,7 +3063,7 @@
           "ruleId": "XSTRIKE-HDR-CSP-MISSING",
           "level": "warning",
           "message": {
-            "text": "[F-35] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-32] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3263,10 +3091,10 @@
           "fingerprints": {
             "evidenceSha256": "48c51258421767558f3f345bc129feea7b07fe016cf3e9a2662d82f01150b1e0",
             "hmacSha256Signature": "f602b382da9ac6ae88f25f018570c009b34de80a81037bb634ea4ce4ccd52c6e",
-            "provenanceId": "PROV-F-35-48C5125842"
+            "provenanceId": "PROV-F-32-48C5125842"
           },
           "properties": {
-            "findingId": "F-35",
+            "findingId": "F-32",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3304,7 +3132,7 @@
           "ruleId": "XSTRIKE-DNS-OPEN-RECURSION",
           "level": "warning",
           "message": {
-            "text": "[F-36] DNS Open Recursion Enabled on ISC BIND 9.4.2 (Port 53) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+            "text": "[F-33] DNS Open Recursion Enabled on ISC BIND 9.4.2 (Port 53) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3318,12 +3146,219 @@
           "fingerprints": {
             "evidenceSha256": "5b4890920f6d14cbae2cc3cddb0e80cb5874a0586fdefad74d80f7ec1d988f7e",
             "hmacSha256Signature": "eafc98e775237f896e4788672c263502a81f91fff327ae4694195c6cf6d9f831",
-            "provenanceId": "PROV-F-36-5B4890920F"
+            "provenanceId": "PROV-F-33-5B4890920F"
+          },
+          "properties": {
+            "findingId": "F-33",
+            "host": "192.168.195.139",
+            "port": "53",
+            "proofState": "VALIDATED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SAFE_PROBE_EXECUTED",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "CONFIGURATION_WEAKNESS",
+              "data_access_status": "METADATA_OR_HEADERS_ONLY",
+              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
+              "evidence_confidence": 94,
+              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+            },
+            "confidenceModel": {
+              "detection_confidence": 96,
+              "validation_confidence": 92,
+              "exploitation_confidence": 25,
+              "exploitability_confidence": 25,
+              "impact_confidence": 52,
+              "evidence_completeness": 100,
+              "evidence_confidence": 95,
+              "composite_confidence": 95,
+              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
+            }
+          }
+        },
+        {
+          "ruleId": "XSTRIKE-HDR-XFO-MISSING",
+          "level": "warning",
+          "message": {
+            "text": "[F-34] Missing Anti-Clickjacking Protection (X-Frame-Options / frame-ancestors) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.139"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.139:80"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.139:80/"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "a9ee8abf7190284f476308a2b7df004fe765385d0e12bfc03164fe8e3a074415",
+            "hmacSha256Signature": "87b1d5a88ee83baf5eaca4124f61d960501530c4b25758335513b835bfce9ca1",
+            "provenanceId": "PROV-F-34-A9EE8ABF71"
+          },
+          "properties": {
+            "findingId": "F-34",
+            "host": "192.168.195.139",
+            "port": "80",
+            "proofState": "VALIDATED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SAFE_PROBE_EXECUTED",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "CONFIGURATION_WEAKNESS",
+              "data_access_status": "METADATA_OR_HEADERS_ONLY",
+              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
+              "evidence_confidence": 94,
+              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+            },
+            "confidenceModel": {
+              "detection_confidence": 96,
+              "validation_confidence": 92,
+              "exploitation_confidence": 25,
+              "exploitability_confidence": 25,
+              "impact_confidence": 52,
+              "evidence_completeness": 100,
+              "evidence_confidence": 95,
+              "composite_confidence": 95,
+              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
+            }
+          }
+        },
+        {
+          "ruleId": "XSTRIKE-WEB-CSRF-BUNDLE",
+          "level": "warning",
+          "message": {
+            "text": "[F-35] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.139:80/phpinfo.php"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "54b9c0ffc0a0064dd1e96f7d89ccceb3eb2476a3c4e0143151186e54e7945ec9",
+            "hmacSha256Signature": "5495fd0fead5db60df55002ca88233feec6c9e69b689c559d7e0b23bb35de677",
+            "provenanceId": "PROV-F-35-54B9C0FFC0"
+          },
+          "properties": {
+            "findingId": "F-35",
+            "host": "192.168.195.139",
+            "port": "80",
+            "proofState": "VALIDATED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SAFE_PROBE_EXECUTED",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "CONFIGURATION_WEAKNESS",
+              "data_access_status": "METADATA_OR_HEADERS_ONLY",
+              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
+              "evidence_confidence": 94,
+              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+            },
+            "confidenceModel": {
+              "detection_confidence": 96,
+              "validation_confidence": 92,
+              "exploitation_confidence": 25,
+              "exploitability_confidence": 25,
+              "impact_confidence": 52,
+              "evidence_completeness": 100,
+              "evidence_confidence": 95,
+              "composite_confidence": 95,
+              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
+            }
+          }
+        },
+        {
+          "ruleId": "XSTRIKE-HDR-CSP-MISSING",
+          "level": "warning",
+          "message": {
+            "text": "[F-36] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140:80"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140:8080"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.140:80/"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.140:8080/"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "1c0159c8893d6ee0c56ba8bb82382eb29f3eebb2e1e473ed37b153fef45b9a54",
+            "hmacSha256Signature": "bc48b0622a8dd89bcccf1f80712f2e4909da3421166c4046e08f6f998940fd51",
+            "provenanceId": "PROV-F-36-1C0159C889"
           },
           "properties": {
             "findingId": "F-36",
-            "host": "192.168.195.139",
-            "port": "53",
+            "host": "192.168.195.140",
+            "port": "80",
             "proofState": "VALIDATED",
             "accessScope": {
               "authenticated": false,
@@ -3365,33 +3400,47 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "192.168.195.139"
+                  "uri": "192.168.195.140"
                 }
               }
             },
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "192.168.195.139:80"
+                  "uri": "192.168.195.140:80"
                 }
               }
             },
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "http://192.168.195.139:80/"
+                  "uri": "192.168.195.140:8080"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.140:80/"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://192.168.195.140:8080/"
                 }
               }
             }
           ],
           "fingerprints": {
-            "evidenceSha256": "a9ee8abf7190284f476308a2b7df004fe765385d0e12bfc03164fe8e3a074415",
-            "hmacSha256Signature": "87b1d5a88ee83baf5eaca4124f61d960501530c4b25758335513b835bfce9ca1",
-            "provenanceId": "PROV-F-37-A9EE8ABF71"
+            "evidenceSha256": "c7f5c2033c00fc6321a5e7a93267e55f9415d377f6ed266123c5d2d6a07c4af8",
+            "hmacSha256Signature": "89c5ea4c4fdc7e9eacd580150b0ca5378d54834bfa1ca72fd2281daa0ab9e534",
+            "provenanceId": "PROV-F-37-C7F5C2033C"
           },
           "properties": {
             "findingId": "F-37",
-            "host": "192.168.195.139",
+            "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
             "accessScope": {
@@ -3434,227 +3483,6 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "http://192.168.195.139:80/phpinfo.php"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "54b9c0ffc0a0064dd1e96f7d89ccceb3eb2476a3c4e0143151186e54e7945ec9",
-            "hmacSha256Signature": "5495fd0fead5db60df55002ca88233feec6c9e69b689c559d7e0b23bb35de677",
-            "provenanceId": "PROV-F-38-54B9C0FFC0"
-          },
-          "properties": {
-            "findingId": "F-38",
-            "host": "192.168.195.139",
-            "port": "80",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 25,
-              "exploitability_confidence": 25,
-              "impact_confidence": 52,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
-            }
-          }
-        },
-        {
-          "ruleId": "XSTRIKE-HDR-CSP-MISSING",
-          "level": "warning",
-          "message": {
-            "text": "[F-39] Content-Security-Policy (CSP) Header Not Set \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:80"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:8080"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "http://192.168.195.140:80/"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "http://192.168.195.140:8080/"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "1c0159c8893d6ee0c56ba8bb82382eb29f3eebb2e1e473ed37b153fef45b9a54",
-            "hmacSha256Signature": "bc48b0622a8dd89bcccf1f80712f2e4909da3421166c4046e08f6f998940fd51",
-            "provenanceId": "PROV-F-39-1C0159C889"
-          },
-          "properties": {
-            "findingId": "F-39",
-            "host": "192.168.195.140",
-            "port": "80",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 25,
-              "exploitability_confidence": 25,
-              "impact_confidence": 52,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
-            }
-          }
-        },
-        {
-          "ruleId": "XSTRIKE-HDR-XFO-MISSING",
-          "level": "warning",
-          "message": {
-            "text": "[F-40] Missing Anti-Clickjacking Protection (X-Frame-Options / frame-ancestors) \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:80"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "192.168.195.140:8080"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "http://192.168.195.140:80/"
-                }
-              }
-            },
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "http://192.168.195.140:8080/"
-                }
-              }
-            }
-          ],
-          "fingerprints": {
-            "evidenceSha256": "c7f5c2033c00fc6321a5e7a93267e55f9415d377f6ed266123c5d2d6a07c4af8",
-            "hmacSha256Signature": "89c5ea4c4fdc7e9eacd580150b0ca5378d54834bfa1ca72fd2281daa0ab9e534",
-            "provenanceId": "PROV-F-40-C7F5C2033C"
-          },
-          "properties": {
-            "findingId": "F-40",
-            "host": "192.168.195.140",
-            "port": "80",
-            "proofState": "VALIDATED",
-            "accessScope": {
-              "authenticated": false,
-              "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
-              "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
-            },
-            "confidenceModel": {
-              "detection_confidence": 96,
-              "validation_confidence": 92,
-              "exploitation_confidence": 25,
-              "exploitability_confidence": 25,
-              "impact_confidence": 52,
-              "evidence_completeness": 100,
-              "evidence_confidence": 95,
-              "composite_confidence": 95,
-              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
-              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
-            }
-          }
-        },
-        {
-          "ruleId": "XSTRIKE-WEB-CSRF-BUNDLE",
-          "level": "warning",
-          "message": {
-            "text": "[F-41] Web Application Missing Anti-CSRF Tokens & Hardening Headers \u2014 ProofState=VALIDATED | CVSS=5.4 | EvidenceConf=95%"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
                   "uri": "192.168.195.140:80"
                 }
               }
@@ -3677,10 +3505,10 @@
           "fingerprints": {
             "evidenceSha256": "6857758f9b1a7847006edfd9564727c6f141070c0cc00a19bfac11952d8378f7",
             "hmacSha256Signature": "bb335dbfea8567314b8d8f7f46a94d4d5996f607d30d6af73471601f651c7021",
-            "provenanceId": "PROV-F-41-6857758F9B"
+            "provenanceId": "PROV-F-38-6857758F9B"
           },
           "properties": {
-            "findingId": "F-41",
+            "findingId": "F-38",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3718,7 +3546,7 @@
           "ruleId": "XSTRIKE-WEB-ADMIN-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-42] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=90%"
+            "text": "[F-39] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=90%"
           },
           "locations": [
             {
@@ -3732,10 +3560,10 @@
           "fingerprints": {
             "evidenceSha256": "0f0910dee41b89e89881c96921ef731eddd34818d782d43455dc5b31183168e6",
             "hmacSha256Signature": "494389bc82f8164eb332a67ec6e4748b98bf2bc5bd281ee027c1872c814a52be",
-            "provenanceId": "PROV-F-42-0F0910DEE4"
+            "provenanceId": "PROV-F-39-0F0910DEE4"
           },
           "properties": {
-            "findingId": "F-42",
+            "findingId": "F-39",
             "host": "192.168.195.1",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3773,7 +3601,7 @@
           "ruleId": "XSTRIKE-WEB-ADMIN-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-43] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-40] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3787,10 +3615,10 @@
           "fingerprints": {
             "evidenceSha256": "2adb9b1adf353b4ac4f1cdfd2fbdc86b4d7aa53d481a3b84d4f86cfbc98a3e13",
             "hmacSha256Signature": "f2b31c89d8e819aaf801c79edbe67713ae6365efbae3dd7bb388da444915d390",
-            "provenanceId": "PROV-F-43-2ADB9B1ADF"
+            "provenanceId": "PROV-F-40-2ADB9B1ADF"
           },
           "properties": {
-            "findingId": "F-43",
+            "findingId": "F-40",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3825,10 +3653,65 @@
           }
         },
         {
+          "ruleId": "XSTRIKE-SMBV1-ENABLED",
+          "level": "warning",
+          "message": {
+            "text": "[F-41] Deprecated SMBv1 Dialect Enabled on SMB Service (Protocol Hardening Weakness) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.139:445"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "88610856038e2153a17fe7244e6b323dbb848733a014d69e17fae1e22e656215",
+            "hmacSha256Signature": "8aa046b4ef3179fd7b0f97cd0d49d873ce364a8f4f06759e350e97e11e46096f",
+            "provenanceId": "PROV-F-41-8861085603"
+          },
+          "properties": {
+            "findingId": "F-41",
+            "host": "192.168.195.139",
+            "port": "445",
+            "proofState": "VALIDATED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SAFE_PROBE_EXECUTED",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "CONFIGURATION_WEAKNESS",
+              "data_access_status": "METADATA_OR_HEADERS_ONLY",
+              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
+              "evidence_confidence": 94,
+              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+            },
+            "confidenceModel": {
+              "detection_confidence": 96,
+              "validation_confidence": 92,
+              "exploitation_confidence": 68,
+              "exploitability_confidence": 68,
+              "impact_confidence": 52,
+              "evidence_completeness": 100,
+              "evidence_confidence": 95,
+              "composite_confidence": 95,
+              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=68% | ImpactConf=52%"
+            }
+          }
+        },
+        {
           "ruleId": "XSTRIKE-PHPMYADMIN-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-44] Exposed phpMyAdmin Web Administrative Interface (/phpMyAdmin/) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-42] Exposed phpMyAdmin Web Administrative Interface (/phpMyAdmin/) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3842,10 +3725,10 @@
           "fingerprints": {
             "evidenceSha256": "fb05c305ac6d103d87c636a1a304a3fd40898ead9a7c298d70c0c92dccc4f244",
             "hmacSha256Signature": "0b4acf25eed457987a6f54d06d790d49117c04428cf69f4eb0297fccdd27f766",
-            "provenanceId": "PROV-F-44-FB05C305AC"
+            "provenanceId": "PROV-F-42-FB05C305AC"
           },
           "properties": {
-            "findingId": "F-44",
+            "findingId": "F-42",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -3883,7 +3766,7 @@
           "ruleId": "XSTRIKE-NFS-EXPORTS-2049",
           "level": "warning",
           "message": {
-            "text": "[F-45] NFS RPC Service & Export Table Exposed (Ports 111 / 2049) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-43] NFS RPC Service & Export Table Exposed (Ports 111 / 2049) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3911,10 +3794,10 @@
           "fingerprints": {
             "evidenceSha256": "83162558d26e1a9f23f9ab97ec76e36af8ae683ddf748cf13932748aab936f26",
             "hmacSha256Signature": "1879d5a264c542f78ebab0bd4c7a2bba4b61ede049c045fabcb9dd93d40eefd9",
-            "provenanceId": "PROV-F-45-83162558D2"
+            "provenanceId": "PROV-F-43-83162558D2"
           },
           "properties": {
-            "findingId": "F-45",
+            "findingId": "F-43",
             "host": "192.168.195.139",
             "port": "2049",
             "proofState": "VALIDATED",
@@ -3952,7 +3835,7 @@
           "ruleId": "XSTRIKE-WEB-PHPINFO-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-46] PHP Configuration Diagnostic Page Exposed (/phpinfo.php) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-44] PHP Configuration Diagnostic Page Exposed (/phpinfo.php) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -3987,10 +3870,10 @@
           "fingerprints": {
             "evidenceSha256": "2f41bcd36ea185f6c5d92f40843a02cf2027ce9d8857d47249e67ff207299979",
             "hmacSha256Signature": "0071d35f31f154ea0485870a3741c3ecfa4f8189b1c92d0159b1631d106a9585",
-            "provenanceId": "PROV-F-46-2F41BCD36E"
+            "provenanceId": "PROV-F-44-2F41BCD36E"
           },
           "properties": {
-            "findingId": "F-46",
+            "findingId": "F-44",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -4028,7 +3911,7 @@
           "ruleId": "XSTRIKE-WEB-NO-RATE-LIMIT",
           "level": "warning",
           "message": {
-            "text": "[F-47] Web Authentication Endpoint Missing Brute-Force Rate Limiting (/dvwa/login.php) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-45] Web Authentication Endpoint Missing Brute-Force Rate Limiting (/dvwa/login.php) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -4042,10 +3925,10 @@
           "fingerprints": {
             "evidenceSha256": "76fad16a68f00707a9b42310daf08f73e3c811d9ffc9a85a0419ace6847ee351",
             "hmacSha256Signature": "6d4210ebb7f9aa42aeba26991ab6e59bd144383dbd0bfda53abbd62464f0d12d",
-            "provenanceId": "PROV-F-47-76FAD16A68"
+            "provenanceId": "PROV-F-45-76FAD16A68"
           },
           "properties": {
-            "findingId": "F-47",
+            "findingId": "F-45",
             "host": "192.168.195.139",
             "port": "80",
             "proofState": "VALIDATED",
@@ -4083,7 +3966,7 @@
           "ruleId": "XSTRIKE-WEB-ADMIN-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-48] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=90%"
+            "text": "[F-46] Administrative Web Interface Reachable Without Network Restriction \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=90%"
           },
           "locations": [
             {
@@ -4097,10 +3980,10 @@
           "fingerprints": {
             "evidenceSha256": "89fb7378f57a555337e8dfc2f350471b329c143a354d19d664ab013356106eb8",
             "hmacSha256Signature": "26fd9cd40c7e7fd15b2e0e3f5e40ae294cab36d2de6f2783d0a7a2d45ca51c96",
-            "provenanceId": "PROV-F-48-89FB7378F5"
+            "provenanceId": "PROV-F-46-89FB7378F5"
           },
           "properties": {
-            "findingId": "F-48",
+            "findingId": "F-46",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
@@ -4135,10 +4018,65 @@
           }
         },
         {
+          "ruleId": "XSTRIKE-SMBV1-ENABLED",
+          "level": "warning",
+          "message": {
+            "text": "[F-47] Deprecated SMBv1 Dialect Enabled on SMB Service (Protocol Hardening Weakness) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140:445"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "c216181d9c3a10f56d50f75b9c8ac72e353749a20de81a80c2cdf72aeffd3853",
+            "hmacSha256Signature": "86a4151d8dac988f0b4a564258b9003f19aa0892437b7a23bd94008b6510dddd",
+            "provenanceId": "PROV-F-47-C216181D9C"
+          },
+          "properties": {
+            "findingId": "F-47",
+            "host": "192.168.195.140",
+            "port": "445",
+            "proofState": "VALIDATED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SAFE_PROBE_EXECUTED",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "CONFIGURATION_WEAKNESS",
+              "data_access_status": "METADATA_OR_HEADERS_ONLY",
+              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
+              "evidence_confidence": 94,
+              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+            },
+            "confidenceModel": {
+              "detection_confidence": 96,
+              "validation_confidence": 92,
+              "exploitation_confidence": 68,
+              "exploitability_confidence": 68,
+              "impact_confidence": 52,
+              "evidence_completeness": 100,
+              "evidence_confidence": 95,
+              "composite_confidence": 95,
+              "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
+              "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=68% | ImpactConf=52%"
+            }
+          }
+        },
+        {
           "ruleId": "XSTRIKE-PHPMYADMIN-EXPOSED",
           "level": "warning",
           "message": {
-            "text": "[F-49] Exposed phpMyAdmin Web Administrative Interface (/phpMyAdmin/) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-48] Exposed phpMyAdmin Web Administrative Interface (/phpMyAdmin/) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -4152,10 +4090,10 @@
           "fingerprints": {
             "evidenceSha256": "452b111dc8ccb52641e038b02634e1ebfee5a060760bba0523fe930ecd881dd0",
             "hmacSha256Signature": "c8d8c353a1cc8bf645a68c187cc5081d7926b45666e170a74cf834743fd0895f",
-            "provenanceId": "PROV-F-49-452B111DC8"
+            "provenanceId": "PROV-F-48-452B111DC8"
           },
           "properties": {
-            "findingId": "F-49",
+            "findingId": "F-48",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
@@ -4193,7 +4131,7 @@
           "ruleId": "XSTRIKE-HTTP-CROSSDOMAIN-POLICY",
           "level": "warning",
           "message": {
-            "text": "[F-50] Permissive Cross-Domain Policy File Exposed (/crossdomain.xml / /clientaccesspolicy.xml) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-49] Permissive Cross-Domain Policy File Exposed (/crossdomain.xml / /clientaccesspolicy.xml) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -4207,10 +4145,10 @@
           "fingerprints": {
             "evidenceSha256": "69faf702bc590702e0516568cc87f386b7fc505b98493774bd1b3b4722bae70d",
             "hmacSha256Signature": "8205cb86b044b6be62443de38a53e514a0521817cd7509373d7c5321e5f29826",
-            "provenanceId": "PROV-F-50-69FAF702BC"
+            "provenanceId": "PROV-F-49-69FAF702BC"
           },
           "properties": {
-            "findingId": "F-50",
+            "findingId": "F-49",
             "host": "192.168.195.140",
             "port": "80",
             "proofState": "VALIDATED",
@@ -4248,7 +4186,7 @@
           "ruleId": "XSTRIKE-TLS-POODLE-SSLV3",
           "level": "warning",
           "message": {
-            "text": "[F-51] SSLv3 Protocol Enabled \u2014 POODLE Padding Oracle Vulnerability (CVE-2014-3566) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-50] SSLv3 Protocol Enabled \u2014 POODLE Padding Oracle Vulnerability (CVE-2014-3566) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -4262,10 +4200,10 @@
           "fingerprints": {
             "evidenceSha256": "79ec8eaddfa67daab11aadbe79ebedb0a9f58da071434e991620f804b91ee93c",
             "hmacSha256Signature": "20f4bffba8670852957cfb4524c50556eb567a893ed96c63831364dc845bd6ce",
-            "provenanceId": "PROV-F-51-79EC8EADDF"
+            "provenanceId": "PROV-F-50-79EC8EADDF"
           },
           "properties": {
-            "findingId": "F-51",
+            "findingId": "F-50",
             "host": "192.168.195.140",
             "port": "443",
             "proofState": "VALIDATED",
@@ -4303,7 +4241,7 @@
           "ruleId": "XSTRIKE-TLS-WEAK-DH",
           "level": "warning",
           "message": {
-            "text": "[F-52] TLS Ephemeral Diffie-Hellman Weak Key Exchange Parameters (Logjam) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
+            "text": "[F-51] TLS Ephemeral Diffie-Hellman Weak Key Exchange Parameters (Logjam) \u2014 ProofState=VALIDATED | CVSS=5.3 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -4317,10 +4255,10 @@
           "fingerprints": {
             "evidenceSha256": "153b65134f4ebf59ef860ffeea5a588193da4770491577081075541f11b0a385",
             "hmacSha256Signature": "0d9c16fa7ec7ebee1bf66773395cc514d159ddd9737442ae1c35f6513c2ca200",
-            "provenanceId": "PROV-F-52-153B65134F"
+            "provenanceId": "PROV-F-51-153B65134F"
           },
           "properties": {
-            "findingId": "F-52",
+            "findingId": "F-51",
             "host": "192.168.195.140",
             "port": "443",
             "proofState": "VALIDATED",
@@ -4351,6 +4289,68 @@
               "verification_tier": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
               "false_positive_band": "Tier 2 \u2014 Deterministically Validated by Protocol/HTTP Response (Exploitability Separate)",
               "formula_summary": "EvidenceConf=95% (Det=96%, Val=92%, Art=100%) | ExploitabilityConf=25% | ImpactConf=52%"
+            }
+          }
+        },
+        {
+          "ruleId": "XSTRIKE-HTTP-SLOWLORIS",
+          "level": "warning",
+          "message": {
+            "text": "[F-52] HTTP Server Slowloris Timeout Heuristic Observed (CVE-2007-6750 Candidate) \u2014 ProofState=OBSERVED | CVSS=5.9 | EvidenceConf=48%"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140:443"
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "192.168.195.140:8080"
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "evidenceSha256": "8fb6eef88cd2d24508e24401720d901d2f92b3655d5a8d1ff6be3e45306896a3",
+            "hmacSha256Signature": "67c84d8ba80e7c80845dd0f6bf9738895bad90b2c315ed9ff240b84be7ac145d",
+            "provenanceId": "PROV-F-52-8FB6EEF88C"
+          },
+          "properties": {
+            "findingId": "F-52",
+            "host": "192.168.195.140",
+            "port": "80",
+            "proofState": "OBSERVED",
+            "accessScope": {
+              "authenticated": false,
+              "file_access": "NONE",
+              "database_access": "NONE",
+              "privilege_level": "NONE",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+              "execution_status": "SCANNER_HEURISTIC_UNVERIFIED_BY_SAFETY_ROE",
+              "authentication_status": "UNAUTHENTICATED_PROBE",
+              "exploitability_status": "SCANNER_HEURISTIC_UNVERIFIED_BY_SAFETY_ROE",
+              "data_access_status": "NONE",
+              "impact_status": "POTENTIAL_AVAILABILITY_RISK_UNVERIFIED",
+              "evidence_confidence": 58,
+              "access_summary": "Nmap NSE (http-slowloris-check) reported 'LIKELY VULNERABLE' timeout heuristic; active connection-exhaustion DoS withheld by RoE safety policy"
+            },
+            "confidenceModel": {
+              "detection_confidence": 86,
+              "validation_confidence": 25,
+              "exploitation_confidence": 15,
+              "exploitability_confidence": 15,
+              "impact_confidence": 22,
+              "evidence_completeness": 45,
+              "evidence_confidence": 48,
+              "composite_confidence": 48,
+              "verification_tier": "Tier 3 \u2014 Unverified Banner/Port Heuristic (Manual Verification Required)",
+              "false_positive_band": "Tier 3 \u2014 Unverified Banner/Port Heuristic (Manual Verification Required)",
+              "formula_summary": "EvidenceConf=48% (Det=86%, Val=25%, Art=45%) | ExploitabilityConf=15% | ImpactConf=22%"
             }
           }
         },

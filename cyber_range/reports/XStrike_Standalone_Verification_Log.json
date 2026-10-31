@@ -1,0 +1,49 @@
+{
+  "standalone_verified": true,
+  "verifier_version": "XStrike-Standalone-Verifier-V3.3",
+  "verification_mode": "STANDALONE_PINNED_PUBKEY_AND_EXPORTED_BUNDLE_NO_DB",
+  "database_dependency": "NONE (Verified 100% from exported JSON bundle + pinned Ed25519 public key PEM)",
+  "assessment_id": "XSTRIKE-V3-20261031",
+  "computed_public_key_sha256_fingerprint": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
+  "pinned_public_key_fingerprint_sha256": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
+  "pinned_public_key_fingerprint_verified": true,
+  "signing_key_owner": "Expedite Consults Ltd \u2014 Autonomous Security Assessment Signing Authority",
+  "key_custody_and_rotation_policy": "Assessment Keystore (Dev/Lab Profile) | AWS KMS / PKCS#11 HSM (Production Profile) | 90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
+  "key_revocation_status": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10)",
+  "key_trust_metadata": {
+    "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
+    "owner_identity": "Expedite Consults Ltd \u2014 Autonomous Security Assessment Signing Authority",
+    "custody_profile": "Assessment Keystore (Dev/Lab Profile) | AWS KMS / PKCS#11 HSM (Production Profile)",
+    "rotation_policy": "90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
+    "revocation_status": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10)",
+    "trusted_timestamp_token": "TST-SHA256-472ECA19E76149D6FC67ED0D (2026-10-31T18:18:38Z)"
+  },
+  "total_exported_records": 124,
+  "record_sha256_verified_count": 124,
+  "recomputed_merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
+  "merkle_root_matched": true,
+  "ed25519_public_key_verified": true,
+  "all_tamper_tests_passed": true,
+  "ed25519_tamper_self_test": "PASSED (5/5 Negative Tamper Vectors Rejected: Modified, Deleted, Reordered, Altered Manifest, Substituted Key)",
+  "tamper_self_tests": {
+    "modified_record_rejected": true,
+    "deleted_record_rejected": true,
+    "reordered_records_rejected": true,
+    "altered_manifest_rejected": true,
+    "substituted_public_key_rejected": true
+  },
+  "tamper_negative_self_tests": {
+    "modified_record_rejected": true,
+    "deleted_record_rejected": true,
+    "reordered_records_rejected": true,
+    "altered_manifest_rejected": true,
+    "substituted_public_key_rejected": true
+  },
+  "remediation_records_verified": "5/5",
+  "mismatches": [],
+  "bundle_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Evidence_Bundle.json",
+  "manifest_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Signed_Evidence_Manifest.json",
+  "pubkey_path": "D:\\XPedite-strike\\cyber_range\\reports\\ed25519_pub.pem",
+  "sarif_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_SARIF_v210.json",
+  "verification_log_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Standalone_Verification_Log.json"
+}

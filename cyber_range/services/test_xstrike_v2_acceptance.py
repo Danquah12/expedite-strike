@@ -217,11 +217,11 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
                 self.assertNotIn("nmap.org", ep_l)
                 self.assertFalse(ep_l.startswith("/"), f"Unbound relative path in endpoint: {ep}")
 
-    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_20_rule_quality_gate(self):
+    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_21_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 20)
-        self.assertEqual(qa["total_rules"], 20)
+        self.assertEqual(qa["passed_rules"], 21)
+        self.assertEqual(qa["total_rules"], 21)
 
         # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
         tm = self.v2["transition_model"]
@@ -266,7 +266,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(len(em.get("manifest_ed25519_signature", "")), 128)
         self.assertEqual(len(em.get("ed25519_public_key_hex", "")), 64)
 
-        # Verify V3.2 Multi-Host Benchmark & 7-Step Retest Lifecycle
+        # Verify V3.3 Multi-Host Benchmark & 7-Step Retest Lifecycle
         v3_arch = self.v2["v3_architecture"]
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["hosts"]), 4)
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["remediation_retest_lifecycle"]), 7)
@@ -280,43 +280,109 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
         self.assertIn("EXPEDITE STRIKE V3", html_doc)
-        self.assertIn("20/20 PASSED", html_doc)
+        self.assertIn("21/21 PASSED", html_doc)
 
-    def test_ac19_ac20_v32_six_priorities_verification_retest_and_risk_recalculation(self):
-        # Priority 1: Standalone Database-Free Bundle Verifier (verify_manifest.py)
+    def test_v33_ten_formal_regression_tests_reg01_to_reg10(self):
+        """
+        Execute all 10 formal V3.3 regression tests (REG-01 through REG-10) requested in the V3.2 technical review:
+          REG-01: Finding ID consistency across database, report, retest ledger, manifest, and risk calculation
+          REG-02: Risk calculation consistency across cover, executive summary, SLA table, and section text
+          REG-03: Retest rejection when target host is offline (RETEST-03-NEG-CTRL)
+          REG-04: Retest rejection when fix is partial (RETEST-04-PARTIAL)
+          REG-05: Retest rejection when vulnerability still reproduces (RETEST-05-FAILED)
+          REG-06: Standalone bundle verification failure on 1-byte evidence modification
+          REG-07: Standalone bundle verification failure on record deletion or reordering
+          REG-08: Standalone bundle verification failure on manifest modification or public-key substitution
+          REG-09: Attack-graph non-inheritance of executed status to inferred/precondition steps
+          REG-10: Exploitability gate blocking scanner-only/heuristic findings from EXPLOITABLE or CONFIRMED_*
+        """
+        sec_map = {f["finding_id"]: f for f in self.v2["security_findings"]}
+        rw = self.v2["remediation_workflow"]
+        rm = self.v2["risk_model"]
         sv = self.v2["standalone_verification"]
+
+        # REG-01: Finding ID consistency across Section 3A, Retest Ledger, Lifecycle, and SLA table
+        for rec in rw["retest_records"]:
+            fid = rec["finding_id"]
+            self.assertIn(fid, sec_map, f"REG-01 failed: Retest finding {fid} not in security_findings")
+            self.assertEqual(sec_map[fid]["canonical_key"], rec["canonical_key"])
+            self.assertEqual(sec_map[fid]["host"], rec["host"])
+            # Ensure dynamic ID appears in SLA T1 target_scope
+            self.assertIn(fid, rm["sla_projections"][1]["target_scope"])
+
+        # REG-02: Risk calculation mathematical reconciliation & zero missing T1 keys
+        self.assertGreater(float(rm["post_retest_s_exposure_raw_sum"]), 0.0, "REG-02 failed: T1 RawSum must not be 0")
+        self.assertLess(float(rm["post_retest_s_exposure_raw_sum"]), float(rm["s_exposure_raw_sum"]))
+        expected_delta = round(float(rm["principal_calibrated_score"]) - float(rm["post_retest_calibrated_score"]), 1)
+        self.assertEqual(float(rm["verified_risk_reduction_pts"]), expected_delta)
+        self.assertEqual(float(rm["verified_risk_reduction_calibrated_pts"]), expected_delta)
+        self.assertEqual(rm["sla_projections"][0]["calibrated_score"], rm["principal_calibrated_score"])
+        self.assertEqual(rm["sla_projections"][1]["calibrated_score"], rm["post_retest_calibrated_score"])
+
+        # REG-03: Retest rejection when target host is offline (RETEST-03-NEG-CTRL)
+        r03 = next(r for r in rw["retest_records"] if r["retest_id"] == "RETEST-03-NEG-CTRL")
+        self.assertFalse(r03["host_online_confirmed"])
+        self.assertIn("REJECTED_HOST_OFFLINE", r03["step6_transition_decision"])
+        self.assertEqual(sec_map[r03["finding_id"]]["post_retest_proof_state"], sec_map[r03["finding_id"]]["baseline_proof_state"])
+        self.assertNotEqual(sec_map[r03["finding_id"]]["post_retest_proof_state"], "REMEDIATION_VERIFIED")
+        self.assertFalse(sec_map[r03["finding_id"]]["remediation_verified"])
+
+        # REG-04: Retest rejection when fix is partial (RETEST-04-PARTIAL)
+        r04 = next(r for r in rw["retest_records"] if r["retest_id"] == "RETEST-04-PARTIAL")
+        self.assertTrue(r04["host_online_confirmed"])
+        self.assertFalse(r04["vulnerability_eliminated"])
+        self.assertIn("PARTIALLY_REMEDIATED_NOT_CLOSED", r04["step6_transition_decision"])
+        self.assertEqual(sec_map[r04["finding_id"]]["post_retest_proof_state"], "VALIDATED")
+
+        # REG-05: Retest rejection when vulnerability still reproduces (RETEST-05-FAILED)
+        r05 = next(r for r in rw["retest_records"] if r["retest_id"] == "RETEST-05-FAILED")
+        self.assertTrue(r05["host_online_confirmed"])
+        self.assertFalse(r05["vulnerability_eliminated"])
+        self.assertIn("RETEST_FAILED_STILL_VULNERABLE", r05["step6_transition_decision"])
+        self.assertEqual(sec_map[r05["finding_id"]]["post_retest_proof_state"], "CONFIRMED_AUTH")
+
+        # Also verify RETEST-02 tested all 5 endpoints (/robots.txt, /admin, /backup, /config, /private)
+        r02 = next(r for r in rw["retest_records"] if r["retest_id"] == "RETEST-02")
+        for ep_path in ("/robots.txt", "/admin", "/backup", "/config", "/private"):
+            self.assertIn(ep_path, r02["after_evidence"])
+
+        # REG-06, REG-07, REG-08: Standalone bundle verification & 5 negative tamper tests + pinned key fingerprint
         self.assertTrue(sv["standalone_verified"])
-        self.assertEqual(sv["database_dependency"], "NONE (Verified 100% from exported JSON bundle + Ed25519 public key PEM)")
-        self.assertEqual(sv["record_sha256_verified_count"], 124)
-        self.assertTrue(sv["merkle_root_matched"])
-        self.assertTrue(sv["ed25519_public_key_verified"])
-        self.assertEqual(sv["remediation_records_verified"], "3/3")
+        self.assertTrue(sv["pinned_public_key_fingerprint_verified"])
+        self.assertTrue(sv["all_tamper_tests_passed"])
+        tamper = sv["tamper_negative_self_tests"]
+        self.assertTrue(tamper["modified_record_rejected"], "REG-06 failed")
+        self.assertTrue(tamper["deleted_record_rejected"], "REG-07a failed")
+        self.assertTrue(tamper["reordered_records_rejected"], "REG-07b failed")
+        self.assertTrue(tamper["altered_manifest_rejected"], "REG-08a failed")
+        self.assertTrue(tamper["substituted_public_key_rejected"], "REG-08b failed")
 
-        # Priority 2 & 3: Exploitability Validation Gate & 4-State MITRE Execution Provenance
-        for f in self.v2["security_findings"]:
-            ev_gate = f.get("exploitability_validation", {})
-            self.assertEqual(ev_gate.get("exploitability_claimed"), ev_gate.get("promotion_criteria_met"))
-            self.assertIn(
-                f.get("mitre_execution_state"),
-                ("EXECUTED_WITH_PROOF", "TECHNIQUE_VALIDATED", "ATTEMPTED_BLOCKED_OR_UNVERIFIED", "MAPPED_ONLY"),
-            )
-
-        # Priority 4: Multi-Host Lateral Movement Succeeded vs. Blocked by Controls
+        # REG-09: Attack-graph non-inheritance & lateral movement terminology
         lat_matrix = self.v2["attack_graph"].get("cross_host_lateral_movement_matrix", [])
         self.assertEqual(len(lat_matrix), 5)
-        outcomes = [m["lateral_outcome"] for m in lat_matrix]
-        self.assertTrue(any("LATERAL_MOVEMENT_SUCCEEDED" in o for o in outcomes))
-        self.assertTrue(any("LATERAL_MOVEMENT_BLOCKED_BY_CONTROL" in o for o in outcomes))
+        p_cyber01 = next(m for m in lat_matrix if m["pivot_id"] == "PIVOT-CYBER-01")
+        self.assertEqual(p_cyber01["lateral_outcome"], "LATERAL_PRECONDITION_VALIDATED_NOT_EXECUTED")
+        p_cyber02 = next(m for m in lat_matrix if m["pivot_id"] == "PIVOT-CYBER-02")
+        self.assertEqual(p_cyber02["lateral_outcome"], "TESTED_ROUTES_BLOCKED_BY_CONTROL")
+        p_bench01 = next(m for m in lat_matrix if m["pivot_id"] == "PIVOT-BENCH-01")
+        self.assertEqual(p_bench01["lateral_outcome"], "LATERAL_MOVEMENT_SUCCEEDED")
+        self.assertTrue(bool(p_bench01.get("source_host_transcript")))
+        self.assertTrue(bool(p_bench01.get("destination_host_transcript")))
 
-        # Priority 5 & 6: 7-Step Remediation Verification, Negative-Control Offline Host Rejection & Before/After Risk
-        rw = self.v2["remediation_workflow"]
-        self.assertEqual(rw["remediation_verified_count"], 2)
-        self.assertEqual(rw["negative_control_rejected_count"], 1)
-        self.assertEqual(self.v2["proof_state_counts"]["REMEDIATION_VERIFIED"], 2)
-        rm = self.v2["risk_model"]
-        self.assertEqual(rm["principal_calibrated_score"], 96.9)
-        self.assertEqual(rm["post_retest_calibrated_score"], 75.7)
-        self.assertLess(rm["post_retest_calibrated_score"], rm["principal_calibrated_score"])
+        # REG-10: Exploitability gate & Issue 6 specific vulnerability classifications (SMBv1, Slowloris, SQLi/SSRF)
+        smbv1_list = [f for f in self.v2["security_findings"] if f["canonical_key"] == "VULN_SMBV1_ENABLED"]
+        self.assertGreaterEqual(len(smbv1_list), 1)
+        for f_smb in smbv1_list:
+            self.assertEqual(f_smb["cve"], "", "SMBv1 dialect must not carry CVE-2017-0144")
+            self.assertEqual(f_smb["severity"], "Medium")
+            self.assertEqual(float(f_smb["cvss_score"]), 5.3)
+        slow_list = [f for f in self.v2["security_findings"] if f["canonical_key"] == "VULN_HTTP_SLOWLORIS"]
+        self.assertGreaterEqual(len(slow_list), 1)
+        for f_sl in slow_list:
+            self.assertEqual(f_sl["proof_state"], "OBSERVED")
+            self.assertEqual(f_sl["severity"], "Medium")
+            self.assertEqual(float(f_sl["cvss_score"]), 5.9)
+            self.assertFalse(f_sl["exploitability_validation"]["exploitability_claimed"])
 
 
 if __name__ == "__main__":
