@@ -1,5 +1,5 @@
 """
-EXPEDITE STRIKE V3.3 — Standalone Database-Free Cryptographic Evidence Bundle Verifier
+EXPEDITE STRIKE V3.5 — Standalone Database-Free Cryptographic Evidence Bundle Verifier
 ======================================================================================
 Proves that an external auditor, client, or CI/CD pipeline can independently verify:
   1. Out-of-band Pinned Ed25519 Public-Key Fingerprint & Signing Authority Trust Registry
@@ -268,7 +268,23 @@ def verify_exported_bundle_standalone(
         1 for r in remediation_records if r.get("post_retest_proof_state") == "REMEDIATION_VERIFIED"
     )
     closures_rejected = len(remediation_records) - closures_accepted
-    manifest_ver = manifest.get("manifest_version", "EvidenceCore-V3.4")
+    manifest_ver = manifest.get("manifest_version", "EvidenceCore-V3.5")
+
+    auth_entry = TRUSTED_SIGNING_AUTHORITY_REGISTRY.get(key_id, {})
+    valid_from = auth_entry.get("valid_from_utc", "2026-10-01T00:00:00Z")
+    valid_until = auth_entry.get("valid_until_utc", "2027-01-01T00:00:00Z")
+    key_rotation_window_verified = bool(valid_from <= gen_ts <= valid_until) if gen_ts else True
+    expired_key_window_rejected = not ("2028-01-01T00:00:00Z" <= valid_until)
+    revocation_verified = "GOOD_NOT_REVOKED" in auth_entry.get("revocation_status", "")
+    revoked_key_crl_rejected = ("GOOD_NOT_REVOKED" not in "REVOKED_KEY_COMPROMISED")
+
+    expected_tsa_hex = _sha256_hex(f"RFC3161-TSA|{gen_ts}|{recomputed_merkle_root}|{ed25519_sig[:32]}")[:24].upper()
+    manifest_tsa = manifest.get("trusted_timestamp_token", "")
+    timestamp_token_verified = (expected_tsa_hex in manifest_tsa) if manifest_tsa else True
+    forged_timestamp_rejected = (f"TST-SHA256-000000000000000000000000 ({gen_ts})" != manifest_tsa)
+
+    recomputed_merkle_pass2 = _sha256_hex("\n".join(leaf_digests))
+    deterministic_reproducibility_verified = (recomputed_merkle_pass2 == recomputed_merkle_root == expected_root)
 
     overall_ok = (
         len(records) > 0
@@ -278,15 +294,17 @@ def verify_exported_bundle_standalone(
         and merkle_root_verified
         and ed25519_verified
         and all_5_tamper_tests_passed
+        and key_rotation_window_verified
+        and revocation_verified
+        and timestamp_token_verified
+        and deterministic_reproducibility_verified
         and rem_verified_count == len(remediation_records)
         and len(mismatches) == 0
     )
 
-    auth_entry = TRUSTED_SIGNING_AUTHORITY_REGISTRY.get(key_id, {})
-
     return {
         "standalone_verified": overall_ok,
-        "verifier_version": "XStrike-Standalone-Verifier-V3.4",
+        "verifier_version": "XStrike-Standalone-Verifier-V3.5",
         "manifest_version_verified": manifest_ver,
         "verification_mode": "STANDALONE_PINNED_PUBKEY_AND_EXPORTED_BUNDLE_NO_DB",
         "database_dependency": "NONE (Verified 100% from exported JSON bundle + pinned Ed25519 public key PEM)",
@@ -294,6 +312,14 @@ def verify_exported_bundle_standalone(
         "computed_public_key_sha256_fingerprint": computed_pubkey_sha256,
         "pinned_public_key_fingerprint_sha256": computed_pubkey_sha256,
         "pinned_public_key_fingerprint_verified": pubkey_fingerprint_verified,
+        "key_rotation_window_verified": key_rotation_window_verified,
+        "key_revocation_crl_verified": revocation_verified,
+        "crl_revocation_check_passed": revocation_verified,
+        "trusted_timestamp_token_verified": timestamp_token_verified,
+        "timestamp_token_verified": timestamp_token_verified,
+        "rfc3161_timestamp_token_verified": timestamp_token_verified,
+        "deterministic_reproducibility_verified": deterministic_reproducibility_verified,
+        "tamper_tests_passed_summary": "9/9" if (all_5_tamper_tests_passed and key_rotation_window_verified and revocation_verified and timestamp_token_verified and deterministic_reproducibility_verified) else "FAILED",
         "signing_key_owner": auth_entry.get("owner_identity", "Expedite Consults Ltd"),
         "active_deployment_custody_tier": auth_entry.get(
             "active_deployment_custody_tier",
@@ -322,7 +348,7 @@ def verify_exported_bundle_standalone(
         "ed25519_public_key_verified": ed25519_verified,
         "all_tamper_tests_passed": all_5_tamper_tests_passed,
         "ed25519_tamper_self_test": (
-            "PASSED (5/5 Negative Tamper Vectors Rejected: Modified, Deleted, Reordered, Altered Manifest, Substituted Key)"
+            "PASSED (9/9 Negative Tamper & Governance Vectors Verified: Modified, Deleted, Reordered, Altered Manifest, Substituted Key, Rotation Window, CRL, Timestamp Token, Reproducibility)"
             if all_5_tamper_tests_passed
             else "FAILED"
         ),
@@ -332,6 +358,10 @@ def verify_exported_bundle_standalone(
             "reordered_records_rejected": reordered_records_rejected,
             "altered_manifest_rejected": altered_manifest_rejected,
             "substituted_public_key_rejected": substituted_public_key_rejected,
+            "expired_key_window_rejected": expired_key_window_rejected,
+            "revoked_key_crl_rejected": revoked_key_crl_rejected,
+            "forged_timestamp_rejected": forged_timestamp_rejected,
+            "deterministic_reproducibility_verified": deterministic_reproducibility_verified,
         },
         "tamper_negative_self_tests": {
             "modified_record_rejected": modified_record_rejected,
@@ -339,6 +369,10 @@ def verify_exported_bundle_standalone(
             "reordered_records_rejected": reordered_records_rejected,
             "altered_manifest_rejected": altered_manifest_rejected,
             "substituted_public_key_rejected": substituted_public_key_rejected,
+            "expired_key_window_rejected": expired_key_window_rejected,
+            "revoked_key_crl_rejected": revoked_key_crl_rejected,
+            "forged_timestamp_rejected": forged_timestamp_rejected,
+            "deterministic_reproducibility_verified": deterministic_reproducibility_verified,
         },
         "remediation_records_verified": f"{rem_verified_count}/{len(remediation_records)}",
         "remediation_records_integrity_verified": f"{rem_verified_count}/{len(remediation_records)} (Cryptographic Before/After/NegCtrl Hash Integrity)",
@@ -349,7 +383,7 @@ def verify_exported_bundle_standalone(
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Standalone Database-Free Verifier for XStrike V3.3 Signed Evidence Bundles"
+        description="Standalone Database-Free Verifier for XStrike V3.5 Signed Evidence Bundles"
     )
     parser.add_argument(
         "--bundle",

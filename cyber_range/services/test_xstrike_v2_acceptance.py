@@ -217,11 +217,11 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
                 self.assertNotIn("nmap.org", ep_l)
                 self.assertFalse(ep_l.startswith("/"), f"Unbound relative path in endpoint: {ep}")
 
-    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_21_rule_quality_gate(self):
+    def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_25_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 23)
-        self.assertEqual(qa["total_rules"], 23)
+        self.assertEqual(qa["passed_rules"], 25)
+        self.assertEqual(qa["total_rules"], 25)
 
         # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
         tm = self.v2["transition_model"]
@@ -266,7 +266,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(len(em.get("manifest_ed25519_signature", "")), 128)
         self.assertEqual(len(em.get("ed25519_public_key_hex", "")), 64)
 
-        # Verify V3.3 Multi-Host Benchmark & 7-Step Retest Lifecycle
+        # Verify V3.5 Multi-Host Benchmark & 7-Step Retest Lifecycle
         v3_arch = self.v2["v3_architecture"]
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["hosts"]), 4)
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"]["remediation_retest_lifecycle"]), 7)
@@ -279,8 +279,8 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertTrue(pdf_bytes.startswith(b"%PDF-"))
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
-        self.assertIn("EXPEDITE STRIKE V3", html_doc)
-        self.assertIn("23/23 PASSED", html_doc)
+        self.assertIn("EXPEDITE STRIKE V3.5", html_doc)
+        self.assertIn("25/25 PASSED", html_doc)
 
     def test_v33_ten_formal_regression_tests_reg01_to_reg10(self):
         """
@@ -384,14 +384,14 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
             self.assertEqual(float(f_sl["cvss_score"]), 5.9)
             self.assertFalse(f_sl["exploitability_validation"]["exploitability_claimed"])
 
-        # REG-11 (V3.4 EPIC 01 & 04): Version provenance unity across Manifest, RiskEngine, and Standalone Verifier
+        # REG-11 (V3.5 EPIC 01): Universal Version Consistency (VERSION_REGISTRY = V3.5) across Manifest, RiskEngine, Verifier, Capabilities & Benchmark
         em = self.v2["evidence_manifest"]
-        self.assertEqual(em["manifest_version"], "EvidenceCore-V3.4")
-        self.assertIn("MANIFEST-XSTRIKE-V3.4-", em["manifest_id"])
-        self.assertEqual(rm["formula_version"], "RiskEngine-V3.4-Calibrated-NonSaturating")
-        self.assertEqual(sv["verifier_version"], "XStrike-Standalone-Verifier-V3.4")
+        self.assertEqual(em["manifest_version"], "EvidenceCore-V3.5")
+        self.assertIn("MANIFEST-XSTRIKE-V3.5-", em["manifest_id"])
+        self.assertEqual(rm["formula_version"], "RiskEngine-V3.5-Calibrated-NonSaturating")
+        self.assertEqual(sv["verifier_version"], "XStrike-Standalone-Verifier-V3.5")
 
-        # REG-12 (V3.4 EPIC 05): Forecast trajectory mathematical reconciliation across SLA table and Quality Gate AC-09
+        # REG-12 (V3.5 EPIC 05): Forecast trajectory mathematical reconciliation across SLA table and Quality Gate AC-09
         sla = rm["sla_projections"]
         self.assertEqual(rm["forecast_24h_calibrated_score"], sla[2]["calibrated_score"])
         self.assertEqual(rm["forecast_7d_calibrated_score"], sla[3]["calibrated_score"])
@@ -401,27 +401,76 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertIn(f"7d ({sla[3]['calibrated_score']})", ac09_chk["detail"])
         self.assertIn(f"30d ({sla[4]['calibrated_score']})", ac09_chk["detail"])
 
-        # REG-13 (V3.4 EPIC 02): MITRE semantic validation (zero T1068 on direct-root chains; SUID Nmap precondition state)
+        # REG-13 (V3.5 EPIC 02): MITRE semantic validation (zero T1068, T1033, or T1190 on direct-root non-web chains; T1210 on vsFTPd & Java RMI)
         for ch in self.v2["attack_graph"]["chains"]:
             if ch["chain_id"] in ("CHAIN-01", "CHAIN-02"):
                 for edge in ch["edges"]:
-                    self.assertNotEqual(edge["technique_id"], "T1068", f"{ch['chain_id']} direct root daemon must not use T1068")
-        for f_ex in [f for f in self.v2["security_findings"] if f["proof_state"] == "EXPLOITABLE"]:
-            self.assertEqual(f_ex["exploitability_validation"]["gate_status"], "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED")
-            self.assertEqual(f_ex["access_scope"]["privesc_lifecycle_state"], "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED")
+                    self.assertNotIn(edge["technique_id"], ("T1068", "T1033", "T1190"), f"{ch['chain_id']} direct root daemon must not use {edge['technique_id']}")
+                self.assertEqual(ch["edges"][2]["technique_id"], "T1059.004")
+                self.assertEqual(ch["edges"][2]["privilege_context"]["uid"], 0)
+                self.assertEqual(ch["edges"][2]["privilege_context"]["source"], "vulnerable_network_daemon")
+                self.assertEqual(ch["edges"][2]["privilege_context"]["privilege_transition"], "NONE")
+        for f_rem in [f for f in self.v2["security_findings"] if f["canonical_key"] in ("VULN_VSFTPD_234_BACKDOOR", "VULN_JAVA_RMI_EXPOSED")]:
+            self.assertEqual(f_rem["mitre_id"], "T1210")
 
-        # REG-14 (V3.4 EPIC 03): 4-Stage Remediation Lifecycle Gates (CHANGE_APPLIED, SERVICE_RELOADED, CONTROL_EFFECTIVE, REMEDIATION_VERIFIED)
+        # REG-14 (V3.5 EPIC 03): 4-Stage Remediation Lifecycle Gates & REMEDIATION_INCONCLUSIVE on offline host
         self.assertTrue(r05["change_applied"])
         self.assertFalse(r05["service_reloaded"])
         self.assertIn("CHANGE_APPLIED_ONLY_SERVICE_NOT_RELOADED", r05["remediation_lifecycle_stage"])
         self.assertTrue(r04["change_applied"])
         self.assertTrue(r04["service_reloaded"])
         self.assertIn("PARTIAL_ONLY", r04["control_effective"])
+        self.assertEqual(r03["retest_outcome_state"], "REMEDIATION_INCONCLUSIVE")
+        self.assertIn("REMEDIATION_INCONCLUSIVE", r03["remediation_lifecycle_stage"])
+        self.assertIn("REJECTED_HOST_OFFLINE", r03["remediation_lifecycle_stage"])
 
-        # REG-15 (V3.4 EPIC 04): Key custody provenance separation (Lab vs Prod) & Retest Integrity (5/5) vs Closures Accepted (2/5)
+        # REG-15 (V3.5 EPIC 04): Key custody provenance separation (Lab vs Prod) & Retest Integrity (5/5) vs Closures Accepted (2/5)
         self.assertIn("LAB_PINNED_ED25519_KEYSTORE", sv["active_deployment_custody_tier"])
         self.assertIn("Not Deployed in Lab", sv["enterprise_production_target_architecture"])
         self.assertIn("2/5 Verified Closures Accepted", sv["remediation_closures_accepted_summary"])
+
+        # REG-16 (V3.5 EPIC 01): Zero stale version strings (V3.1, V3.2, V3.3, v3.3, V3.4) in capabilities, benchmark, lateral matrix, or HTML
+        v3_arch = self.v2["v3_architecture"]
+        for cap in v3_arch["v3_capabilities"]:
+            self.assertIn("v3.5", cap["status"])
+            for stale_tok in ("v3.3", "V3.3", "V3.2", "V3.4"):
+                self.assertNotIn(stale_tok, cap["name"] + " " + cap["status"] + " " + cap["summary"])
+        self.assertEqual(v3_arch["v31_multihost_benchmark"]["benchmark_id"], "XSTRIKE-V3.5-MULTIHOST-ENTERPRISE-RANGE")
+
+        # REG-17 (V3.5 EPIC 03): Proof-state normalization — zero user-facing EXPLOITABLE; SUID Nmap uses PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED
+        raw_expl = [f for f in self.v2["security_findings"] if f["proof_state"] == "EXPLOITABLE"]
+        self.assertEqual(len(raw_expl), 0, "Zero findings may use ambiguous user-facing EXPLOITABLE proof state in V3.5")
+        f_nmap = next(f for f in self.v2["security_findings"] if f["canonical_key"] == "VULN_PRIVESC_SUID_NMAP")
+        self.assertEqual(f_nmap["proof_state"], "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED")
+        self.assertIn("LOCAL_ESCALATION_PRECONDITION", f_nmap["access_scope"]["privilege_level"])
+        self.assertIn("root transition not executed", f_nmap["access_scope"]["privilege_level"])
+
+        # REG-18 (V3.5 EPIC 03): Standardized 4-tier compliance enum & technical control mapping on 100% of findings
+        allowed_comp = {"EVIDENCE_OF_CONTROL_FAILURE", "POTENTIAL_CONTROL_GAP", "CONTROL_NOT_ASSESSED", "NO_FAILURE_OBSERVED"}
+        for f in self.v2["security_findings"] + self.v2["recon_findings"]:
+            self.assertIn(f["compliance_status"], allowed_comp)
+            self.assertTrue(bool(f.get("compliance_technical_control")))
+
+        # REG-19 (V3.5 EPIC 04): 9/9 Tamper & Key-Lifecycle Governance Self-Tests in Standalone Verifier
+        for req_test in (
+            "modified_record_rejected", "deleted_record_rejected", "reordered_records_rejected",
+            "altered_manifest_rejected", "substituted_public_key_rejected",
+            "expired_key_window_rejected", "revoked_key_crl_rejected",
+            "forged_timestamp_rejected", "deterministic_reproducibility_verified",
+        ):
+            self.assertTrue(tamper.get(req_test), f"REG-19 failed on {req_test}")
+        self.assertTrue(sv["key_rotation_window_verified"])
+        self.assertTrue(sv["key_revocation_crl_verified"])
+        self.assertTrue(sv["rfc3161_timestamp_token_verified"])
+        self.assertTrue(sv["deterministic_reproducibility_verified"])
+
+        # REG-20 (V3.5 EPIC 05 & EPIC 06): Modeled Architectural Floor Assumption & 4-Host Benchmark Seeded Manifest Isolation
+        self.assertEqual(sla[2]["forecast_classification"], "HYPOTHETICAL_REMEDIATION_SCENARIO_FORECAST")
+        self.assertEqual(sla[3]["forecast_classification"], "HYPOTHETICAL_REMEDIATION_SCENARIO_FORECAST")
+        self.assertEqual(sla[4]["forecast_classification"], "MODELED_ARCHITECTURAL_FLOOR_ASSUMPTION")
+        self.assertIn("MODELED_ARCHITECTURAL_FLOOR_ASSUMPTION", rm.get("forecast_governance_policy", ""))
+        self.assertEqual(len(v3_arch["v31_multihost_benchmark"].get("seeded_vulnerability_manifest", [])), 4)
+        self.assertTrue(bool(v3_arch["v31_multihost_benchmark"].get("scenario_isolation_boundary")))
 
 
 if __name__ == "__main__":
