@@ -1,0 +1,14 @@
+/* Compliance GRC Ticker — scrolls like CyberTV breaking news bar */
+@keyframes grcTicker {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+}
+.grc-ticker-track {
+    display: inline-block;
+    white-space: nowrap;
+    will-change: transform;
+    animation: grcTicker 40s linear infinite;
+}
+.grc-ticker-track:hover {
+    animation-play-state: paused;
+}

@@ -1,0 +1,1297 @@
+"""
+ui_osint.py
+OSINT Tab — Domain · IP · Email · Person · Organisation · Breach · Dark Web · AI Profiling
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import threading
+import time
+from datetime import datetime, timezone
+from typing import Any
+
+import requests
+from dash import callback, dcc, html, Input, Output, State, ctx, ALL
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+
+try:
+    from llm_engine import call_llm
+except ImportError:
+    def call_llm(prompt: str) -> str:
+        return "LLM engine not available."
+
+# ── Styling ───────────────────────────────────────────────────────────────────
+DARK_BG   = "#0d0d0d"
+CARD_BG   = "#111317"
+BORDER    = "1px solid #1e2230"
+INPUT_STY = {"background": "#1a1d24", "border": BORDER, "color": "#e0e0e0",
+             "borderRadius": "6px", "fontSize": "13px"}
+BTN_SM    = {"borderRadius": "6px", "fontSize": "12px", "padding": "4px 10px"}
+LABEL     = {"color": "#8e9eb0", "fontSize": "11px", "marginBottom": "4px",
+             "fontWeight": "600", "textTransform": "uppercase", "letterSpacing": "0.5px"}
+
+# ── In-memory results store ───────────────────────────────────────────────────
+_OSINT_RESULTS: dict[str, list] = {
+    "subdomains": [], "emails": [], "ips": [], "people": [],
+    "breaches": [], "social": [], "dns": [], "whois": [], "shodan": [],
+    "internetdb": [],
+}
+_CMD_OUTPUTS: dict[str, str] = {}
+_LOCK = threading.Lock()
+
+# ── OSINT Tool definitions ────────────────────────────────────────────────────
+OSINT_TOOLS = [
+    {"id": "theharvester", "name": "theHarvester", "category": "Passive",
+     "desc": "Email, hostname & IP harvesting", "needs": "domain"},
+    {"id": "amass",        "name": "Amass",         "category": "Active",
+     "desc": "Subdomain enumeration & attack surface mapping", "needs": "domain"},
+    {"id": "subfinder",    "name": "Subfinder",      "category": "Passive",
+     "desc": "Fast passive subdomain discovery", "needs": "domain"},
+    {"id": "whois",        "name": "WHOIS",          "category": "Passive",
+     "desc": "Domain registration & ownership", "needs": "domain/ip"},
+    {"id": "nslookup",     "name": "DNS Lookup",     "category": "Passive",
+     "desc": "All DNS records (A/MX/TXT/NS/SOA)", "needs": "domain"},
+    {"id": "shodan",       "name": "Shodan",         "category": "Passive",
+     "desc": "Internet-facing services & banners", "needs": "ip/domain"},
+    {"id": "dnsx",         "name": "dnsx",           "category": "Passive",
+     "desc": "DNS bruteforce & wildcard detection", "needs": "domain"},
+    {"id": "wayback",      "name": "Wayback Machine", "category": "Passive",
+     "desc": "Historical URLs and exposed paths", "needs": "domain"},
+    {"id": "emailhunter",  "name": "Hunter.io",      "category": "Passive",
+     "desc": "Email address discovery (needs HUNTER_KEY)", "needs": "domain"},
+    {"id": "hibp",         "name": "HaveIBeenPwned", "category": "Passive",
+     "desc": "Breach database lookup (needs HIBP_KEY)", "needs": "email"},
+    {"id": "googledorker", "name": "Google Dorks",   "category": "Passive",
+     "desc": "Pre-built Google dork queries", "needs": "domain/org"},
+    {"id": "spiderfoot",   "name": "SpiderFoot CLI", "category": "Active",
+     "desc": "Automated OSINT correlation engine", "needs": "domain/ip/email"},
+]
+
+
+# ── UI helpers ────────────────────────────────────────────────────────────────
+def _card(*children, style=None):
+    base = {"background": CARD_BG, "border": BORDER, "borderRadius": "10px",
+            "padding": "16px", "marginBottom": "12px"}
+    if style:
+        base.update(style)
+    return html.Div(children, style=base)
+
+
+def _label(text):
+    return html.Div(text, style=LABEL)
+
+
+def _result_row(text: str, sub: str = "", color: str = "#e0e0e0") -> html.Div:
+    return html.Div([
+        html.Div(text, style={"color": color, "fontSize": "12px"}),
+        html.Div(sub,  style={"color": "#636e72", "fontSize": "10px"}) if sub else html.Span(),
+    ], style={"padding": "5px 8px", "borderBottom": f"1px solid {DARK_BG}"})
+
+
+def _stat_pill(label: str, val: str, color: str = "#3498db") -> html.Span:
+    return html.Span([
+        html.Span(val,   style={"fontWeight": "700", "color": color}),
+        html.Span(f" {label}", style={"color": "#8e9eb0", "fontSize": "11px"}),
+    ], style={"background": CARD_BG, "border": BORDER, "borderRadius": "20px",
+              "padding": "4px 12px", "marginRight": "8px", "marginBottom": "6px",
+              "display": "inline-block"})
+
+
+def _google_dorks(target: str) -> list[dict]:
+    return [
+        {"label": "Site index",         "url": f"https://www.google.com/search?q=site:{target}"},
+        {"label": "Login pages",        "url": f"https://www.google.com/search?q=site:{target}+inurl:login"},
+        {"label": "Exposed files",      "url": f"https://www.google.com/search?q=site:{target}+ext:pdf+OR+ext:xlsx+OR+ext:docx"},
+        {"label": "Config/env files",   "url": f"https://www.google.com/search?q=site:{target}+ext:env+OR+ext:cfg+OR+ext:conf"},
+        {"label": "Passwords",          "url": f"https://www.google.com/search?q=site:{target}+intitle:\"index of\"+\"password\""},
+        {"label": "GitHub leaks",       "url": f"https://github.com/search?q={target}&type=code"},
+        {"label": "Pastebin dumps",     "url": f"https://www.google.com/search?q=site:pastebin.com+{target}"},
+        {"label": "Shodan search",      "url": f"https://www.shodan.io/search?query={target}"},
+        {"label": "Wayback Machine",    "url": f"https://web.archive.org/web/*/{target}/*"},
+        {"label": "Email addresses",    "url": f"https://www.google.com/search?q=\"@{target}\""},
+        {"label": "Job postings (tech)","url": f"https://www.google.com/search?q={target}+site:linkedin.com+jobs"},
+        {"label": "SecurityTrails",     "url": f"https://securitytrails.com/domain/{target}/dns"},
+        {"label": "crt.sh certs",       "url": f"https://crt.sh/?q=%25.{target}"},
+        {"label": "Censys search",      "url": f"https://search.censys.io/search?resource=hosts&q={target}"},
+        {"label": "GreyNoise IP lookup","url": f"https://viz.greynoise.io/query/?gnql=ip:{target}"},
+    ]
+
+
+# ── Main layout ───────────────────────────────────────────────────────────────
+def layout() -> html.Div:
+    return html.Div([
+        dcc.Store(id="osint-results",  data={}),
+        dcc.Store(id="osint-target",   data=""),
+        dcc.Interval(id="osint-poll",  interval=2500, disabled=True, max_intervals=80),
+
+        # Header
+        html.Div([
+            html.H4("🔍 OSINT Intelligence Framework",
+                    style={"color": "#e0e0e0", "fontWeight": "700", "margin": "0"}),
+            html.Div("Domain · IP · Email · Username · Organisation · Breach · Social · Dark Web · AI Profiling",
+                     style={"color": "#636e72", "fontSize": "13px"}),
+        ], style={"marginBottom": "16px"}),
+
+        # Stats bar
+        html.Div(id="osint-stats-bar", style={"marginBottom": "16px"}),
+
+        dbc.Row([
+            # ── Left: Target config ──────────────────────────────────────────
+            dbc.Col([
+                _card(
+                    html.Div("🎯 Target Configuration",
+                             style={"color": "#e0e0e0", "fontWeight": "600",
+                                    "marginBottom": "12px"}),
+                    _label("Target Type"),
+                    dbc.Select(
+                        id="osint-target-type",
+                        options=[
+                            {"label": "🌐 Domain / Organisation", "value": "domain"},
+                            {"label": "🖥️ IP Address",            "value": "ip"},
+                            {"label": "📧 Email Address",         "value": "email"},
+                            {"label": "👤 Username / Handle",     "value": "username"},
+                            {"label": "🏢 Person Name",           "value": "person"},
+                        ],
+                        value="domain",
+                        style={**INPUT_STY, "marginBottom": "8px"},
+                    ),
+                    _label("Target"),
+                    dbc.Input(id="osint-target-input",
+                              placeholder="e.g. example.com",
+                              style={**INPUT_STY, "marginBottom": "8px"}),
+                    _label("Scope"),
+                    dbc.Checklist(
+                        id="osint-scope",
+                        options=[
+                            {"label": "Passive (no direct contact)", "value": "passive"},
+                            {"label": "Active (direct queries)",     "value": "active"},
+                            {"label": "Social Media",                "value": "social"},
+                            {"label": "Breach Databases",            "value": "breach"},
+                            {"label": "Dark Web Mentions",           "value": "dark"},
+                        ],
+                        value=["passive", "social", "breach"],
+                        style={"color": "#b0b0b0", "fontSize": "12px",
+                               "marginBottom": "10px"},
+                        inputStyle={"marginRight": "4px"},
+                    ),
+                    dbc.Button("🔍 Start OSINT", id="osint-run-btn",
+                               color="primary", size="sm",
+                               style={**BTN_SM, "width": "100%",
+                                      "padding": "10px", "fontSize": "14px",
+                                      "marginBottom": "8px"}),
+                    html.Div(id="osint-status",
+                             style={"color": "#636e72", "fontSize": "12px",
+                                    "minHeight": "18px"}),
+                ),
+
+                _card(
+                    html.Div("🛠️ Manual Tools", style={"color": "#e0e0e0",
+                                                        "fontWeight": "600",
+                                                        "marginBottom": "10px"}),
+                    _label("Select Tool"),
+                    dbc.Select(
+                        id="osint-tool-select",
+                        options=[{"label": f"{t['name']} ({t['category']})",
+                                  "value": t["id"]} for t in OSINT_TOOLS],
+                        value="theharvester",
+                        style={**INPUT_STY, "marginBottom": "8px"},
+                    ),
+                    html.Div(id="osint-tool-desc",
+                             style={"color": "#636e72", "fontSize": "11px",
+                                    "marginBottom": "8px"}),
+                    _label("Command"),
+                    dbc.Textarea(id="osint-tool-cmd",
+                                 style={**INPUT_STY, "height": "70px",
+                                        "fontFamily": "monospace",
+                                        "fontSize": "11px",
+                                        "marginBottom": "8px"}),
+                    dbc.Row([
+                        dbc.Col(dbc.Button("▶ Run", id="osint-tool-run-btn",
+                                           color="danger", size="sm",
+                                           style={**BTN_SM, "width": "100%"}), width=6),
+                        dbc.Col(dbc.Button("⎘ Copy", id="osint-tool-copy-btn",
+                                           color="outline-secondary", size="sm",
+                                           style={**BTN_SM, "width": "100%"}), width=6),
+                    ]),
+                    dbc.Textarea(id="osint-tool-output", value="", readOnly=True,
+                                 style={**INPUT_STY, "height": "130px",
+                                        "fontFamily": "monospace",
+                                        "fontSize": "10px", "color": "#50fa7b",
+                                        "marginTop": "8px"}),
+                ),
+
+                _card(
+                    html.Div("📤 Export", style={"color": "#e0e0e0", "fontWeight": "600",
+                                                  "marginBottom": "10px"}),
+                    dbc.Row([
+                        dbc.Col(dbc.Button("⬇ JSON", id="osint-export-json",
+                                           color="outline-secondary", size="sm",
+                                           style=BTN_SM), width=6),
+                        dbc.Col(dbc.Button("⬇ Report", id="osint-export-report",
+                                           color="outline-secondary", size="sm",
+                                           style=BTN_SM), width=6),
+                    ]),
+                    dcc.Download(id="osint-download"),
+                ),
+            ], width=3),
+
+            # ── Centre: Results tabs ─────────────────────────────────────────
+            dbc.Col([
+                dbc.Tabs(id="osint-tabs", active_tab="tab-dns",
+                         style={"marginBottom": "12px"}, children=[
+                     dbc.Tab(label="🌐 DNS",        tab_id="tab-dns"),
+                     dbc.Tab(label="📡 Subdomains",  tab_id="tab-subdomains"),
+                     dbc.Tab(label="📧 Emails",      tab_id="tab-emails"),
+                     dbc.Tab(label="🖥️ IPs/Hosts",   tab_id="tab-ips"),
+                     dbc.Tab(label="🔓 Breaches",    tab_id="tab-breaches"),
+                     dbc.Tab(label="👥 Social",      tab_id="tab-social"),
+                     dbc.Tab(label="🔗 Dorks",       tab_id="tab-dorks"),
+                 ]),
+                html.Div(id="osint-main-content"),
+            ], width=6),
+
+            # ── Right: AI Profile + Summary ──────────────────────────────────
+            dbc.Col([
+                _card(
+                    html.Div("🧠 Intelligence Profile",
+                             style={"color": "#e0e0e0", "fontWeight": "600",
+                                    "marginBottom": "10px"}),
+                    html.Div("Run OSINT scan to build profile →",
+                             id="osint-profile-panel",
+                             style={"color": "#636e72", "fontSize": "12px",
+                                    "minHeight": "100px"}),
+                ),
+                _card(
+                    html.Div("✨ AI Intelligence Analysis",
+                             style={"color": "#e0e0e0", "fontWeight": "600",
+                                    "marginBottom": "10px"}),
+                    dbc.Row([
+                        dbc.Col(dbc.Button("🎯 Attack Surface", id="osint-ai-attack-btn",
+                                           color="outline-danger", size="sm",
+                                           style={**BTN_SM, "width": "100%",
+                                                  "marginBottom": "6px"}), width=12),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(dbc.Button("👤 Threat Profile",   id="osint-ai-profile-btn",
+                                           color="outline-warning", size="sm",
+                                           style={**BTN_SM, "width": "100%",
+                                                  "marginBottom": "6px"}), width=12),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(dbc.Button("📋 OSINT Report", id="osint-ai-report-btn",
+                                           color="outline-info", size="sm",
+                                           style={**BTN_SM, "width": "100%",
+                                                  "marginBottom": "8px"}), width=12),
+                    ]),
+                    html.Div(id="osint-ai-output",
+                             style={"color": "#b0b0b0", "fontSize": "12px",
+                                    "whiteSpace": "pre-wrap",
+                                    "maxHeight": "360px", "overflowY": "auto",
+                                    "minHeight": "80px"}),
+                ),
+                _card(
+                    html.Div("📋 Quick OSINT Ref",
+                             style={"color": "#e0e0e0", "fontWeight": "600",
+                                    "marginBottom": "10px"}),
+                    *[html.Div(line, style={"color": "#50fa7b", "fontSize": "10px",
+                                            "fontFamily": "monospace",
+                                            "marginBottom": "3px"})
+                      for line in [
+                          "theHarvester -d TARGET -b all",
+                          "amass enum -passive -d TARGET",
+                          "subfinder -d TARGET -silent",
+                          "dnsx -d TARGET -a -mx -txt -resp",
+                          "whois TARGET",
+                          "dig TARGET ANY +short",
+                          "nmap -sV -p 80,443,8080 TARGET",
+                          "shodan search hostname:TARGET",
+                          "spiderfoot -s TARGET -m all",
+                      ]],
+                ),
+            ], width=3),
+        ]),
+    ], style={"background": DARK_BG, "minHeight": "100vh", "padding": "24px"})
+
+
+# ── Tool command builder ──────────────────────────────────────────────────────
+
+def _build_tool_cmd(tool_id: str, target: str) -> str:
+    t = target or "TARGET"
+    commands = {
+        "theharvester": f"theHarvester -d {t} -b bing,certspotter,crtsh,dnsdumpster,duckduckgo,hackertarget,otx,rapiddns,sublist3r,threatminer,urlscan,virustotal -l 500 -f /tmp/harvester_{t}",
+        "amass":        f"amass enum -passive -d {t} -o /tmp/amass_{t}.txt",
+        "subfinder":    f"subfinder -d {t} -silent -o /tmp/subfinder_{t}.txt",
+        "whois":        f"whois {t}",
+        "nslookup":     f"dig {t} ANY +noall +answer\ndig {t} MX +short\ndig {t} TXT +short\ndig {t} NS +short\ndig -x {t} +short",
+        "shodan":       (f"# Requires SHODAN_API_KEY\n"
+                         f"shodan search hostname:{t} --fields ip_str,port,org,hostnames\n"
+                         f"# Or use curl:\n"
+                         f"curl 'https://api.shodan.io/shodan/host/search?key=${{SHODAN_API_KEY}}&query=hostname:{t}'"),
+        "dnsx":         f"dnsx -d {t} -a -mx -txt -ns -cname -resp -silent",
+        "wayback":      (f"curl -s 'http://web.archive.org/cdx/search/cdx?url=*.{t}/*"
+                         f"&output=json&fl=original&collapse=urlkey&limit=100'"),
+        "emailhunter":  (f"# Requires HUNTER_KEY env var\n"
+                         f"curl 'https://api.hunter.io/v2/domain-search?domain={t}"
+                         f"&api_key=${{HUNTER_KEY}}&limit=100'"),
+        "hibp":         (f"# Requires HIBP_KEY env var\n"
+                         f"curl -H 'hibp-api-key: ${{HIBP_KEY}}' "
+                         f"'https://haveibeenpwned.com/api/v3/breachedaccount/{t}?truncateResponse=false'"),
+        "googledorker": (f"# Google Dork queries for {t}\n"
+                         f"# Open the Dorks tab in the UI for clickable links, or:\n"
+                         f"xdg-open 'https://www.google.com/search?q=site:{t}'"),
+        "spiderfoot":   (f"spiderfoot -s {t} -m sfp_dnsraw,sfp_whois,sfp_haveibeenpwned,"
+                         f"sfp_hunter,sfp_shodan -o /tmp/sf_{t}.csv"),
+    }
+    return commands.get(tool_id, f"# Tool: {tool_id}\n{tool_id} {t}")
+
+
+# ── OSINT data fetchers ───────────────────────────────────────────────────────
+
+def _fetch_dns(target: str) -> dict:
+    results = {}
+    record_types = ["A", "AAAA", "MX", "TXT", "NS", "SOA", "CNAME"]
+    for rtype in record_types:
+        try:
+            r = subprocess.run(
+                ["dig", "+short", target, rtype],
+                capture_output=True, text=True, timeout=10
+            )
+            records = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+            if records:
+                results[rtype] = records
+        except Exception:
+            pass
+    return results
+
+
+def _fetch_whois(target: str) -> str:
+    try:
+        r = subprocess.run(["whois", target], capture_output=True, text=True, timeout=15)
+        return r.stdout[:3000]
+    except Exception as e:
+        return f"whois error: {e}"
+
+
+def _fetch_subdomains_crt(domain: str) -> list[str]:
+    """Multi-source subdomain discovery: crt.sh + HackerTarget + AlienVault OTX."""
+    subs: set[str] = set()
+
+    # Source 1: crt.sh Certificate Transparency
+    try:
+        r = requests.get(
+            f"https://crt.sh/?q=%.{domain}&output=json",
+            timeout=15, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+        )
+        if r.status_code == 200 and r.text.strip():
+            for entry in r.json():
+                val = entry.get("name_value", "")
+                for line in val.splitlines():
+                    line = line.strip().replace("*.", "").lower()
+                    if line.endswith(f".{domain}") or line == domain:
+                        subs.add(line)
+    except Exception:
+        pass
+
+    # Source 2: HackerTarget (no API key needed)
+    try:
+        r = requests.get(
+            f"https://api.hackertarget.com/hostsearch/?q={domain}",
+            timeout=15, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+        )
+        if r.status_code == 200 and "error" not in r.text.lower()[:50]:
+            for line in r.text.splitlines():
+                host = line.split(",")[0].strip().lower()
+                if host and (host.endswith(f".{domain}") or host == domain):
+                    subs.add(host)
+    except Exception:
+        pass
+
+    # Source 3: AlienVault OTX (no API key needed)
+    try:
+        r = requests.get(
+            f"https://otx.alienvault.com/api/v1/indicators/domain/{domain}/passive_dns",
+            timeout=15, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+        )
+        if r.status_code == 200:
+            for entry in r.json().get("passive_dns", []):
+                host = entry.get("hostname", "").lower()
+                if host and (host.endswith(f".{domain}") or host == domain):
+                    subs.add(host)
+    except Exception:
+        pass
+
+    return sorted(subs)[:150]
+
+
+def _fetch_wayback_urls(domain: str) -> list[str]:
+    try:
+        r = requests.get(
+            f"http://web.archive.org/cdx/search/cdx?url=*.{domain}/*"
+            f"&output=json&fl=original&collapse=urlkey&limit=50",
+            timeout=20
+        )
+        if r.status_code == 200:
+            data = r.json()
+            return [row[0] for row in data[1:] if row]  # skip header
+    except Exception:
+        pass
+    return []
+
+
+def _fetch_internetdb(ips: list[str]) -> list[dict]:
+    """Query Shodan InternetDB (free, no key) for port/vuln info per IP."""
+    results = []
+    for ip in ips[:10]:
+        try:
+            r = requests.get(f"https://internetdb.shodan.io/{ip}",
+                             timeout=8, headers={"User-Agent": "OSINT-Dashboard/1.0"})
+            if r.status_code == 200:
+                d = r.json()
+                results.append({
+                    "ip":    ip,
+                    "ports": ", ".join(str(p) for p in d.get("ports", [])),
+                    "vulns": ", ".join(d.get("vulns", [])[:5]),
+                    "tags":  ", ".join(d.get("tags", [])),
+                    "cpes":  ", ".join(d.get("cpes", [])[:3]),
+                })
+        except Exception:
+            pass
+    return results
+
+
+def _fetch_hunter_emails(domain: str, whois_text: str = "", dns_txt: list = None) -> list[dict]:
+    """Email discovery: WHOIS + DNS TXT (free) + Hunter.io (if key set)."""
+    emails: dict[str, dict] = {}  # email -> record
+    EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", re.I)
+
+    # Free source 1: Extract from WHOIS text
+    if whois_text:
+        for m in EMAIL_RE.findall(whois_text):
+            addr = m.lower()
+            if addr not in emails:
+                emails[addr] = {"email": addr, "conf": 0, "type": "whois",
+                                "first": "", "last": ""}
+
+    # Free source 2: Extract from DNS TXT records
+    for txt in (dns_txt or []):
+        for m in EMAIL_RE.findall(txt):
+            addr = m.lower()
+            if addr not in emails:
+                emails[addr] = {"email": addr, "conf": 0, "type": "dns-txt",
+                                "first": "", "last": ""}
+
+    # Free source 3: PhoneBook.cz (no key, scrape-friendly)
+    try:
+        r = requests.get(
+            f"https://phonebook.cz/search?term={domain}&type=2&media=1",
+            timeout=10, headers={"User-Agent": "Mozilla/5.0"}
+        )
+        for m in EMAIL_RE.findall(r.text):
+            addr = m.lower()
+            if domain in addr and addr not in emails:
+                emails[addr] = {"email": addr, "conf": 50, "type": "phonebook",
+                                "first": "", "last": ""}
+    except Exception:
+        pass
+
+    # Paid source: Hunter.io (if key set)
+    key = os.environ.get("HUNTER_KEY", "")
+    if key:
+        try:
+            r = requests.get(
+                f"https://api.hunter.io/v2/domain-search?domain={domain}&api_key={key}&limit=50",
+                timeout=15
+            )
+            if r.status_code == 200:
+                data = r.json().get("data", {})
+                for e in data.get("emails", []):
+                    addr = e.get("value", "").lower()
+                    if addr:
+                        emails[addr] = {"email": addr,
+                                        "first": e.get("first_name", ""),
+                                        "last":  e.get("last_name", ""),
+                                        "conf":  e.get("confidence", 0),
+                                        "type":  e.get("type", "hunter")}
+        except Exception:
+            pass
+
+    if not emails:
+        return [{"email": f"No emails found for {domain}. Set HUNTER_KEY for Hunter.io.",
+                 "conf": 0, "type": "info", "first": "", "last": ""}]
+    return sorted(emails.values(), key=lambda x: -x.get("conf", 0))
+
+
+def _fetch_hibp(email: str) -> list[dict]:
+    key = os.environ.get("HIBP_KEY", "")
+    if not key:
+        return [{"breach": f"Set HIBP_KEY env var to check {email} against HaveIBeenPwned",
+                 "date": "", "count": 0}]
+    try:
+        r = requests.get(
+            f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}?truncateResponse=false",
+            headers={"hibp-api-key": key, "User-Agent": "OSINT-Dashboard/1.0"},
+            timeout=15
+        )
+        if r.status_code == 200:
+            return [{"breach": b.get("Name", ""),
+                     "date":   b.get("BreachDate", ""),
+                     "count":  b.get("PwnCount", 0),
+                     "desc":   b.get("Description", "")[:200]}
+                    for b in r.json()]
+        elif r.status_code == 404:
+            return [{"breach": f"✅ {email} not found in any known breach", "date": "", "count": 0}]
+    except Exception as e:
+        return [{"breach": f"HIBP error: {e}", "date": "", "count": 0}]
+    return []
+
+
+def _shodan_lookup(target: str) -> list[dict]:
+    key = os.environ.get("SHODAN_API_KEY", "")
+    if not key:
+        return [{"ip": f"Set SHODAN_API_KEY to query Shodan for {target}",
+                 "port": "", "org": "", "os": ""}]
+    try:
+        r = requests.get(
+            f"https://api.shodan.io/shodan/host/search?key={key}&query=hostname:{target}&limit=20",
+            timeout=15
+        )
+        if r.status_code == 200:
+            matches = r.json().get("matches", [])
+            return [{"ip": m.get("ip_str", ""),
+                     "port": str(m.get("port", "")),
+                     "org":  m.get("org", ""),
+                     "os":   m.get("os", "") or "Unknown",
+                     "banner": (m.get("data", "") or "")[:200]}
+                    for m in matches]
+    except Exception as e:
+        return [{"ip": f"Shodan error: {e}", "port": "", "org": "", "os": ""}]
+    return []
+
+
+
+def _fetch_domain_breaches(domain: str) -> list[dict]:
+    """Free domain breach lookup: ProxyNova COMB + PasteBin dump search."""
+    results = []
+
+    # Source 1: ProxyNova COMB (free, no key — searches 3.2B credentials)
+    try:
+        r = requests.get(
+            f"https://api.proxynova.com/comb?q={domain}&limit=10",
+            timeout=12, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+        )
+        if r.status_code == 200:
+            data = r.json()
+            count = data.get("count", 0)
+            lines = data.get("lines", [])
+            if count:
+                results.append({
+                    "breach": f"COMB (Collection of Many Breaches)",
+                    "date":   "2021-02",
+                    "count":  count,
+                    "desc":   f"{count:,} credentials with @{domain} found in COMB dataset",
+                    "source": "proxynova"
+                })
+                # Add sample credential lines (redacted)
+                for line in lines[:5]:
+                    parts = str(line).split(":")
+                    if len(parts) >= 2:
+                        email = parts[0]
+                        results.append({
+                            "breach": f"  📧 {email}",
+                            "date":   "",
+                            "count":  0,
+                            "desc":   "Credential found in COMB",
+                            "source": "comb-entry"
+                        })
+    except Exception:
+        pass
+
+    # Source 2: PasteBin dump search via psbdmp.ws (free)
+    try:
+        r = requests.get(
+            f"https://psbdmp.ws/api/v3/search/{domain}",
+            timeout=10, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+        )
+        if r.status_code == 200:
+            data = r.json()
+            items = data.get("data", [])
+            if items:
+                results.append({
+                    "breach": f"Pastebin/Dump Sites — {len(items)} mentions",
+                    "date": "",
+                    "count": len(items),
+                    "desc": f"Domain found in {len(items)} public paste dumps",
+                    "source": "psbdmp"
+                })
+    except Exception:
+        pass
+
+    # Source 3: DeHashed (no key — limited free tier)
+    try:
+        r = requests.get(
+            f"https://dehashed.com/search?query=domain:{domain}",
+            timeout=10, headers={"User-Agent": "Mozilla/5.0",
+                                  "Accept": "application/json"}
+        )
+        if r.status_code == 200:
+            data = r.json()
+            total = data.get("total", 0)
+            if total:
+                results.append({
+                    "breach": f"DeHashed — {total:,} results",
+                    "date":   "",
+                    "count":  total,
+                    "desc":   f"{total:,} records found on DeHashed (login required to view)",
+                    "source": "dehashed"
+                })
+    except Exception:
+        pass
+
+    if not results:
+        results.append({
+            "breach": f"No breach data found for @{domain} in free sources",
+            "date":   "",
+            "count":  0,
+            "desc":   "Set HIBP_KEY and change Target Type to Email for full breach lookup",
+            "source": "none"
+        })
+    return results
+
+
+def _fetch_org_social(domain: str) -> list[dict]:
+    """Check organisation social media presence via HEAD requests (free)."""
+    org = domain.split(".")[0]  # 'acme' from 'acme.com'
+    profiles = [
+        ("LinkedIn",   f"https://www.linkedin.com/company/{org}"),
+        ("Twitter/X",  f"https://twitter.com/{org}"),
+        ("GitHub",     f"https://github.com/{org}"),
+        ("Facebook",   f"https://www.facebook.com/{org}"),
+        ("YouTube",    f"https://www.youtube.com/@{org}"),
+        ("Instagram",  f"https://www.instagram.com/{org}"),
+        ("Reddit",     f"https://www.reddit.com/r/{org}"),
+        ("Glassdoor",  f"https://www.glassdoor.com/Overview/Working-at-{org}.htm"),
+        ("Crunchbase", f"https://www.crunchbase.com/organization/{org}"),
+        ("AngelList",  f"https://angel.co/{org}"),
+        ("Wikipedia",  f"https://en.wikipedia.org/wiki/{org.title()}"),
+        ("DockerHub",  f"https://hub.docker.com/u/{org}"),
+        ("PyPI",       f"https://pypi.org/user/{org}"),
+        ("NPM",        f"https://www.npmjs.com/~{org}"),
+    ]
+    results = []
+    for platform, url in profiles:
+        try:
+            r = requests.head(url, timeout=6, allow_redirects=True,
+                              headers={"User-Agent": "Mozilla/5.0"})
+            found = r.status_code in (200, 301, 302)
+        except Exception:
+            found = False
+        results.append({"platform": platform, "url": url,
+                         "status": "✅ Found" if found else "❌ Not found",
+                         "found": found})
+    return results
+
+
+def _username_check(username: str) -> list[dict]:
+    """Check username across common platforms via public profile URLs."""
+    platforms = [
+        ("Twitter/X",   f"https://twitter.com/{username}"),
+        ("GitHub",      f"https://github.com/{username}"),
+        ("LinkedIn",    f"https://www.linkedin.com/in/{username}"),
+        ("Instagram",   f"https://www.instagram.com/{username}"),
+        ("Reddit",      f"https://www.reddit.com/user/{username}"),
+        ("HackerNews",  f"https://news.ycombinator.com/user?id={username}"),
+        ("GitLab",      f"https://gitlab.com/{username}"),
+        ("Keybase",     f"https://keybase.io/{username}"),
+        ("Medium",      f"https://medium.com/@{username}"),
+        ("Dev.to",      f"https://dev.to/{username}"),
+        ("DockerHub",   f"https://hub.docker.com/u/{username}"),
+        ("NPM",         f"https://www.npmjs.com/~{username}"),
+        ("PyPI",        f"https://pypi.org/user/{username}"),
+    ]
+    results = []
+    for name, url in platforms:
+        try:
+            r = requests.head(url, timeout=6, allow_redirects=True,
+                              headers={"User-Agent": "Mozilla/5.0"})
+            found = r.status_code in (200, 301, 302)
+        except Exception:
+            found = False
+        results.append({"platform": name, "url": url,
+                         "status": "✅ Found" if found else "❌ Not found",
+                         "found": found})
+    return results
+
+
+# ── Run OSINT callback ────────────────────────────────────────────────────────
+
+def _run_osint_bg(target: str, target_type: str, scope: list[str]):
+    results: dict[str, list] = {k: [] for k in _OSINT_RESULTS}
+    dns_data = {}
+    whois_data = ""
+
+    # Passive DNS & WHOIS (always run for domain)
+    if target_type in ("domain", "ip") and "passive" in scope:
+        dns_data = _fetch_dns(target)
+        whois_data = _fetch_whois(target)
+
+    # Subdomains via crt.sh
+    if target_type == "domain" and "passive" in scope:
+        results["subdomains"] = _fetch_subdomains_crt(target)
+
+    # Wayback
+    if target_type == "domain" and "passive" in scope:
+        results["ips"] = _fetch_wayback_urls(target)[:50]
+
+    # Email harvest via Hunter.io
+    if target_type in ("domain",) and "passive" in scope:
+        results["emails"] = _fetch_hunter_emails(target)
+
+    # HIBP breach check
+    if target_type == "email" and "breach" in scope:
+        results["breaches"] = _fetch_hibp(target)
+    elif target_type == "domain" and "breach" in scope:
+        results["breaches"] = [{"breach": "Enter email address to check HaveIBeenPwned",
+                                  "date": "", "count": 0}]
+
+    # Shodan
+    if target_type in ("domain", "ip") and "passive" in scope:
+        results["shodan"] = _shodan_lookup(target)
+
+    # Username check
+    if target_type == "username" and "social" in scope:
+        results["social"] = _username_check(target)
+
+    with _LOCK:
+        _OSINT_RESULTS.update(results)
+        _CMD_OUTPUTS["dns"]   = json.dumps(dns_data, indent=2)
+        _CMD_OUTPUTS["whois"] = whois_data
+        _CMD_OUTPUTS["done"]  = "1"
+
+
+@callback(
+    Output("osint-results", "data"),
+    Output("osint-status",  "children"),
+    Output("osint-stats-bar","children"),
+    Output("osint-target",  "data"),
+    Input("osint-run-btn",  "n_clicks"),
+    State("osint-target-input","value"),
+    State("osint-target-type", "value"),
+    State("osint-scope",       "value"),
+    prevent_initial_call=True,
+)
+def run_osint(n, target, target_type, scope):
+    if not n or not target:
+        raise PreventUpdate
+    target = target.strip()
+    scope  = scope or ["passive"]
+
+    # ── Run fast lookups SYNCHRONOUSLY so they're ready before we return ──────
+    results: dict[str, Any] = {k: [] for k in _OSINT_RESULTS}
+    dns_data  = {}
+    whois_raw = ""
+
+    if target_type in ("domain", "ip") and "passive" in scope:
+        # DNS (fast, ~1-2s)
+        dns_data  = _fetch_dns(target)
+        # WHOIS (fast, ~1-2s)
+        whois_raw = _fetch_whois(target)
+
+    if target_type == "domain" and "passive" in scope:
+        # crt.sh subdomains — run synchronously with 20s timeout
+        try:
+            r = requests.get(
+                f"https://crt.sh/?q=%.{target}&output=json",
+                timeout=20, headers={"User-Agent": "OSINT-Dashboard/1.0"}
+            )
+            if r.status_code == 200:
+                data = r.json()
+                subs = sorted({
+                    entry.get("name_value", "").replace("*.", "").lower()
+                    for entry in data
+                    if target in entry.get("name_value", "")
+                })
+                results["subdomains"] = subs[:100]
+        except Exception:
+            results["subdomains"] = []
+
+        # Wayback URLs — run synchronously
+        try:
+            r = requests.get(
+                f"http://web.archive.org/cdx/search/cdx?url=*.{target}/*"
+                f"&output=json&fl=original&collapse=urlkey&limit=50",
+                timeout=15
+            )
+            if r.status_code == 200:
+                data = r.json()
+                results["ips"] = [row[0] for row in data[1:] if row][:50]
+        except Exception:
+            results["ips"] = []
+
+        # InternetDB: get port/vuln info for DNS A/AAAA IPs (free, no key)
+        a_ips = dns_data.get("A", []) + dns_data.get("AAAA", [])
+        results["internetdb"] = _fetch_internetdb(a_ips)
+
+    # Email harvest: WHOIS + DNS TXT (free) + Hunter.io (if key set)
+    if target_type == "domain" and "passive" in scope:
+        dns_txt = dns_data.get("TXT", [])
+        results["emails"] = _fetch_hunter_emails(target, whois_raw, dns_txt)
+
+    # HIBP breach check (fast API)
+    if target_type == "email" and "breach" in scope:
+        results["breaches"] = _fetch_hibp(target)
+    elif target_type == "domain" and "breach" in scope:
+        # Free domain breach lookup: ProxyNova COMB + PasteBin + DeHashed
+        results["breaches"] = _fetch_domain_breaches(target)
+
+    # Shodan (fast if key set)
+    if target_type in ("domain", "ip") and "passive" in scope:
+        results["shodan"] = _shodan_lookup(target)
+
+    # Social checks — run in background (many HEAD requests)
+    if target_type == "username" and "social" in scope:
+        def _user_social_bg():
+            social = _username_check(target)
+            with _LOCK:
+                _OSINT_RESULTS["social"] = social
+        threading.Thread(target=_user_social_bg, daemon=True).start()
+
+    elif target_type == "domain" and "social" in scope:
+        # Org social check for the organisation name extracted from domain
+        def _org_social_bg():
+            social = _fetch_org_social(target)
+            with _LOCK:
+                _OSINT_RESULTS["social"] = social
+                results["social"] = social  # noqa: F821
+        threading.Thread(target=_org_social_bg, daemon=True).start()
+        # Give it a few seconds inline before returning
+        time.sleep(5)
+        with _LOCK:
+            results["social"] = list(_OSINT_RESULTS.get("social", []))
+
+    # Persist to shared store
+    with _LOCK:
+        _OSINT_RESULTS.update(results)
+        _CMD_OUTPUTS["dns"]   = json.dumps(dns_data, indent=2)
+        _CMD_OUTPUTS["whois"] = whois_raw
+
+    results["_dns_raw"]   = json.dumps(dns_data, indent=2)
+    results["_whois_raw"] = whois_raw
+
+    n_subs   = len(results.get("subdomains", []))
+    n_emails = len([e for e in results.get("emails", []) if "@" in e.get("email", "")])
+    n_breach = len(results.get("breaches", []))
+    n_social = len([s for s in results.get("social", []) if s.get("found")])
+    n_shodan = len(results.get("shodan", []))
+
+    stats = html.Div([
+        _stat_pill("Subdomains", str(n_subs),   "#3498db"),
+        _stat_pill("Emails",     str(n_emails),  "#f39c12"),
+        _stat_pill("Breaches",   str(n_breach),  "#e74c3c"),
+        _stat_pill("Social Hits",str(n_social),  "#9b59b6"),
+        _stat_pill("Shodan IPs", str(n_shodan),  "#1abc9c"),
+    ], style={"marginBottom": "4px"})
+
+    status_msg = f"✅ OSINT complete for {target} — {n_subs} subdomains, {n_emails} emails"
+    if n_subs == 0 and target_type == "domain":
+        status_msg += " (crt.sh returned 0 — try the DNS and Dorks tabs)"
+
+    return (results, status_msg, stats, target)
+
+
+# ── Tool descriptor ───────────────────────────────────────────────────────────
+
+@callback(
+    Output("osint-tool-desc", "children"),
+    Output("osint-tool-cmd",  "value"),
+    Input("osint-tool-select","value"),
+    State("osint-target-input","value"),
+)
+def update_tool(tool_id, target):
+    target = (target or "").strip() or "TARGET"
+    tool = next((t for t in OSINT_TOOLS if t["id"] == tool_id), None)
+    desc = tool["desc"] if tool else ""
+    cmd  = _build_tool_cmd(tool_id, target)
+    return desc, cmd
+
+
+@callback(
+    Output("osint-tool-output", "value"),
+    Input("osint-tool-run-btn", "n_clicks"),
+    State("osint-tool-cmd",    "value"),
+    prevent_initial_call=True,
+)
+def run_tool(n, cmd):
+    if not n or not cmd:
+        raise PreventUpdate
+    def _bg(c):
+        try:
+            r = subprocess.run(c, shell=True, capture_output=True, text=True, timeout=45)
+            out = r.stdout + ("\n[STDERR]\n" + r.stderr if r.stderr else "")
+        except subprocess.TimeoutExpired:
+            out = "[TIMEOUT]"
+        except Exception as e:
+            out = f"[ERROR] {e}"
+        with _LOCK:
+            _CMD_OUTPUTS["manual_tool"] = out
+    threading.Thread(target=_bg, args=(cmd,), daemon=True).start()
+    time.sleep(4)
+    with _LOCK:
+        return _CMD_OUTPUTS.get("manual_tool", "[Running…]")
+
+
+# ── Main content renderer ─────────────────────────────────────────────────────
+
+@callback(
+    Output("osint-main-content", "children"),
+    Output("osint-profile-panel","children"),
+    Input("osint-tabs",    "active_tab"),
+    Input("osint-results", "data"),
+    State("osint-target",  "data"),
+)
+def render_content(tab, results, target):
+    results = results or {}
+    target  = target or "—"
+
+    if tab == "tab-dns":
+        dns_raw = results.get("_dns_raw", "{}")
+        try:
+            dns = json.loads(dns_raw)
+        except Exception:
+            dns = {}
+        whois = results.get("_whois_raw", "")
+        if not dns and not whois:
+            return (_card(html.Div("Run OSINT scan to see DNS records.",
+                                   style={"color": "#636e72", "fontSize": "13px",
+                                          "textAlign": "center", "padding": "30px"})),
+                    _profile_panel(results, target))
+        rows = []
+        for rtype, records in dns.items():
+            for rec in records:
+                rows.append(_result_row(rec, rtype, "#3498db"))
+        return (_card(
+            html.Div(f"🌐 DNS Records — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div(rows or [html.Div("No DNS data.", style={"color": "#636e72"})],
+                     style={"maxHeight": "300px", "overflowY": "auto"}),
+            html.Div("WHOIS:", style={"color": "#8e9eb0", "fontSize": "11px",
+                                      "fontWeight": "600", "marginTop": "12px",
+                                      "marginBottom": "4px"}),
+            html.Pre(whois[:2000] or "No WHOIS data.",
+                     style={"color": "#b0b0b0", "fontSize": "10px",
+                            "whiteSpace": "pre-wrap", "maxHeight": "180px",
+                            "overflowY": "auto", "background": "#0d0d0d",
+                            "padding": "8px", "borderRadius": "4px"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-subdomains":
+        subs = results.get("subdomains", [])
+        rows = [_result_row(s, "via crt.sh", "#3498db") for s in subs] if subs else \
+               [html.Div("No subdomains found.", style={"color": "#636e72", "fontSize": "12px"})]
+        return (_card(
+            html.Div(f"📡 {len(subs)} Subdomains — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div(rows, style={"maxHeight": "500px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-emails":
+        emails = results.get("emails", [])
+        rows = []
+        for e in emails:
+            addr = e.get("email", "")
+            name = f"{e.get('first', '')} {e.get('last', '')}".strip()
+            sub  = f"Confidence: {e.get('conf', '')}% · {e.get('type', '')}" if e.get("conf") else ""
+            rows.append(_result_row(addr, f"{name} | {sub}".strip(" |"), "#f39c12"))
+        return (_card(
+            html.Div(f"📧 {len(emails)} Emails — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div(rows or [html.Div("No emails found. Set HUNTER_KEY for Hunter.io results.",
+                                        style={"color": "#636e72", "fontSize": "12px"})],
+                     style={"maxHeight": "500px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-ips":
+        urls      = results.get("ips", [])
+        shodan    = results.get("shodan", [])
+        internetdb = results.get("internetdb", [])
+
+        # InternetDB rows (free, no key)
+        rows_idb = []
+        for d in internetdb:
+            ip = d.get("ip", "")
+            ports = d.get("ports", "") or "—"
+            vulns = d.get("vulns", "")
+            cpes  = d.get("cpes", "")
+            color = "#e74c3c" if vulns else "#1abc9c"
+            rows_idb.append(html.Div([
+                html.Div(ip, style={"color": color, "fontWeight": "700",
+                                    "fontSize": "12px", "fontFamily": "monospace"}),
+                html.Div(f"Ports: {ports}",
+                         style={"color": "#b0b0b0", "fontSize": "11px"}),
+                html.Div(f"Vulns: {vulns}", style={"color": "#e74c3c", "fontSize": "10px"}) if vulns else html.Span(),
+                html.Div(f"CPEs: {cpes}",  style={"color": "#636e72", "fontSize": "10px"}) if cpes else html.Span(),
+            ], style={"padding": "6px 8px", "borderBottom": f"1px solid {DARK_BG}"}))
+
+        # Wayback URL rows
+        rows_wb = [_result_row(u, "Wayback URL", "#1abc9c") for u in urls[:40]]
+
+        # Paid Shodan rows
+        rows_sh = [_result_row(
+            f"{s.get('ip','')}:{s.get('port','')}",
+            f"Org: {s.get('org','')} | OS: {s.get('os','')}",
+            "#3498db"
+        ) for s in shodan]
+
+        return (_card(
+            html.Div(f"🖥️ Hosts & Services — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div("🔎 InternetDB (open ports & CVEs — free):",
+                     style={"color": "#8e9eb0", "fontSize": "11px",
+                            "fontWeight": "600", "marginBottom": "4px"}),
+            html.Div(rows_idb or [html.Div("No IPs resolved from DNS.",
+                                            style={"color": "#636e72", "fontSize": "12px"})],
+                     style={"marginBottom": "12px"}),
+            html.Div("Shodan (SHODAN_API_KEY):",
+                     style={"color": "#8e9eb0", "fontSize": "11px",
+                            "fontWeight": "600", "marginBottom": "4px"}),
+            html.Div(rows_sh or [html.Div("Set SHODAN_API_KEY for full banner/service data.",
+                                           style={"color": "#636e72", "fontSize": "11px"})],
+                     style={"marginBottom": "12px"}),
+            html.Div("📼 Wayback Machine URLs:",
+                     style={"color": "#8e9eb0", "fontSize": "11px",
+                            "fontWeight": "600", "marginBottom": "4px"}),
+            html.Div(rows_wb or [html.Div("No archived URLs found.",
+                                           style={"color": "#636e72", "fontSize": "11px"})],
+                     style={"maxHeight": "250px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-breaches":
+        breaches = results.get("breaches", [])
+        rows = []
+        for b in breaches:
+            name  = b.get("breach", "")
+            date  = b.get("date", "")
+            count = b.get("count", 0)
+            rows.append(_result_row(
+                name,
+                f"Date: {date} | Records: {count:,}" if count else date,
+                "#e74c3c" if count else "#27ae60"
+            ))
+        return (_card(
+            html.Div(f"🔓 Breach Results — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div(rows or [html.Div("No breach data. Set HIBP_KEY or enter an email target.",
+                                        style={"color": "#636e72", "fontSize": "12px"})],
+                     style={"maxHeight": "500px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-social":
+        social = results.get("social", [])
+        rows = []
+        for s in social:
+            color = "#27ae60" if s.get("found") else "#636e72"
+            rows.append(html.Div([
+                html.Span(s.get("status", ""), style={"color": color,
+                                                       "fontSize": "11px",
+                                                       "marginRight": "8px",
+                                                       "fontWeight": "700"}),
+                html.A(s.get("platform", ""), href=s.get("url", "#"),
+                       target="_blank",
+                       style={"color": "#3498db", "fontSize": "12px"}),
+            ], style={"padding": "5px 8px", "borderBottom": f"1px solid {DARK_BG}"}))
+        return (_card(
+            html.Div(f"👥 Social Media — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div("Run OSINT with username type to check profiles." if not social
+                     else "", style={"color": "#636e72", "fontSize": "12px"}),
+            html.Div(rows or [], style={"maxHeight": "500px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    elif tab == "tab-dorks":
+        dorks = _google_dorks(target)
+        rows = [html.Div([
+            html.A(d["label"], href=d["url"], target="_blank",
+                   style={"color": "#3498db", "fontSize": "12px",
+                          "textDecoration": "none"}),
+            html.Div(d["url"][:80] + "…",
+                     style={"color": "#636e72", "fontSize": "9px",
+                            "fontFamily": "monospace"}),
+        ], style={"padding": "6px 8px", "borderBottom": f"1px solid {DARK_BG}"})
+                for d in dorks]
+        return (_card(
+            html.Div(f"🔗 Google Dork Links — {target}",
+                     style={"color": "#e0e0e0", "fontWeight": "600", "marginBottom": "10px"}),
+            html.Div("Click any link to open in browser (clickable OSINT links):",
+                     style={"color": "#636e72", "fontSize": "11px", "marginBottom": "8px"}),
+            html.Div(rows, style={"maxHeight": "500px", "overflowY": "auto"}),
+        ), _profile_panel(results, target))
+
+    return html.Div(), _profile_panel(results, target)
+
+
+def _profile_panel(results: dict, target: str) -> html.Div:
+    subs    = len(results.get("subdomains", []))
+    emails  = len([e for e in results.get("emails", []) if "@" in e.get("email", "")])
+    breaches= len(results.get("breaches", []))
+    social  = len([s for s in results.get("social", []) if s.get("found")])
+    shodan  = len(results.get("shodan", []))
+    if not any([subs, emails, breaches, social, shodan]):
+        return html.Div("Run OSINT scan to build profile →",
+                        style={"color": "#636e72", "fontSize": "12px"})
+    return html.Div([
+        html.Div(f"🎯 {target}", style={"color": "#e0e0e0", "fontWeight": "700",
+                                         "fontSize": "14px", "marginBottom": "10px"}),
+        html.Div(f"📡 {subs} subdomains discovered",
+                 style={"color": "#3498db", "fontSize": "12px", "marginBottom": "4px"}),
+        html.Div(f"📧 {emails} email addresses found",
+                 style={"color": "#f39c12", "fontSize": "12px", "marginBottom": "4px"}),
+        html.Div(f"🔓 {breaches} breach records",
+                 style={"color": "#e74c3c", "fontSize": "12px", "marginBottom": "4px"}),
+        html.Div(f"👥 {social} social profiles confirmed",
+                 style={"color": "#9b59b6", "fontSize": "12px", "marginBottom": "4px"}),
+        html.Div(f"🖥️ {shodan} internet-facing services",
+                 style={"color": "#1abc9c", "fontSize": "12px", "marginBottom": "4px"}),
+    ])
+
+
+# ── AI callbacks ──────────────────────────────────────────────────────────────
+
+@callback(
+    Output("osint-ai-output",    "children"),
+    Input("osint-ai-attack-btn", "n_clicks"),
+    Input("osint-ai-profile-btn","n_clicks"),
+    Input("osint-ai-report-btn", "n_clicks"),
+    State("osint-results",       "data"),
+    State("osint-target",        "data"),
+    State("osint-target-type",   "value"),
+    prevent_initial_call=True,
+)
+def osint_ai(attack_n, profile_n, report_n, results, target, target_type):
+    if not ctx.triggered_id:
+        raise PreventUpdate
+    results  = results or {}
+    target   = target or "Unknown Target"
+    subs     = results.get("subdomains", [])[:20]
+    emails   = [e.get("email", "") for e in results.get("emails", [])
+                 if "@" in e.get("email", "")][:10]
+    shodan   = results.get("shodan", [])[:5]
+    breaches = results.get("breaches", [])[:5]
+    social   = [s.get("platform") for s in results.get("social", [])
+                 if s.get("found")][:10]
+
+    summary = (
+        f"Target: {target} ({target_type})\n"
+        f"Subdomains ({len(subs)}): {', '.join(subs[:10])}\n"
+        f"Emails ({len(emails)}): {', '.join(emails[:5])}\n"
+        f"Shodan ({len(shodan)}): {', '.join(s.get('ip','')+':{}'.format(s.get('port','')) for s in shodan)}\n"
+        f"Breaches: {', '.join(b.get('breach','') for b in breaches)}\n"
+        f"Social confirmed: {', '.join(social)}\n"
+    )
+
+    triggered = ctx.triggered_id
+    if triggered == "osint-ai-attack-btn":
+        prompt = (
+            f"You are a red team operator. Analyse this OSINT data and identify attack surface:\n\n"
+            f"{summary}\n"
+            f"Provide:\n"
+            f"1) **Top 3 Initial Access Vectors** with specific techniques\n"
+            f"2) **High-value targets** identified from the data\n"
+            f"3) **Phishing opportunities** based on discovered emails/personnel\n"
+            f"4) **Exposed services** in Shodan worth attacking\n"
+            f"5) **Breach data risk** — potential credential stuffing opportunities"
+        )
+    elif triggered == "osint-ai-profile-btn":
+        prompt = (
+            f"You are a threat intelligence analyst. Build an intelligence profile:\n\n"
+            f"{summary}\n"
+            f"Provide:\n"
+            f"1) **Organisation Profile** — technology stack, infrastructure, size estimate\n"
+            f"2) **Digital Footprint** — exposure level and public attack surface\n"
+            f"3) **Personnel intelligence** — identifiable roles from email/social data\n"
+            f"4) **Risk Posture** — overall OSINT risk rating (Low/Medium/High/Critical)\n"
+            f"5) **Recommended monitoring** — what to track ongoing"
+        )
+    else:  # report
+        prompt = (
+            f"Write a professional OSINT intelligence report for: {target}\n\n"
+            f"Data collected:\n{summary}\n\n"
+            f"Include:\n"
+            f"1) Executive Summary\n"
+            f"2) Target Overview & Digital Footprint\n"
+            f"3) Infrastructure Analysis (subdomains, IPs, services)\n"
+            f"4) Personnel & Email Exposure\n"
+            f"5) Breach & Dark Web Exposure\n"
+            f"6) Social Media Intelligence (SOCMINT)\n"
+            f"7) Attack Surface Assessment\n"
+            f"8) Risk Rating & Recommendations"
+        )
+
+    try:
+        return call_llm(prompt)
+    except Exception as e:
+        return f"LLM error: {e}"
+
+
+# ── Export ────────────────────────────────────────────────────────────────────
+
+@callback(
+    Output("osint-download",     "data"),
+    Input("osint-export-json",   "n_clicks"),
+    Input("osint-export-report", "n_clicks"),
+    State("osint-results",       "data"),
+    State("osint-target",        "data"),
+    State("osint-ai-output",     "children"),
+    prevent_initial_call=True,
+)
+def export_osint(json_n, report_n, results, target, ai_text):
+    if not ctx.triggered_id:
+        raise PreventUpdate
+    results = results or {}
+    target  = target or "osint"
+    ts      = datetime.now().strftime("%Y%m%d_%H%M")
+
+    if ctx.triggered_id == "osint-export-json":
+        export = {
+            "target": target,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "subdomains": results.get("subdomains", []),
+            "emails":     results.get("emails", []),
+            "shodan":     results.get("shodan", []),
+            "breaches":   results.get("breaches", []),
+            "social":     results.get("social", []),
+        }
+        return dcc.send_string(json.dumps(export, indent=2),
+                               f"osint_{target}_{ts}.json")
+    else:
+        html_content = f"""<!DOCTYPE html>
+<html><head>
+<meta charset='utf-8'>
+<title>OSINT Report — {target}</title>
+<style>
+  body{{font-family:Arial,sans-serif;background:#0d1117;color:#e0e0e0;
+       max-width:960px;margin:40px auto;padding:0 20px;}}
+  h1,h2{{color:#f39c12;}} h3{{color:#3498db;}}
+  pre{{background:#161b22;padding:12px;border-radius:6px;color:#50fa7b;
+       font-size:12px;white-space:pre-wrap;overflow-x:auto;}}
+  .stat{{display:inline-block;background:#1c2128;border:1px solid #30363d;
+         border-radius:20px;padding:4px 12px;margin:4px;}}
+</style>
+</head><body>
+<h1>🔍 OSINT Intelligence Report</h1>
+<h2>{target}</h2>
+<p style='color:#636e72;'>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+<h3>Subdomains ({len(results.get('subdomains',[]))})</h3>
+<pre>{'\\n'.join(results.get('subdomains',[])[:50]) or 'None'}</pre>
+<h3>Emails</h3>
+<pre>{'\\n'.join(e.get('email','') for e in results.get('emails',[]))}</pre>
+<h3>Breach Data</h3>
+<pre>{'\\n'.join(b.get('breach','') + ' (' + str(b.get('count',0)) + ' records)' for b in results.get('breaches',[]))}</pre>
+<h3>AI Analysis</h3>
+<pre>{ai_text or 'Run AI Analysis for insights'}</pre>
+<hr><p style='color:#636e72;font-size:11px;'>
+Vulnerability Intelligence Dashboard — OSINT Module</p>
+</body></html>"""
+        return dcc.send_string(html_content, f"osint_report_{target}_{ts}.html")

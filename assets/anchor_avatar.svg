@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230" width="200" height="230">
+  <rect width="200" height="230" fill="none"/>
+  <!-- Head -->
+  <circle cx="100" cy="95" r="70" fill="#f5c5a3" stroke="#d4956a" stroke-width="2"/>
+  <!-- Hair -->
+  <ellipse cx="100" cy="35" rx="68" ry="35" fill="#2c1a0a"/>
+  <rect x="32" y="35" width="15" height="55" rx="8" fill="#2c1a0a"/>
+  <rect x="153" y="35" width="15" height="55" rx="8" fill="#2c1a0a"/>
+  <!-- Suit -->
+  <ellipse cx="100" cy="195" rx="75" ry="40" fill="#1a3a6a"/>
+  <rect x="75" y="163" width="50" height="50" fill="#1a3a6a"/>
+  <!-- Tie -->
+  <polygon points="100,163 93,180 100,200 107,180" fill="#cc2200"/>
+  <!-- Eyes white -->
+  <ellipse cx="78" cy="85" rx="10" ry="7" fill="white"/>
+  <ellipse cx="122" cy="85" rx="10" ry="7" fill="white"/>
+  <!-- Pupils -->
+  <circle cx="80" cy="85" r="4" fill="#1a1a1a"/>
+  <circle cx="124" cy="85" r="4" fill="#1a1a1a"/>
+  <circle cx="81" cy="83" r="1.5" fill="white"/>
+  <circle cx="125" cy="83" r="1.5" fill="white"/>
+  <!-- Eyebrows -->
+  <line x1="68" y1="74" x2="88" y2="72" stroke="#2c1a0a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="112" y1="72" x2="132" y2="74" stroke="#2c1a0a" stroke-width="3" stroke-linecap="round"/>
+  <!-- Nose -->
+  <ellipse cx="100" cy="107" rx="5" ry="7" fill="#e09070"/>
+  <!-- Ears -->
+  <ellipse cx="30" cy="95" rx="8" ry="12" fill="#f5c5a3" stroke="#d4956a" stroke-width="1"/>
+  <ellipse cx="170" cy="95" rx="8" ry="12" fill="#f5c5a3" stroke="#d4956a" stroke-width="1"/>
+  <!-- Mic stand -->
+  <rect x="98" y="175" width="4" height="38" fill="#666"/>
+  <rect x="90" y="210" width="20" height="8" rx="4" fill="#888"/>
+  <!-- Desk -->
+  <rect x="0" y="218" width="200" height="12" fill="#0a1a3a"/>
+  <!-- Animated mouth using CSS in SVG -->
+  <style>
+    @keyframes talk { 0%,100%{ry:5} 50%{ry:12} }
+    #mouth-anim { animation: talk 0.25s ease-in-out infinite paused; }
+    #mouth-anim.speaking { animation-play-state: running; }
+  </style>
+  <ellipse id="mouth-anim" cx="100" cy="128" rx="16" ry="5"
+           fill="#c0605a" stroke="#8b3030" stroke-width="1.5"/>
+</svg>

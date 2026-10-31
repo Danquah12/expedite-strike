@@ -1,0 +1,189 @@
+{
+  "users": {
+    "admin": {
+      "password": "Adomaa12@",
+      "role": "admin",
+      "tabs": [
+        "all"
+      ],
+      "display_name": "Administrator",
+      "mfa_secret": "VTNJQCXZWKAUIBDFTAB7WNJDFKXEL5ZN",
+      "nav_items": "all"
+    },
+    "analyst": {
+      "password": "analyst123",
+      "role": "analyst",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Security Analyst"
+    },
+    "viewer": {
+      "password": "viewer123",
+      "role": "viewer",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Read-Only Viewer"
+    },
+    "testuser": {
+      "password": "test123",
+      "role": "viewer",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Test User"
+    },
+    "konji": {
+      "password": "Adomaa12@",
+      "role": "viewer",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": ""
+    },
+    "yasiedu": {
+      "password": "Datesexpo12@",
+      "role": "viewer",
+      "tabs": [
+        "system"
+      ],
+      "display_name": ""
+    },
+    "kasiedu": {
+      "password": "Datesexpo12@",
+      "role": "viewer",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Kweku Asiedu",
+      "mfa_secret": "65OQHTTJQOY5EHKM6JR52JKIPWEAHKBM"
+    },
+    "easiedu": {
+      "password": "changeme",
+      "role": "admin",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "E. Asiedu",
+      "must_change_password": true
+    },
+    "oasiedu": {
+      "password": "",
+      "role": "analyst",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "osei Larbi"
+    },
+    "rasiedu": {
+      "password": "Adomaa12@1234567",
+      "role": "manager",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Rhoda Asiedu",
+      "mfa_secret": "A3EXPPILJ3TLP6QPRX4LJ7LQW2U5N7XW"
+    },
+    "lasiedu": {
+      "password": "",
+      "role": "analyst",
+      "tabs": [
+        "all"
+      ],
+      "nav_items": "all",
+      "display_name": "Larbi Asiedu",
+      "pending_approval": true
+    }
+  },
+  "all_tabs": [
+    {
+      "id": "system",
+      "label": "\u2699\ufe0f System",
+      "group": "Platform"
+    },
+    {
+      "id": "assessment",
+      "label": "\ud83d\udccb Assessment",
+      "group": "Platform"
+    },
+    {
+      "id": "import",
+      "label": "\ud83d\udce5 Import Feeds",
+      "group": "Platform"
+    },
+    {
+      "id": "recon",
+      "label": "\ud83d\udd0d Recon & Intel",
+      "group": "Recon"
+    },
+    {
+      "id": "attack_surface",
+      "label": "\ud83c\udfaf Attack Surface",
+      "group": "Attack"
+    },
+    {
+      "id": "red_team",
+      "label": "\ud83d\udd34 Red Team",
+      "group": "Attack"
+    },
+    {
+      "id": "defence",
+      "label": "\ud83d\udee1\ufe0f Defence",
+      "group": "Defence"
+    },
+    {
+      "id": "specialised",
+      "label": "\ud83d\udd2c Specialised",
+      "group": "Specialised"
+    },
+    {
+      "id": "grc",
+      "label": "\ud83d\udcca GRC & Reports",
+      "group": "Reports"
+    },
+    {
+      "id": "phd-comparison",
+      "label": "\ud83c\udf93 PhD AI Comparison",
+      "group": "Chatbot"
+    },
+    {
+      "id": "phd-advanced",
+      "label": "\ud83d\udd2c PhD Research Tools",
+      "group": "Chatbot"
+    },
+    {
+      "id": "enhancements",
+      "label": "\ud83d\ude80 Platform Enhancements",
+      "group": "AI"
+    },
+    {
+      "id": "voice_enhanced",
+      "label": "\ud83c\udf99\ufe0f Voice Simulator",
+      "group": "AI"
+    },
+    {
+      "id": "chatbot",
+      "label": "\ud83d\udcac Chatbot",
+      "group": "AI"
+    },
+    {
+      "id": "home",
+      "label": "\ud83c\udfe0 Home TV Station",
+      "group": "Home"
+    },
+    {
+      "id": "admin",
+      "label": "\u2699\ufe0f Admin Dashboard",
+      "group": "Home"
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "nodes": [
+    "service:http:80",
+    "outcome:Shell access",
+    "outcome:Privilege abuse",
+    "outcome:Lateral movement",
+    "service:mysql:3306",
+    "service:http:443",
+    "exploit:Pre-auth Backdoor",
+    "exploit:Cleartext Authentication",
+    "host:192.168.1.101",
+    "host:192.168.1.113",
+    "service:telnet:23",
+    "exploit:Remote Code Execution",
+    "outcome:Credential-based access",
+    "outcome:Full system compromise",
+    "service:ssh:22",
+    "outcome:Privilege escalation",
+    "exploit:Authentication Weakness",
+    "host:192.168.1.111",
+    "service:ftp:21",
+    "service:bindshell:1524",
+    "exploit:User Enumeration"
+  ],
+  "edges": [
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:ftp:21"
+    },
+    {
+      "from": "service:ftp:21",
+      "to": "exploit:Remote Code Execution"
+    },
+    {
+      "from": "exploit:Remote Code Execution",
+      "to": "outcome:Shell access"
+    },
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:ssh:22"
+    },
+    {
+      "from": "service:ssh:22",
+      "to": "exploit:User Enumeration"
+    },
+    {
+      "from": "exploit:User Enumeration",
+      "to": "outcome:Credential-based access"
+    },
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:telnet:23"
+    },
+    {
+      "from": "service:telnet:23",
+      "to": "exploit:Cleartext Authentication"
+    },
+    {
+      "from": "exploit:Cleartext Authentication",
+      "to": "outcome:Lateral movement"
+    },
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:http:80"
+    },
+    {
+      "from": "service:http:80",
+      "to": "exploit:Remote Code Execution"
+    },
+    {
+      "from": "exploit:Remote Code Execution",
+      "to": "outcome:Privilege escalation"
+    },
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:bindshell:1524"
+    },
+    {
+      "from": "service:bindshell:1524",
+      "to": "exploit:Pre-auth Backdoor"
+    },
+    {
+      "from": "exploit:Pre-auth Backdoor",
+      "to": "outcome:Full system compromise"
+    },
+    {
+      "from": "host:192.168.1.101",
+      "to": "service:mysql:3306"
+    },
+    {
+      "from": "service:mysql:3306",
+      "to": "exploit:Authentication Weakness"
+    },
+    {
+      "from": "exploit:Authentication Weakness",
+      "to": "outcome:Privilege abuse"
+    },
+    {
+      "from": "host:192.168.1.113",
+      "to": "service:ssh:22"
+    },
+    {
+      "from": "service:ssh:22",
+      "to": "exploit:User Enumeration"
+    },
+    {
+      "from": "exploit:User Enumeration",
+      "to": "outcome:Credential-based access"
+    },
+    {
+      "from": "host:192.168.1.113",
+      "to": "service:http:80"
+    },
+    {
+      "from": "service:http:80",
+      "to": "exploit:Remote Code Execution"
+    },
+    {
+      "from": "exploit:Remote Code Execution",
+      "to": "outcome:Privilege escalation"
+    },
+    {
+      "from": "host:192.168.1.113",
+      "to": "service:http:443"
+    },
+    {
+      "from": "service:http:443",
+      "to": "exploit:Remote Code Execution"
+    },
+    {
+      "from": "exploit:Remote Code Execution",
+      "to": "outcome:Privilege escalation"
+    },
+    {
+      "from": "host:192.168.1.111",
+      "to": "service:ssh:22"
+    },
+    {
+      "from": "service:ssh:22",
+      "to": "exploit:User Enumeration"
+    },
+    {
+      "from": "exploit:User Enumeration",
+      "to": "outcome:Credential-based access"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University — Vulnerability Intelligence Dashboard
+Integrated with Neo4j, Nmap, OpenVAS, Nessus, Burp, and OpenAI
+"""
+
+# ==========================================================
+#  STANDARD LIBRARY IMPORTS
+# ==========================================================
+import os, sys, json, sqlite3, subprocess, time, psutil, threading
+from datetime import datetime
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+import pandas as pd
+import plotly.express as px
+import requests
+from dash import Dash, dcc, html, Input, Output, State, dash_table, no_update
+import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
+from neo4j import GraphDatabase
+
+# ==========================================================
+#  CONFIGURATION AND ENVIRONMENT
+# ==========================================================
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+Path(STATUS_LOG).write_text("")  # Reset on launch
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+NEO4J_URI = "bolt://localhost:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASS = "Adomaa12@"
+
+# ==========================================================
+#  DASH INITIALIZATION
+# ==========================================================
+external_stylesheets = [dbc.themes.DARKLY]
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=external_stylesheets)
+server = app.server
+app.title = "Towson Vulnerability Intelligence Dashboard"
+
+print(f"[+] DB path: {DB_PATH}")
+print("[+] Environment initialized successfully.")
+
+# ==========================================================
+#  HELPER FUNCTIONS
+# ==========================================================
+def append_status(msg: str):
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(STATUS_LOG, "a") as f:
+        f.write(f"[{ts}] {msg}\n")
+
+def call_openai(prompt: str) -> str:
+    if not OPENAI_API_KEY:
+        return "(Missing OPENAI_API_KEY in environment)"
+    try:
+        headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+        data = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}]}
+        resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
+        rj = resp.json()
+        return rj["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"OpenAI error: {e}"
+
+def load_vuln_data():
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT id, host, port, service, title, severity, cvss, cve_id, source FROM findings", conn)
+    conn.close()
+    return df
+
+# ==========================================================
+#  TAB 1 — SYSTEM HEALTH
+# ==========================================================
+def get_system_health():
+    cpu = psutil.cpu_percent(interval=0.5)
+    mem = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
+    df = pd.DataFrame({
+        "Metric": ["CPU Usage", "Memory Usage", "Disk Usage"],
+        "Value": [cpu, mem, disk]
+    })
+    fig = px.bar(df, x="Metric", y="Value", title="System Health Overview", color="Value", range_y=[0,100])
+    fig.update_layout(paper_bgcolor="#1C1C1C", plot_bgcolor="#1C1C1C", font_color="white")
+    return fig
+
+system_health_layout = html.Div([
+    html.H3("System Health Overview", className="text-warning"),
+    dcc.Graph(id="system-health-graph", figure=get_system_health()),
+    dcc.Interval(id="sys-interval", interval=60000, n_intervals=0)
+])
+
+@app.callback(Output("system-health-graph", "figure"), Input("sys-interval", "n_intervals"))
+def refresh_health(_): return get_system_health()
+
+# ==========================================================
+#  TAB 2 — VULNERABILITY DASHBOARD
+# ==========================================================
+vuln_tab = html.Div([
+    html.H3("Vulnerability Dashboard", className="text-warning"),
+    html.Button("Reload Data", id="reload-btn", className="btn btn-warning mb-2"),
+    dash_table.DataTable(
+        id="vuln-table",
+        columns=[{"name": i, "id": i} for i in ["id", "host", "port", "service", "title", "severity", "cvss", "cve_id", "source"]],
+        style_table={"overflowX": "auto"},
+        style_header={"backgroundColor": "#111", "color": "#EAAA00"},
+        style_cell={"backgroundColor": "#1C1C1C", "color": "white", "textAlign": "left"}
+    )
+])
+
+@app.callback(Output("vuln-table", "data"), Input("reload-btn", "n_clicks"))
+def reload_vuln_data(_): return load_vuln_data().to_dict("records")
+
+# ==========================================================
+#  TAB 3 — LLM REQUEST
+# ==========================================================
+llm_tab = html.Div([
+    html.H3("LLM Vulnerability Analysis", className="text-warning"),
+    dcc.Textarea(id="llm-prompt", placeholder="Ask about vulnerabilities...", style={"width":"100%","height":"150px"}),
+    html.Br(),
+    dbc.Button("Submit to LLM", id="llm-btn", color="warning"),
+    html.Div(id="llm-output", style={"whiteSpace": "pre-wrap", "marginTop":"10px","color":"#EAAA00"})
+])
+
+@app.callback(Output("llm-output","children"), Input("llm-btn","n_clicks"), State("llm-prompt","value"), prevent_initial_call=True)
+def llm_query(_, text):
+    if not text: raise PreventUpdate
+    return call_openai(text)
+
+# ==========================================================
+#  TAB 4 — CHATBOT PLACEHOLDER
+# ==========================================================
+chatbot_tab = html.Div([
+    html.H3("Chatbot Interface (LLM-based)", className="text-warning"),
+    html.Div("Future upgrade: conversational assistant for vulnerability Q&A.")
+])
+
+# ==========================================================
+#  TAB 5 — ASSESSMENT (NMAP / OPENVAS / BURP / NESSUS)
+# ==========================================================
+assessment_tab = html.Div([
+    html.H3("Automated Vulnerability Assessment", className="text-warning"),
+    html.Label("Select Scanner:"),
+    dcc.Dropdown(
+        id="scanner-select",
+        options=[
+            {"label":"Nmap","value":"nmap"},
+            {"label":"OpenVAS","value":"openvas"},
+            {"label":"Burp Suite","value":"burp"},
+            {"label":"Nessus","value":"nessus"}
+        ],
+        value="nmap", style={"width":"300px"}
+    ),
+    html.Br(),
+    html.Label("Target IP(s):"),
+    dcc.Input(id="target-ip", type="text", placeholder="192.168.1.10 or CIDR", style={"width":"300px"}),
+    html.Br(),
+    html.Label("Or upload target.txt:"),
+    dcc.Upload(id="upload-targets", children=html.Div(["📄 Drag and Drop or Select File"]), multiple=False,
+               style={"width":"60%","height":"60px","borderWidth":"1px","borderStyle":"dashed",
+                      "borderRadius":"5px","textAlign":"center","margin":"10px"}),
+    dbc.Button("Run Scan", id="start-scan-btn", color="warning"),
+    html.Div(id="scan-status", style={"marginTop":"15px","color":"#EAAA00"})
+])
+
+@app.callback(
+    Output("scan-status","children"),
+    Input("start-scan-btn","n_clicks"),
+    State("scanner-select","value"),
+    State("target-ip","value"),
+    State("upload-targets","contents"),
+    prevent_initial_call=True
+)
+def trigger_scan(_, scanner, target_ip, upload_content):
+    target_file = "/tmp/targets.txt"
+    if upload_content:
+        import base64
+        content = upload_content.split(",")[1]
+        Path(target_file).write_bytes(base64.b64decode(content))
+    elif target_ip:
+        Path(target_file).write_text(target_ip)
+    else:
+        return "❌ No targets provided."
+
+    cmd = ""
+    if scanner == "nmap":
+        cmd = f"nmap -sV -T4 -A -v -iL {target_file} -oX /root/vuln_intel/feeds/nmap/live_scan.xml"
+    elif scanner == "openvas":
+        cmd = "gvm-cli socket --xml '<create_target>' ..."
+    elif scanner == "burp":
+        cmd = "echo 'Burp scan placeholder'"
+    elif scanner == "nessus":
+        cmd = "echo 'Nessus scan placeholder'"
+
+    threading.Thread(target=lambda: subprocess.run(cmd, shell=True)).start()
+    append_status(f"Started {scanner} scan on {target_file}")
+    return f"🚀 {scanner} scan started on targets in {target_file}"
+
+# ==========================================================
+#  TAB 6 — REPORTING
+# ==========================================================
+report_tab = html.Div([
+    html.H3("Reporting", className="text-warning"),
+    html.Div("Export and summary report generation coming soon.")
+])
+
+# ==========================================================
+#  TAB 7 — VOICE ASSISTANT
+# ==========================================================
+voice_tab = html.Div([
+    html.H3("Voice Assistant", className="text-warning"),
+    html.Div("Browser Speech-to-Text integrated assistant.")
+])
+
+# ==========================================================
+#  TAB 8 — ATTACK PATH ANALYSIS
+# ==========================================================
+attack_tab = html.Div([
+    html.H3("Attack Path Analysis (Neo4j Graph)", className="text-warning"),
+    html.Div("Visual graph analytics with Neo4j data connection.")
+])
+
+# ==========================================================
+#  MAIN TAB ROUTING CALLBACK
+# ==========================================================
+@app.callback(Output("tabs-content","children"), Input("tabs","value"))
+def render_tab(tab):
+    if tab=="tab1": return system_health_layout
+    elif tab=="tab2": return vuln_tab
+    elif tab=="tab3": return llm_tab
+    elif tab=="tab4": return chatbot_tab
+    elif tab=="tab5": return assessment_tab
+    elif tab=="tab6": return report_tab
+    elif tab=="tab7": return voice_tab
+    elif tab=="tab8": return attack_tab
+    return html.Div("No tab selected.")
+
+# ==========================================================
+#  RUN SERVER
+# ==========================================================
+
+if __name__ == "__main__":
+    print("✅ Dashboard ready on http://127.0.0.1:8050")
+    app.run(host="0.0.0.0", port=8050, debug=True)
+

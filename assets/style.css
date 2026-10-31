@@ -1,0 +1,63 @@
+/* === Global Page Background === */
+body {
+    background-color: #1C1C1C;
+    color: #FFFFFF;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* === Header Title === */
+h1, h2, h3 {
+    color: #EAAA00; /* Towson gold */
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* === Tabs Container === */
+.tab-container {
+    background-color: #000000; /* Deep black bar background */
+    padding: 10px 0;
+    border-bottom: 3px solid #EAAA00; /* Gold underline */
+    display: flex;
+    justify-content: center;
+}
+
+/* === Individual Tabs === */
+.tab {
+    background-color: #2B2B2B;
+    color: #E0E0E0 !important;
+    border-radius: 8px 8px 0 0;
+    font-weight: 500;
+    margin: 0 5px;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+/* === Hover Effect === */
+.tab:hover {
+    background-color: #3B3B3B;
+    color: #FFFFFF !important;
+    transform: translateY(-2px);
+}
+
+/* === Active Tab === */
+.tab--selected {
+    background-color: #EAAA00 !important; /* Gold highlight */
+    color: #000000 !important;            /* Black text for contrast */
+    font-weight: 600;
+    border-bottom: 3px solid #FFFFFF;
+    box-shadow: 0 2px 6px rgba(234, 170, 0, 0.6);
+}
+
+/* === Tabs Text Responsiveness === */
+.tab span {
+    font-size: 16px;
+}
+
+/* === Subtle Glow for Top Bar === */
+header, .tab-container {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}

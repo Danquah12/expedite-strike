@@ -1,0 +1,17 @@
+{
+  "domain": "HTTPS",
+  "target": "HTTPS://qx.issuenet.ihsmarkit.com/admin-website",
+  "baseline_findings": 23,
+  "baseline_critical": 13,
+  "created": "2026-08-29 15:16:40.052520",
+  "schedule": "weekly",
+  "alerts": {
+    "new_critical": true,
+    "new_high": true,
+    "resolved": true
+  },
+  "notify": [
+    "security-team"
+  ],
+  "next_scan": "2026-09-05 15:16:40.052520"
+}

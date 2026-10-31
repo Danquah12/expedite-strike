@@ -1,0 +1,88 @@
+###############################################################################
+# .dockerignore — AEGIS Security Platform
+# Keeps the build context lean and prevents leaking secrets into the image.
+###############################################################################
+
+# ── Version control & IDE ────────────────────────────────────────────────────
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+.local/
+.config/
+
+# ── Python virtual env & caches ──────────────────────────────────────────────
+venv/
+__pycache__/
+__pycache_STALE_DO_NOT_USE__/
+__pycache_stale__/
+*.pyc
+*.pyo
+.cache/
+
+# ── Environment & secrets ────────────────────────────────────────────────────
+.env
+.ssh_config
+vault_keys.json
+
+# ── Logs & runtime state ─────────────────────────────────────────────────────
+*.log
+*.pid
+logs/
+nohup.out
+status.log
+
+# ── Database files (never bake these into the image) ─────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Large binaries & archives ────────────────────────────────────────────────
+*.apk
+*.ipa
+*.zip
+*.tar.gz
+*.saz
+
+# ── Backup files ─────────────────────────────────────────────────────────────
+*.bak
+*.bak.*
+*.backup.*
+backup-*
+backups/
+*-backup
+*-bak-*
+
+# ── Date-stamped backup directories ─────────────────────────────────────────
+11-*/
+*_backup_*
+
+# ── Node.js (not needed at runtime) ─────────────────────────────────────────
+node_modules/
+package-lock.json
+
+# ── Docker files themselves ──────────────────────────────────────────────────
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ── Scan outputs & reports (mounted at runtime, not baked in) ────────────────
+scans/
+scan_history/
+reports/
+data/
+outputs/
+uploads/
+certs/
+
+# ── Misc dev/test artifacts ──────────────────────────────────────────────────
+*.pdf
+chunks/
+b64_*.txt
+payload_*.txt
+target.txt
+test_*.py
+debug_*.py
+*.xml

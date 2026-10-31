@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXPEDITE STRIKE Security Operations Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #00ffcc;
+    --danger:  #ff003c;
+    --warn:    #ff9900;
+    --dim:     rgba(0,255,204,0.15);
+    --border:  rgba(0,255,204,0.35);
+    --bg:      #020b10;
+    --panel:   rgba(0,10,20,0.82);
+    --text:    #c8e8e0;
+    --mono:    'Share Tech Mono', monospace;
+  }
+
+  html, body { height: 100%; background: var(--bg); overflow-x: hidden; overflow-y: auto; }
+
+  /* ── Canvas background ── */
+  #bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ── hex/circuit overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,30,20,0) 60%, rgba(2,11,16,0.85) 100%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,255,204,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,255,204,0.03) 40px);
+  }
+
+  /* ── Layout ── */
+  .page { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Top nav ── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    margin-top: 10px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,5,10,0.7);
+    backdrop-filter: blur(6px);
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-brand svg { width: 22px; height: 22px; fill: none; stroke: var(--primary); stroke-width: 1.5; }
+  .nav-brand span { font-family: var(--mono); font-size: 0.95rem; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; }
+  .nav-status { font-family: var(--mono); font-size: 0.85rem; color: rgba(0,255,204,0.5); letter-spacing: 1px; }
+  .nav-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-right: 5px; animation: blink 1.4s infinite; }
+  .nav-auth { display: flex; gap: 10px; }
+
+  .btn { font-family: var(--mono); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; padding: 8px 20px; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-ghost { color: var(--primary); border: 1px solid var(--border); background: transparent; }
+  .btn-ghost:hover { background: var(--dim); border-color: var(--primary); box-shadow: 0 0 12px rgba(0,255,204,0.3); }
+  .btn-solid { color: #000; background: var(--primary); border: 1px solid var(--primary); }
+  .btn-solid:hover { background: #00e6b8; box-shadow: 0 0 20px rgba(0,255,204,0.5); }
+  .btn-danger { color: var(--danger); border: 1px solid rgba(255,0,60,0.4); background: transparent; letter-spacing: 3px; padding: 13px 36px; font-size: 1rem; }
+  .btn-danger:hover { background: rgba(255,0,60,0.08); border-color: var(--danger); box-shadow: 0 0 24px rgba(255,0,60,0.3), inset 0 0 12px rgba(255,0,60,0.05); }
+
+  /* ── Main content ── */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 14px 20px 20px; }
+
+  /* ── Hero panel ── */
+  .hero-panel {
+    width: 100%; max-width: 660px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    padding: 22px 28px 18px;
+    position: relative;
+    animation: fadeSlideIn 0.7s ease forwards;
+  }
+  /* corner brackets */
+  .hero-panel::before, .hero-panel::after {
+    content: ''; position: absolute; width: 16px; height: 16px; border-color: var(--primary); border-style: solid;
+  }
+  .hero-panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .hero-panel::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  .corner-tr, .corner-bl { position: absolute; width: 16px; height: 16px; border-color: var(--primary); border-style: solid; }
+  .corner-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+
+  /* scan line animation across panel */
+  .scanline {
+    position: absolute; top: -2px; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    animation: scan 4s linear infinite; opacity: 0.6;
+  }
+
+  .hero-logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
+  .hero-logo svg { width: 40px; height: 40px; fill: none; stroke: var(--primary); stroke-width: 1.5; filter: drop-shadow(0 0 6px rgba(0,255,204,0.6)); }
+  .hero-title { font-family: 'Orbitron', sans-serif; font-size: 1.9rem; font-weight: 900; color: var(--primary); letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,255,204,0.5); }
+  .hero-sub { font-family: var(--mono); font-size: 1rem; color: rgba(0,255,204,0.6); text-align: center; letter-spacing: 2px; margin-bottom: 6px; }
+  .hero-desc { font-family: var(--mono); font-size: 1rem; color: var(--text); text-align: center; letter-spacing: 1px; margin-bottom: 14px; }
+
+  .cta-row { display: flex; justify-content: center; margin-bottom: 16px; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-label { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,204,0.4); letter-spacing: 3px; white-space: nowrap; }
+
+  /* ── Status grid ── */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-bottom: 14px; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 0.9rem; padding: 5px 0; border-bottom: 1px solid rgba(0,255,204,0.07); }
+  .status-key { color: rgba(200,232,224,0.7); }
+  .status-val { display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot-green  { background: #00ff88; box-shadow: 0 0 6px rgba(0,255,136,0.8); animation: blink 2s infinite; }
+  .dot-yellow { background: #ff9900; box-shadow: 0 0 6px rgba(255,153,0,0.8); animation: blink 2.5s infinite; }
+  .dot-red    { background: var(--danger); box-shadow: 0 0 6px rgba(255,0,60,0.8); animation: blink 1.2s infinite; }
+  .status-text { color: var(--primary); letter-spacing: 1px; font-size: 0.85rem; }
+
+  /* ── Telemetry ── */
+  .telemetry-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 14px; }
+  .tel-card {
+    border: 1px solid rgba(0,255,204,0.2); background: rgba(0,255,204,0.03);
+    padding: 10px 8px; text-align: center; position: relative; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .tel-card:hover { border-color: var(--primary); background: rgba(0,255,204,0.06); }
+  .tel-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,255,204,0.05) 0%, transparent 60%); }
+  .tel-val { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--primary); letter-spacing: 1px; }
+  .tel-val.danger { color: var(--danger); text-shadow: 0 0 10px rgba(255,0,60,0.6); }
+  .tel-val.warn   { color: var(--warn);   text-shadow: 0 0 10px rgba(255,153,0,0.6); }
+  .tel-key { font-family: var(--mono); font-size: 0.72rem; color: rgba(200,232,224,0.5); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+
+  /* ── Footer ── */
+  .panel-footer { text-align: center; font-family: var(--mono); font-size: 0.72rem; color: rgba(0,255,204,0.3); letter-spacing: 2px; padding-top: 8px; border-top: 1px solid rgba(0,255,204,0.1); }
+
+  /* ── Extra compact on very short screens ── */
+  @media (max-height: 680px) {
+    main { padding: 8px 16px; }
+    .hero-panel { padding: 12px 20px 10px; }
+    .hero-logo svg { width: 24px; height: 24px; }
+    .hero-title { font-size: 1.1rem; }
+    .hero-sub { font-size: 0.68rem; margin-bottom: 2px; }
+    .hero-desc { margin-bottom: 8px; }
+    .cta-row { margin-bottom: 10px; }
+    .btn-danger { padding: 8px 22px; font-size: 0.75rem; }
+    .divider { margin: 10px 0; }
+    .status-grid { margin-bottom: 8px; }
+    .telemetry-grid { gap: 5px; margin-bottom: 8px; }
+    .tel-card { padding: 5px 4px; }
+    .tel-val { font-size: 0.9rem; }
+    .ticker-bar { padding: 4px 0; }
+  }
+
+  /* ── Threat ticker ── */
+  .ticker-bar {
+    width: 100%; background: rgba(255,0,60,0.06); border-top: 1px solid rgba(255,0,60,0.2);
+    border-bottom: 1px solid rgba(255,0,60,0.2); padding: 7px 0; overflow: hidden;
+    font-family: var(--mono); font-size: 0.85rem; color: rgba(255,0,60,0.7);
+    margin-bottom: 14px; letter-spacing: 1px;
+  }
+  .ticker-inner { display: flex; width: max-content; animation: ticker 30s linear infinite; gap: 80px; }
+
+  /* ── Modal ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,5,10,0.88); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    width: 100%; max-width: 400px;
+    border: 1px solid var(--border); background: #020d14;
+    padding: 32px 28px; position: relative; animation: fadeSlideIn 0.3s ease;
+  }
+  .modal::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border-top: 2px solid var(--primary); border-left: 2px solid var(--primary); }
+  .modal::after  { content: ''; position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+  .modal-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; color: var(--primary); letter-spacing: 3px; margin-bottom: 22px; text-align: center; }
+  .modal-close { position: absolute; top: 12px; right: 16px; font-family: var(--mono); font-size: 0.8rem; color: rgba(0,255,204,0.4); cursor: pointer; background: none; border: none; }
+  .modal-close:hover { color: var(--primary); }
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,204,0.5); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; display: block; }
+  .field-input {
+    width: 100%; background: rgba(0,255,204,0.04); border: 1px solid rgba(0,255,204,0.25);
+    color: var(--primary); font-family: var(--mono); font-size: 0.82rem; padding: 9px 12px;
+    outline: none; letter-spacing: 1px; transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: var(--primary); background: rgba(0,255,204,0.07); box-shadow: 0 0 12px rgba(0,255,204,0.15); }
+  .field-input::placeholder { color: rgba(0,255,204,0.2); }
+  .modal-submit { width: 100%; margin-top: 8px; }
+  .modal-switch { text-align: center; font-family: var(--mono); font-size: 0.65rem; color: rgba(200,232,224,0.4); margin-top: 14px; }
+  .modal-switch a { color: rgba(0,255,204,0.6); cursor: pointer; text-decoration: none; }
+  .modal-switch a:hover { color: var(--primary); }
+  .modal-err { font-family: var(--mono); font-size: 0.65rem; color: var(--danger); text-align: center; margin-top: 8px; display: none; }
+
+  /* ── Keyframes ── */
+  @keyframes blink     { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes scan      { 0%{top:-2px} 100%{top:calc(100% + 2px)} }
+  @keyframes ticker    { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  @keyframes fadeSlideIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes matrixFall { 0%{opacity:0} 10%{opacity:1} 100%{opacity:0} }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<div class="page">
+
+  <!-- ── NAV ── -->
+  <nav>
+    <div class="nav-brand">
+      <svg viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg>
+      <span>EXPEDITE STRIKE Security Operations Center</span>
+    </div>
+    <div class="nav-status">
+      <span class="dot"></span>SYSTEMS NOMINAL &nbsp;|&nbsp; TLP: RED
+    </div>
+    <div class="nav-auth">
+      <a href="#" class="btn btn-ghost" onclick="openModal('login')">[ LOGIN ]</a>
+      <a href="#" class="btn btn-solid" onclick="openModal('register')">REGISTER</a>
+    </div>
+  </nav>
+
+  <!-- ── THREAT TICKER ── -->
+  <div class="ticker-bar">
+    <div class="ticker-inner">
+      <span>⚠ ALERT: CVE-2024-21413 exploited in wild &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: RDP brute-force campaign detected — 10.0.0.5 &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: BloodHound path to Domain Admin identified &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: SQL injection probe on api-gateway:443 &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: Cobalt Strike beacon C2 callback intercepted &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: CVE-2024-21413 exploited in wild &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: RDP brute-force campaign detected — 10.0.0.5 &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: BloodHound path to Domain Admin identified &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: SQL injection probe on api-gateway:443 &nbsp;▸&nbsp;</span>
+      <span>⚠ ALERT: Cobalt Strike beacon C2 callback intercepted &nbsp;▸&nbsp;</span>
+    </div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <main>
+    <div class="hero-panel" id="heroPanel">
+      <div class="scanline"></div>
+      <span class="corner-tr"></span>
+      <span class="corner-bl"></span>
+
+      <!-- Logo + Title -->
+      <div class="hero-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="hero-title">ÆGIS SECURITY</div>
+      </div>
+      <div class="hero-sub">Operations Command Center</div>
+      <div class="hero-desc">Real-Time Cyber Defense &amp; Threat Intelligence</div>
+
+      <!-- CTA -->
+      <div class="cta-row">
+        <a href="/app/" class="btn btn-danger" id="enterBtn">ENTER PLATFORM</a>
+      </div>
+
+      <!-- System Status -->
+      <div class="divider"><div class="divider-line"></div><div class="divider-label">SYSTEM STATUS</div><div class="divider-line"></div></div>
+      <div class="status-grid">
+        <div class="status-row"><span class="status-key">Threat Intel Feeds</span><span class="status-val"><span class="status-dot dot-green"></span><span class="status-text">Online</span></span></div>
+        <div class="status-row"><span class="status-key">Detection Engines</span><span class="status-val"><span class="status-dot dot-green"></span><span class="status-text">Active</span></span></div>
+        <div class="status-row"><span class="status-key">Network Sensors</span><span class="status-val"><span class="status-dot dot-yellow"></span><span class="status-text">Monitoring</span></span></div>
+        <div class="status-row"><span class="status-key">AI Threat Analysis</span><span class="status-val"><span class="status-dot dot-green"></span><span class="status-text">Running</span></span></div>
+        <div class="status-row"><span class="status-key">BloodHound Engine</span><span class="status-val"><span class="status-dot dot-green"></span><span class="status-text">Indexed</span></span></div>
+        <div class="status-row"><span class="status-key">SIEM Ingest</span><span class="status-val"><span class="status-dot dot-red"></span><span class="status-text">High Load</span></span></div>
+      </div>
+
+      <!-- Live Telemetry -->
+      <div class="divider"><div class="divider-line"></div><div class="divider-label">LIVE TELEMETRY</div><div class="divider-line"></div></div>
+      <div class="telemetry-grid">
+        <div class="tel-card">
+          <div class="tel-val" id="tel-packets">1,245,908</div>
+          <div class="tel-key">Packets / sec</div>
+        </div>
+        <div class="tel-card">
+          <div class="tel-val danger" id="tel-threats">12</div>
+          <div class="tel-key">Active Threats</div>
+        </div>
+        <div class="tel-card">
+          <div class="tel-val warn" id="tel-sensors">18</div>
+          <div class="tel-key">Sensors Online</div>
+        </div>
+        <div class="tel-card">
+          <div class="tel-val" id="tel-cves">347</div>
+          <div class="tel-key">CVEs Tracked</div>
+        </div>
+        <div class="tel-card">
+          <div class="tel-val danger" id="tel-critical">6</div>
+          <div class="tel-key">Critical Hosts</div>
+        </div>
+        <div class="tel-card">
+          <div class="tel-val" id="tel-uptime">99.3%</div>
+          <div class="tel-key">Platform Uptime</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="panel-footer">© Ægis Cyber Defense Platform &nbsp;|&nbsp; CLASSIFICATION: RESTRICTED &nbsp;|&nbsp; v3.1.0</div>
+    </div>
+  </main>
+
+</div><!-- /page -->
+
+<!-- ── LOGIN MODAL ── -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">OPERATOR LOGIN</div>
+    <form onsubmit="handleLogin(event)">
+      <div class="field-group">
+        <label class="field-label">Access ID / Username</label>
+        <input id="l-user" name="username" class="field-input" type="text" placeholder="operator@aegis.sec" autocomplete="username" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Passphrase</label>
+        <input id="l-pass" name="password" class="field-input" type="password" placeholder="••••••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="login-btn">AUTHENTICATE →</button>
+      <div class="modal-err" id="login-err">⚠ Authentication failed. Verify credentials.</div>
+    </form>
+    <div class="modal-switch">No account? <a onclick="openModal('register')">Register access →</a></div>
+    <div class="modal-switch" style="margin-top:6px"><a onclick="openModal('forgot1')" style="color:rgba(0,255,204,0.35);font-size:0.6rem">Forgot passphrase?</a></div>
+  </div>
+</div>
+
+<!-- ── REGISTER MODAL ── -->
+<div class="modal-overlay" id="modal-register">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">REQUEST ACCESS</div>
+    <form onsubmit="handleRegister(event)">
+      <div class="field-group">
+        <label class="field-label">Full Name</label>
+        <input id="r-name" class="field-input" type="text" placeholder="Operator Name" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Email / Access ID</label>
+        <input id="r-email" class="field-input" type="email" placeholder="operator@aegis.sec" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Passphrase</label>
+        <input id="r-pass" class="field-input" type="password" placeholder="Min 12 chars" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Confirm Passphrase</label>
+        <input id="r-pass2" class="field-input" type="password" placeholder="Repeat passphrase" required>
+      </div>
+      <button type="submit" class="btn btn-solid modal-submit" id="reg-btn">REQUEST ACCESS →</button>
+      <div class="modal-err" id="reg-err">⚠ Passphrase mismatch. Check and retry.</div>
+    </form>
+    <div class="modal-switch">Already have access? <a onclick="openModal('login')">Login →</a></div>
+  </div>
+</div>
+
+<!-- ── FORGOT: STEP 1 — Username entry (auto-routes based on MFA status) ── -->
+<div class="modal-overlay" id="modal-forgot1">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">RESET PASSPHRASE</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(200,232,224,0.5);text-align:center;margin-bottom:18px;letter-spacing:1px;line-height:1.6">
+      Enter your username to begin the identity verification process.
+    </p>
+    <form onsubmit="handleForgotCheck(event)">
+      <div class="field-group">
+        <label class="field-label">Access ID / Username</label>
+        <input id="f-user" class="field-input" type="text" placeholder="operator@aegis.sec" required autocomplete="off">
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="forgot-btn-check">CONTINUE →</button>
+      <div class="modal-err" id="forgot-err-check"></div>
+    </form>
+    <div class="modal-switch" style="margin-top:10px"><a onclick="openModal('login')">← Back to login</a></div>
+  </div>
+</div>
+
+<!-- ── FORGOT: STEP 1b — QR setup (users WITHOUT MFA) ── -->
+<div class="modal-overlay" id="modal-forgot-setup">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">SET UP AUTHENTICATOR</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(200,232,224,0.5);text-align:center;margin-bottom:10px;letter-spacing:1px;line-height:1.6">
+      Scan this QR code with <strong style="color:rgba(0,255,204,0.7)">Google / Microsoft Authenticator</strong>,<br>then enter the 6-digit code to verify and continue.
+    </p>
+    <div style="text-align:center;margin-bottom:10px">
+      <img id="f-qr-img" src="" alt="QR Code" style="width:160px;height:160px;border:2px solid rgba(0,255,204,0.3);background:#fff">
+    </div>
+    <p style="font-family:var(--mono);font-size:0.6rem;color:rgba(200,232,224,0.35);text-align:center;margin-bottom:12px">
+      Manual key: <span id="f-secret-display" style="color:rgba(0,255,204,0.5);letter-spacing:2px"></span>
+    </p>
+    <form onsubmit="handleForgotSetupVerify(event)">
+      <div class="field-group">
+        <label class="field-label">6-Digit Code from Authenticator</label>
+        <input id="f-setup-code" class="field-input" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required autocomplete="off">
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="forgot-btn-setup">VERIFY CODE →</button>
+      <div class="modal-err" id="forgot-err-setup"></div>
+    </form>
+    <div class="modal-switch" style="margin-top:10px"><a onclick="openModal('forgot1')">← Back</a></div>
+  </div>
+</div>
+
+<!-- ── FORGOT: STEP 1c — Existing MFA users ── -->
+<div class="modal-overlay" id="modal-forgot-mfa">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">VERIFY IDENTITY</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(200,232,224,0.5);text-align:center;margin-bottom:18px;letter-spacing:1px;line-height:1.6">
+      Enter the 6-digit code from your<br><strong style="color:rgba(0,255,204,0.7)">Authenticator app</strong>.
+    </p>
+    <form onsubmit="handleForgotVerify(event)">
+      <div class="field-group">
+        <label class="field-label">Authenticator Code</label>
+        <input id="f-mfa" class="field-input" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required autocomplete="off">
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="forgot-btn1">VERIFY →</button>
+      <div class="modal-err" id="forgot-err1"></div>
+    </form>
+    <div class="modal-switch" style="margin-top:10px"><a onclick="openModal('forgot1')">← Back</a></div>
+  </div>
+</div>
+
+<!-- ── FORGOT: STEP 2 — Set new passphrase ── -->
+<div class="modal-overlay" id="modal-forgot2">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModals()">[ CLOSE ✕ ]</button>
+    <div class="modal-title">SET NEW PASSPHRASE</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,204,0.5);text-align:center;margin-bottom:18px;letter-spacing:1px">✅ Identity verified — set your new passphrase.</p>
+    <form onsubmit="handleForgotReset(event)">
+      <div class="field-group">
+        <label class="field-label">New Passphrase (min 12 chars)</label>
+        <input id="f-pass1" class="field-input" type="password" placeholder="Min 12 chars" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Confirm Passphrase</label>
+        <input id="f-pass2" class="field-input" type="password" placeholder="Repeat passphrase" required>
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="forgot-btn2">SAVE NEW PASSPHRASE →</button>
+      <div class="modal-err" id="forgot-err2"></div>
+    </form>
+  </div>
+</div>
+
+
+<!-- ── LOGIN: MFA CHECK (Existing MFA users — enter 6-digit code) ── -->
+<div class="modal-overlay" id="modal-login-mfa">
+  <div class="modal">
+    <div class="modal-title">🔐 TWO-FACTOR AUTHENTICATION</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(200,232,224,0.5);text-align:center;margin-bottom:18px;letter-spacing:1px;line-height:1.6">
+      Credentials verified — enter the 6-digit code from your<br>
+      <strong style="color:rgba(0,255,204,0.7)">Authenticator app</strong> to complete login.
+    </p>
+    <form onsubmit="handleLoginMfaCheck(event)">
+      <div class="field-group">
+        <label class="field-label">Authenticator Code</label>
+        <input id="lm-code" class="field-input" type="text" inputmode="numeric"
+               maxlength="6" pattern="[0-9]{6}" placeholder="000000"
+               required autocomplete="one-time-code">
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="lm-btn">VERIFY &amp; ENTER PLATFORM →</button>
+      <div class="modal-err" id="lm-err"></div>
+    </form>
+    <div class="modal-switch" style="margin-top:10px"><a onclick="openModal('login')">← Cancel login</a></div>
+  </div>
+</div>
+
+<!-- ── LOGIN: MFA ENROLL (First-time — scan QR then enter code) ── -->
+<div class="modal-overlay" id="modal-login-enroll">
+  <div class="modal">
+    <div class="modal-title">🛡️ SET UP AUTHENTICATOR</div>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(200,232,224,0.5);text-align:center;margin-bottom:10px;letter-spacing:1px;line-height:1.6">
+      Your account requires 2FA. Scan this QR code with<br>
+      <strong style="color:rgba(0,255,204,0.7)">Google / Microsoft Authenticator</strong>,<br>
+      then enter the 6-digit code to activate &amp; complete login.
+    </p>
+    <div style="text-align:center;margin-bottom:8px">
+      <img id="lm-qr-img" src="" alt="QR Code"
+           style="width:160px;height:160px;border:2px solid rgba(0,255,204,0.3);background:#fff">
+    </div>
+    <p style="font-family:var(--mono);font-size:0.6rem;color:rgba(200,232,224,0.35);text-align:center;margin-bottom:10px">
+      Manual key: <span id="lm-secret" style="color:rgba(0,255,204,0.5);letter-spacing:2px"></span>
+    </p>
+    <form onsubmit="handleLoginMfaEnroll(event)">
+      <div class="field-group">
+        <label class="field-label">6-Digit Code from Authenticator</label>
+        <input id="lm-enroll-code" class="field-input" type="text" inputmode="numeric"
+               maxlength="6" pattern="[0-9]{6}" placeholder="000000"
+               required autocomplete="one-time-code">
+      </div>
+      <button type="submit" class="btn btn-danger modal-submit" id="lm-enroll-btn">ACTIVATE MFA &amp; ENTER PLATFORM →</button>
+      <div class="modal-err" id="lm-enroll-err"></div>
+    </form>
+    <div class="modal-switch" style="margin-top:10px"><a onclick="openModal('login')">← Cancel login</a></div>
+  </div>
+</div>
+
+
+<script>
+// ── Canvas background: Matrix rain + floating network nodes ──────────────────
+(function() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Matrix rain
+  const FONT_SIZE = 13;
+  const CHARS = '01アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEF0123456789!@#$%MATCH>/\\|_';
+  let cols, drops;
+
+  function initDrops() {
+    cols  = Math.floor(canvas.width / FONT_SIZE);
+    drops = Array.from({length: cols}, () => Math.random() * -canvas.height / FONT_SIZE);
+  }
+  initDrops();
+  window.addEventListener('resize', initDrops);
+
+  // Network nodes
+  const NODES = Array.from({length: 28}, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    vx: (Math.random()-0.5)*0.4,
+    vy: (Math.random()-0.5)*0.4,
+    r: Math.random()*2.5+1.5,
+    pulse: Math.random()*Math.PI*2,
+    type: Math.floor(Math.random()*3) // 0=host 1=threat 2=sensor
+  }));
+
+  const NODE_COLORS = ['#00ffcc','#ff003c','#ff9900'];
+  const CONNECT_DIST = 180;
+
+  function drawFrame() {
+    // Fade trail
+    ctx.fillStyle = 'rgba(2,11,16,0.13)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Matrix rain
+    ctx.font = `${FONT_SIZE}px 'Share Tech Mono'`;
+    for (let i = 0; i < cols; i++) {
+      const char = CHARS[Math.floor(Math.random()*CHARS.length)];
+      const y    = drops[i] * FONT_SIZE;
+      // Head — bright
+      ctx.fillStyle = 'rgba(0,255,204,0.85)';
+      ctx.fillText(char, i*FONT_SIZE, y);
+      // One step behind — fading
+      ctx.fillStyle = 'rgba(0,255,204,0.25)';
+      if (y - FONT_SIZE > 0) ctx.fillText(CHARS[Math.floor(Math.random()*CHARS.length)], i*FONT_SIZE, y - FONT_SIZE);
+
+      if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 0.55;
+    }
+
+    // Network nodes + edges
+    const t = Date.now() / 1000;
+    NODES.forEach(n => {
+      n.x = (n.x + n.vx + canvas.width)  % canvas.width;
+      n.y = (n.y + n.vy + canvas.height) % canvas.height;
+      n.pulse += 0.03;
+    });
+
+    // Edges
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = i+1; j < NODES.length; j++) {
+        const dx = NODES[i].x - NODES[j].x;
+        const dy = NODES[i].y - NODES[j].y;
+        const d  = Math.sqrt(dx*dx+dy*dy);
+        if (d < CONNECT_DIST) {
+          const alpha = (1 - d/CONNECT_DIST)*0.18;
+          ctx.strokeStyle = `rgba(0,255,204,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(NODES[i].x, NODES[i].y);
+          ctx.lineTo(NODES[j].x, NODES[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Nodes
+    NODES.forEach(n => {
+      const glow    = (Math.sin(n.pulse)*0.5+0.5);
+      const color   = NODE_COLORS[n.type];
+      const grad    = ctx.createRadialGradient(n.x,n.y,0, n.x,n.y, n.r*6);
+      grad.addColorStop(0, color.replace(')',`,${0.5*glow})`).replace('rgb','rgba'));
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r*6, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+
+    requestAnimationFrame(drawFrame);
+  }
+  drawFrame();
+})();
+
+// ── Live telemetry counter ────────────────────────────────────────────────────
+function randomDelta(base, pct) { return Math.floor(base * (1 + (Math.random()-0.5)*pct)); }
+function fmtNum(n) { return n.toLocaleString(); }
+
+let packets=1245908, threats=12, sensors=18, cves=347, critical=6;
+setInterval(()=>{
+  packets  = randomDelta(1245908, 0.02);
+  threats  = Math.max(8, Math.min(20, threats + Math.round((Math.random()-0.48)*2)));
+  critical = Math.max(4, Math.min(12, critical + Math.round((Math.random()-0.47))));
+
+  document.getElementById('tel-packets').textContent  = fmtNum(packets);
+  document.getElementById('tel-threats').textContent  = threats;
+  document.getElementById('tel-critical').textContent = critical;
+}, 1800);
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(which) {
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));
+  document.getElementById('modal-'+which).classList.add('active');
+}
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));
+}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click', e=>{ if(e.target===el) closeModals(); });
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModals(); });
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pass').value;
+  const errEl = document.getElementById('login-err');
+  errEl.style.display = 'none';
+  if (!u || !p) { errEl.textContent = '⚠ Please enter both username and passphrase.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'AUTHENTICATING…'; btn.disabled = true;
+  try {
+    const res = await fetch('/admin/auth', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&next_url=/app/`
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      const msg = '⚠ ' + (data.error || 'Invalid credentials. Access denied.');
+      errEl.textContent = msg; errEl.style.display = 'block';
+      btn.textContent = 'AUTHENTICATE →'; btn.disabled = false;
+      return;
+    }
+    // First-login redirect
+    if (data.redirect) { window.location.href = data.redirect; return; }
+    // MFA required
+    if (data.mfa_required) {
+      btn.textContent = 'AUTHENTICATE →'; btn.disabled = false;
+      if (data.has_mfa) {
+        // User has MFA → show code entry modal
+        openModal('login-mfa');
+        document.getElementById('lm-code').value = '';
+        document.getElementById('lm-err').style.display = 'none';
+        setTimeout(() => document.getElementById('lm-code').focus(), 200);
+      } else {
+        // No MFA yet → show QR enroll modal
+        document.getElementById('lm-qr-img').src = 'data:image/png;base64,' + (data.qr_b64 || '');
+        document.getElementById('lm-secret').textContent = data.secret || '';
+        document.getElementById('lm-enroll-code').value = '';
+        document.getElementById('lm-enroll-err').style.display = 'none';
+        openModal('login-enroll');
+        setTimeout(() => document.getElementById('lm-enroll-code').focus(), 200);
+      }
+      return;
+    }
+    // Direct success (fallback — should not occur with MFA enforcement)
+    btn.textContent = `✅ AUTHENTICATED — ${data.display || u}`;
+    setTimeout(() => { window.location.href = '/app/'; }, 800);
+  } catch(err) {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'AUTHENTICATE →'; btn.disabled = false;
+  }
+}
+
+// ── 2FA Code check (existing MFA users) ──────────────────────────────────────
+async function handleLoginMfaCheck(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('lm-err');
+  errEl.style.display = 'none';
+  const code = document.getElementById('lm-code').value.trim();
+  const btn  = document.getElementById('lm-btn');
+  btn.textContent = 'VERIFYING…'; btn.disabled = true;
+  try {
+    const res  = await fetch('/admin/user-mfa-check', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `code=${encodeURIComponent(code)}`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = `✅ VERIFIED — ${data.display || ''}`;
+      setTimeout(() => { window.location.href = data.redirect || '/app/'; }, 600);
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Invalid code.');
+      errEl.style.display = 'block';
+      btn.textContent = 'VERIFY & ENTER PLATFORM →'; btn.disabled = false;
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'VERIFY & ENTER PLATFORM →'; btn.disabled = false;
+  }
+}
+
+// ── 2FA Enroll + verify (new users who scanned QR) ───────────────────────────
+async function handleLoginMfaEnroll(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('lm-enroll-err');
+  errEl.style.display = 'none';
+  const code = document.getElementById('lm-enroll-code').value.trim();
+  const btn  = document.getElementById('lm-enroll-btn');
+  btn.textContent = 'ACTIVATING…'; btn.disabled = true;
+  try {
+    const res  = await fetch('/admin/user-mfa-enroll', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `code=${encodeURIComponent(code)}`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = `✅ MFA ACTIVATED — ${data.display || ''}`;
+      setTimeout(() => { window.location.href = data.redirect || '/app/'; }, 600);
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Invalid code.');
+      errEl.style.display = 'block';
+      btn.textContent = 'ACTIVATE MFA & ENTER PLATFORM →'; btn.disabled = false;
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'ACTIVATE MFA & ENTER PLATFORM →'; btn.disabled = false;
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const p1 = document.getElementById('r-pass').value;
+  const p2 = document.getElementById('r-pass2').value;
+  const errEl = document.getElementById('reg-err');
+  errEl.style.display = 'none';
+  if (p1 !== p2) { errEl.textContent='⚠ Passphrase mismatch.'; errEl.style.display='block'; return; }
+  if (p1.length < 12) { errEl.textContent='⚠ Passphrase too short (min 12).'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('reg-btn');
+  btn.textContent = 'SUBMITTING…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `fullname=${encodeURIComponent(document.getElementById('r-name').value)}&email=${encodeURIComponent(document.getElementById('r-email').value)}&password=${encodeURIComponent(p1)}`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Auto-logged in — go straight to the platform
+      window.location.href = '/app/';
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Registration failed.');
+      errEl.style.display = 'block';
+      btn.textContent = 'REQUEST ACCESS →'; btn.disabled = false;
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'REQUEST ACCESS →'; btn.disabled = false;
+  }
+}
+
+// ── Forgot password JS handlers ───────────────────────────────────────────────
+let _forgotToken  = null;
+let _forgotUser   = '';   // kept across steps
+
+// Step 1: Check username → route to QR setup OR MFA entry
+async function handleForgotCheck(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('forgot-err-check');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('forgot-btn-check');
+  btn.textContent = 'CHECKING…'; btn.disabled = true;
+  _forgotUser = document.getElementById('f-user').value.trim();
+  try {
+    const res = await fetch('/api/forgot-check', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `username=${encodeURIComponent(_forgotUser)}`
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      errEl.textContent = '⛔ ' + (data.error || 'Error.');
+      errEl.style.display = 'block';
+    } else if (data.has_mfa) {
+      // Has MFA → go to code entry
+      openModal('forgot-mfa');
+    } else {
+      // No MFA → show QR setup
+      document.getElementById('f-qr-img').src = 'data:image/png;base64,' + data.qr_b64;
+      document.getElementById('f-secret-display').textContent = data.secret;
+      openModal('forgot-setup');
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'CONTINUE →'; btn.disabled = false;
+}
+
+// Step 1b: New MFA setup — scan QR, enter code to enroll + get reset token
+async function handleForgotSetupVerify(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('forgot-err-setup');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('forgot-btn-setup');
+  btn.textContent = 'VERIFYING…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/forgot-verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `username=${encodeURIComponent(_forgotUser)}&mfa_code=${encodeURIComponent(document.getElementById('f-setup-code').value)}&is_setup=true`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      _forgotToken = data.token;
+      document.getElementById('f-setup-code').value = '';
+      openModal('forgot2');
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Verification failed.');
+      errEl.style.display = 'block';
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'VERIFY CODE →'; btn.disabled = false;
+}
+
+// Step 1c: Existing MFA — enter code to get reset token
+async function handleForgotVerify(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('forgot-err1');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('forgot-btn1');
+  btn.textContent = 'VERIFYING…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/forgot-verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `username=${encodeURIComponent(_forgotUser)}&mfa_code=${encodeURIComponent(document.getElementById('f-mfa').value)}&is_setup=false`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      _forgotToken = data.token;
+      document.getElementById('f-mfa').value = '';
+      openModal('forgot2');
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Verification failed.');
+      errEl.style.display = 'block';
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'VERIFY →'; btn.disabled = false;
+}
+
+// Step 2: Set new passphrase
+async function handleForgotReset(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('forgot-err2');
+  errEl.style.display = 'none';
+  const p1 = document.getElementById('f-pass1').value;
+  const p2 = document.getElementById('f-pass2').value;
+  if (p1.length < 12) { errEl.textContent = '⚠ Passphrase too short (min 12).'; errEl.style.display = 'block'; return; }
+  if (p1 !== p2)       { errEl.textContent = '⚠ Passphrases do not match.';     errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('forgot-btn2');
+  btn.textContent = 'SAVING…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/forgot-reset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `token=${encodeURIComponent(_forgotToken)}&password=${encodeURIComponent(p1)}`
+    });
+    const data = await res.json();
+    if (data.ok) {
+      _forgotToken = null; _forgotUser = '';
+      closeModals();
+      openModal('login');
+      document.getElementById('login-err').style.display = 'none';
+      setTimeout(() => alert('✅ Passphrase updated — please log in with your new credentials.'), 300);
+    } else {
+      errEl.textContent = '⛔ ' + (data.error || 'Reset failed.');
+      errEl.style.display = 'block';
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'SAVE NEW PASSPHRASE →'; btn.disabled = false;
+}
+
+
+const btn=document.getElementById('enterBtn');
+const orig='ENTER PLATFORM'; let typed='';
+setInterval(()=>{
+  if(Math.random()>0.97 && btn!==document.activeElement){
+    const chars='01ABCDEF!@#><';
+    const scrambled=orig.split('').map((c,i)=>i<typed.length?c:(Math.random()>0.7?chars[Math.floor(Math.random()*chars.length)]:c)).join('');
+    btn.textContent=scrambled;
+    setTimeout(()=>btn.textContent=orig, 120);
+  }
+},1200);
+</script>
+</body>
+</html>

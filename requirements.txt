@@ -1,0 +1,27 @@
+# Expedite Strike — Standalone Requirements
+# ===========================================
+# Minimal pip packages for full autonomous pentest operation.
+# Install: pip install -r requirements_standalone.txt
+
+# ── Core Framework ──────────────────────────────────────────
+dash>=2.14
+dash-bootstrap-components>=1.5
+dash-cytoscape>=0.3
+flask>=3.0
+plotly>=5.18
+requests>=2.31
+
+# ── Reporting ───────────────────────────────────────────────
+reportlab>=4.0
+
+# ── Exploitation & Scanning ────────────────────────────────
+paramiko>=3.4          # SSH exploitation, lateral movement, pivoting
+ldap3>=2.9             # Active Directory LDAP enumeration
+pymysql>=1.1           # MySQL database exploitation
+psycopg2-binary>=2.9   # PostgreSQL exploitation & findings DB
+
+# ── AI Reasoning (Optional) ────────────────────────────────
+google-generativeai>=0.8   # Gemini LLM for AD gap analysis & planning
+
+# ── ZAP Integration (Optional) ─────────────────────────────
+# python-owasp-zap-v2.4>=0.0.21   # Uncomment if ZAP is installed

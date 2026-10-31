@@ -1,0 +1,277 @@
+##############################################################################
+# AEGIS Security Platform – Production Docker Compose
+# All application services share a single image built from ./Dockerfile.
+# Nginx acts as the TLS-terminating reverse proxy in front of everything.
+##############################################################################
+
+x-base-service: &base-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: aegis-platform:latest
+  restart: unless-stopped
+  env_file: .env.production
+  working_dir: /app
+  volumes:
+    - ./reports:/app/reports
+    - ./data:/app/data
+    - ./data/vuln_intel.db:/opt/vuln_intel.db    # exact path used by findings_service.py
+    - reports-data:/app/reports     # shared named volume across services
+  networks:
+    - aegis-net
+
+services:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. COMMAND – central entry point / orchestrator
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-command:
+    <<: *base-service
+    container_name: aegis-command
+    command: python launchpad_server.py
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. WATCHTOWER – main dashboard / landing UI
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-watchtower:
+    <<: *base-service
+    container_name: aegis-watchtower
+    command: python home_app.py
+    ports:
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. BASTION – Security Operations Centre module
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-bastion:
+    <<: *base-service
+    container_name: aegis-bastion
+    user: root
+    command: bash -c "mkdir -p ./uploads ./templates && cp -n /app/templates/landing.html ./templates/ 2>/dev/null; pip install --quiet pyotp qrcode[pil] && python app.py"
+    ports:
+      - "9021:9011"
+    depends_on:
+      aegis-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9011/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 4. SPECTRE – external penetration testing
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-spectre:
+    <<: *base-service
+    container_name: aegis-spectre
+    command: python external_assessment_app.py --port 9012
+    ports:
+      - "9012:9012"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9012/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 5. VIPER – offensive operations module
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-viper:
+    <<: *base-service
+    container_name: aegis-viper
+    command: python red_team_app.py
+    ports:
+      - "9013:9013"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9013/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 6. TRIDENT – extended red-team toolkit
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-trident:
+    <<: *base-service
+    container_name: aegis-trident
+    command: python red_team_suite_app.py --port 9014
+    ports:
+      - "9014:9014"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9014/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 7. RAMPART – blue-team / defensive security module
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-rampart:
+    <<: *base-service
+    container_name: aegis-rampart
+    command: python defence_app.py
+    ports:
+      - "9015:9015"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9015/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 8. ECHELON – niche / specialist security tooling
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-echelon:
+    <<: *base-service
+    container_name: aegis-echelon
+    command: python specialised_app.py
+    ports:
+      - "9016:9016"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9016/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 9. BULWARK – Governance, Risk & Compliance
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-bulwark:
+    <<: *base-service
+    container_name: aegis-bulwark
+    command: python grc_app.py
+    ports:
+      - "9017:9017"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9017/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 10. CORSAIR – Digital Forensics & Incident Response
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-corsair:
+    <<: *base-service
+    container_name: aegis-corsair
+    command: python dfir_app.py
+    ports:
+      - "9018:9018"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9018/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 11. NEXUS – core platform services / admin
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-nexus:
+    <<: *base-service
+    container_name: aegis-nexus
+    command: python platform_app.py
+    ports:
+      - "9019:9019"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9019/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 12. LEDGER – reporting & export engine
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-ledger:
+    <<: *base-service
+    container_name: aegis-ledger
+    command: python reports_app.py
+    ports:
+      - "9020:9020"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9020/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 13. Nginx – TLS-terminating reverse proxy
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-nginx:
+    image: nginx:alpine
+    container_name: aegis-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - aegis-net
+    depends_on:
+      - aegis-command
+      - aegis-watchtower
+      - aegis-bastion
+      - aegis-spectre
+      - aegis-viper
+      - aegis-trident
+      - aegis-rampart
+      - aegis-echelon
+      - aegis-bulwark
+      - aegis-corsair
+      - aegis-nexus
+      - aegis-ledger
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # PostgreSQL — database backend for BASTION (Main SOC)
+  # ──────────────────────────────────────────────────────────────────────────
+  aegis-postgres:
+    image: postgres:16-alpine
+    container_name: aegis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: aegis-pg-2026
+      POSTGRES_DB: aegis_soc
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - aegis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis_soc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ────────────────────────────────────────────────────────────────────────────
+# Named volumes
+# ────────────────────────────────────────────────────────────────────────────
+volumes:
+  reports-data:
+    driver: local
+  pg-data:
+    driver: local
+
+# ────────────────────────────────────────────────────────────────────────────
+# Networks
+# ────────────────────────────────────────────────────────────────────────────
+networks:
+  aegis-net:
+    driver: bridge

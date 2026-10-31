@@ -1,0 +1,193 @@
+# ================================================================
+#  VULNERABILITY DATA LOADER + AUTO REFRESH DASHBOARD
+# ================================================================
+# ================================================================
+#  GLOBAL CONFIGURATION & PATHS
+# ================================================================
+
+
+
+
+from dash import dash_table
+from pathlib import Path
+
+PROJECT_ROOT = "/root/vuln_intel"
+
+# Main vulnerability database
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+
+# Reports + logs
+REPORT_DIR = Path(f"{PROJECT_ROOT}/app/data/reports")
+REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+Path(STATUS_LOG).write_text("")  # initialize or clear log
+
+
+print(f"[+] Loading vulnerability data from: {DB_PATH}")
+
+def load_findings():
+    """Safely pull all findings from the SQLite DB into a DataFrame."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("""
+            SELECT
+                id,
+                COALESCE(asset_id, '') AS asset_id,
+                COALESCE(host, '') AS host,
+                COALESCE(port, '') AS port,
+                COALESCE(service, '') AS service,
+                COALESCE(title, '') AS title,
+                COALESCE(severity, '') AS severity,
+                COALESCE(cvss, '') AS cvss,
+                COALESCE(cve_id, '') AS cve_id,
+                COALESCE(description, '') AS description,
+                COALESCE(evidence, '') AS evidence,
+                COALESCE(remediation, '') AS remediation,
+                COALESCE(vuln_name, '') AS vuln_name,
+                COALESCE(path, '') AS path,
+                COALESCE(source, '') AS source,
+                COALESCE(import_date, '') AS import_date,
+                COALESCE(timestamp, '') AS timestamp
+            FROM findings
+            ORDER BY import_date DESC, id DESC
+        """, conn)
+        conn.close()
+        print(f"✅ Loaded {len(df)} findings into dashboard.")
+        return df
+    except Exception as e:
+        print(f"❌ Error reading DB: {e}")
+        return pd.DataFrame()
+
+# Initial load
+df = load_findings()
+
+# === Vulnerability Dashboard Layout ===
+vuln_tab = dbc.Container(
+    [
+        html.H3("Vulnerability Dashboard", className="text-warning mb-3"),
+        dcc.Interval(id="refresh-interval", interval=30*1000, n_intervals=0),  # 30s refresh
+        dash_table.DataTable(
+            id="findings-table",
+            data=df.to_dict("records"),
+            columns=[{"name": i, "id": i} for i in df.columns],
+            page_size=10,
+            style_table={"overflowX": "auto"},
+            style_cell={
+                "textAlign": "left",
+                "backgroundColor": "#1C1C1C",
+                "color": "white",
+                "fontFamily": "Segoe UI",
+                "fontSize": "14px",
+            },
+            style_header={
+                "backgroundColor": "#EAAA00",
+                "fontWeight": "bold",
+                "color": "#000",
+            },
+        ),
+    ],
+    fluid=True,
+)
+
+# === Auto-refresh callback ===
+@app.callback(
+    Output("findings-table", "data"),
+    Input("refresh-interval", "n_intervals")
+)
+def refresh_table(_):
+    df = load_findings()
+    return df.to_dict("records")
+
+# ================================================================
+#  LLM REQUEST TAB — AI-POWERED FINDING ANALYSIS
+# ================================================================
+
+def call_llm(prompt: str) -> str:
+    """Send text to OpenAI API for analysis."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return "❌ OpenAI API key not configured."
+
+    try:
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are a cybersecurity vulnerability analyst."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.4,
+        }
+        r = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM error: {e}"
+
+llm_tab = html.Div(
+    [
+        html.H3("🤖 LLM Vulnerability Analysis", className="text-warning"),
+        dcc.Textarea(
+            id="llm-prompt",
+            placeholder="Ask the AI to summarize vulnerabilities, rank risks, or explain CVEs...",
+            style={"width": "100%", "height": "150px", "background": "#111", "color": "#fff"},
+        ),
+        html.Br(),
+        dbc.Button("Submit to LLM", id="llm-btn", color="warning"),
+        html.Div(id="llm-output", style={"whiteSpace": "pre-wrap", "marginTop": "10px", "color": "#EAAA00"}),
+    ]
+)
+
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True,
+)
+def process_llm(n, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    return call_llm(text)
+
+# ================================================================
+#  TAB NAVIGATION + DASH APP INITIALIZATION
+# ================================================================
+
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])
+
+app.layout = html.Div([
+    html.H2("Towson University — Vulnerability Intelligence Dashboard", className="text-warning text-center mb-4"),
+    dcc.Tabs(
+        id="tabs",
+        value="tab-vuln",
+        children=[
+            dcc.Tab(label="Vulnerability Dashboard", value="tab-vuln", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="LLM Request", value="tab-llm", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Natural Language", value="tab-nlp", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Chatbot", value="tab-chat", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Assessment", value="tab-assess", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Reporting", value="tab-report", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Voice Assistant", value="tab-voice", className="tab", selected_className="tab--selected"),
+        ],
+    ),
+    html.Div(id="tabs-content", className="p-4"),
+])
+
+@app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
+def render_tab(tab):
+    if tab == "tab-vuln":
+        return vuln_tab
+    elif tab == "tab-llm":
+        return llm_tab
+    else:
+        return html.Div("🚧 Under Development", style={"color": "#aaa", "textAlign": "center", "marginTop": "40px"})
+
+# ================================================================
+#  RUN APP
+# ================================================================
+if __name__ == "__main__":
+    print("[+] Dashboard starting on http://0.0.0.0:8050")
+    app.run(host="0.0.0.0", port=8050, debug=True)
+

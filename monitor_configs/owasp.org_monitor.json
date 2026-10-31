@@ -1,0 +1,17 @@
+{
+  "domain": "owasp.org",
+  "target": "https://owasp.org/www-project-webgoat/",
+  "baseline_findings": 19,
+  "baseline_critical": 0,
+  "created": "2026-06-24 09:33:21.905738",
+  "schedule": "weekly",
+  "alerts": {
+    "new_critical": true,
+    "new_high": true,
+    "resolved": true
+  },
+  "notify": [
+    "security-team"
+  ],
+  "next_scan": "2026-07-01 09:33:21.905738"
+}

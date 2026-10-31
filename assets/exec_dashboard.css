@@ -1,0 +1,101 @@
+/* ── Executive Dashboard Animations ─────────────────────────────────── */
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0px rgba(255,215,0,0); }
+  50%       { box-shadow: 0 0 16px rgba(255,215,0,0.25); }
+}
+
+.exec-kpi-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: default;
+}
+.exec-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+
+.exec-finding-row {
+  transition: background 0.2s ease;
+}
+.exec-finding-row:hover td {
+  background: rgba(255, 215, 0, 0.04) !important;
+}
+
+.exec-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  animation: livePulse 1.8s ease-in-out infinite;
+  margin-right: 6px;
+}
+
+/* ── Vulnerability Management (Wiz-style) ───────────────────────────── */
+
+/* ── Wiz-style Tab Strip (vm-wiz-tabs class on dbc.Tabs) ────────────────── */
+
+/* The tab list row itself — horizontal scroll, no wrap */
+.vm-wiz-tabs > ul {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  border-bottom: 1px solid #111c30 !important;
+  background: transparent !important;
+  padding: 0 4px !important;
+  margin: 0 !important;
+  scrollbar-width: none !important;           /* Firefox */
+  -ms-overflow-style: none !important;        /* IE/Edge */
+}
+
+.vm-wiz-tabs > ul::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
+
+/* Each tab item */
+.vm-wiz-tabs > ul > li > a.nav-link {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  color: #3a4a65 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 8px 14px !important;
+  white-space: nowrap !important;
+  transition: color .15s ease, border-color .15s ease !important;
+}
+
+.vm-wiz-tabs > ul > li > a.nav-link:hover {
+  color: #8a9cc0 !important;
+  border-bottom-color: #2a3a5a !important;
+  background: transparent !important;
+}
+
+.vm-wiz-tabs > ul > li > a.nav-link.active {
+  color: #5baef5 !important;
+  border-bottom-color: #5baef5 !important;
+  background: transparent !important;
+}
+
+/* Suppress the tab pane wrapper since we render content via callback */
+.vm-wiz-tabs > div.tab-content {
+  display: none !important;
+}
+
+/* ── Other VM helpers ────────────────────────────────────────────────────── */
+.vm-row { transition: background 0.15s ease; }
+.vm-row:hover { background: #131c2e !important; }
+
+.vm-sev-bar { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: default; }
+.vm-sev-bar:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important; }

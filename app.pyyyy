@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University AI-Augmented Vulnerability Intelligence Dashboard
+Author: [Your Name]
+Date: 2025-11-11
+"""
+
+import os
+import dash
+from dash import Dash, html, dcc, Input, Output, State, dash_table
+import pandas as pd
+import sqlite3
+import requests
+
+# === Secure OpenAI Initialization ===
+try:
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    if not OPENAI_API_KEY:
+        raise ValueError("Missing OPENAI_API_KEY in environment.")
+    print("[+] OpenAI API key loaded (env).")
+except Exception as e:
+    print(f"[!] OpenAI Initialization failed: {e}")
+    OPENAI_API_KEY = None
+
+
+# === Helper: Local DB loader ===
+DB_PATH = "/root/vuln_intel/app/data/findings.db"
+
+def load_data():
+    if not os.path.exists(DB_PATH):
+        return pd.DataFrame()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        print(f"[!] DB load error: {e}")
+        return pd.DataFrame()
+
+
+# === Helper: Call OpenAI LLM via REST ===
+def call_llm(prompt: str) -> str:
+    """Send user query to OpenAI GPT model or simulate reply if key missing."""
+    if not OPENAI_API_KEY:
+        return f"(demo) LLM simulated reply to: \"{prompt}\""
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You are a cybersecurity analyst summarizing vulnerabilities."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+    try:
+        r = requests.post("https://api.openai.com/v1/chat/completions",
+                          headers=headers, json=payload, timeout=20)
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        return f"❌ LLM call failed: {e}"
+
+
+# === Dash App Setup ===
+app = Dash(__name__, suppress_callback_exceptions=True, assets_folder="assets")
+server = app.server
+
+# === Tabs Layout ===
+app.layout = html.Div([
+    html.H2(
+        "Towson University AI-Augmented Vulnerability Intelligence Dashboard",
+        style={"textAlign": "center", "color": "#EAAA00", "marginBottom": "10px"}
+    ),
+
+    dcc.Tabs(
+        id="tabs",
+        value="tab1",
+        children=[
+            dcc.Tab(label="Vulnerability Dashboard", value="tab1", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="LLM Request", value="tab2", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Natural Language", value="tab3", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Chatbot", value="tab4", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Assessment", value="tab5", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Reporting", value="tab6", className="tab", selected_className="tab--selected"),
+            dcc.Tab(label="Voice Assistant", value="tab7", className="tab", selected_className="tab--selected")
+        ]
+    ),
+    html.Div(id="tabs-content", style={"padding": "1rem"})
+])
+
+
+# === Tabs Rendering Callback ===
+@app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
+def render_tab(tab):
+    df = load_data()
+
+    # Tab 1 – Vulnerability Dashboard
+    if tab == "tab1":
+        if df.empty:
+            return html.Div("No data found in findings.db", style={"color": "red"})
+        return html.Div([
+            html.H3("Vulnerability Dashboard", style={"color": "#EAAA00"}),
+            dcc.Dropdown(id="source-filter",
+                         options=[{"label": s, "value": s} for s in sorted(df["source"].dropna().unique())],
+                         placeholder="Filter by Source"),
+            dcc.Dropdown(id="severity-filter",
+                         options=[{"label": s, "value": s} for s in sorted(df["severity"].dropna().unique())],
+                         placeholder="Filter by Severity"),
+            dcc.Dropdown(id="ip-filter",
+                         options=[{"label": h, "value": h} for h in sorted(df["host"].dropna().unique())],
+                         placeholder="Filter by IP"),
+            dash_table.DataTable(
+                id="findings-table",
+                columns=[{"name": i, "id": i} for i in df.columns],
+                data=df.to_dict("records"),
+                style_table={"overflowX": "auto", "maxHeight": "400px"},
+                style_header={"backgroundColor": "#222", "color": "gold"},
+                style_data={"backgroundColor": "#111", "color": "#EEE"}
+            )
+        ])
+
+    # Tab 2 – LLM Request
+    elif tab == "tab2":
+        return html.Div([
+            html.H3("LLM Request", style={"color": "#EAAA00"}),
+            dcc.Textarea(
+                id="llm-input",
+                placeholder="Ask the AI to summarize or analyze vulnerabilities...",
+                style={"width": "100%", "height": "120px"}
+            ),
+            html.Button("Run LLM Analysis", id="llm-btn", n_clicks=0,
+                        style={"marginTop": "10px", "backgroundColor": "#EAAA00"}),
+            html.Div(id="llm-output", style={"marginTop": "15px", "color": "#EEE"})
+        ])
+
+    # Tab 3 – Natural Language
+    elif tab == "tab3":
+        return html.Div([
+            html.H3("Natural Language Interface (Under Development)",
+                    style={"color": "#EAAA00"})
+        ])
+
+    # Tab 4 – Chatbot
+    elif tab == "tab4":
+        return html.Div([
+            html.H3("Chatbot", style={"color": "#EAAA00"}),
+            dcc.Textarea(id="chatbot-input", placeholder="Ask something...",
+                         style={"width": "100%", "height": "100px"}),
+            html.Button("Ask", id="chatbot-btn", n_clicks=0, style={"marginTop": "10px"}),
+            html.Div(id="chatbot-output", style={"marginTop": "15px", "color": "#EEE"})
+        ])
+
+    # Tab 5 – Assessment
+    elif tab == "tab5":
+        return html.Div([
+            html.H3("Assessment Tab (Automated Analysis)", style={"color": "#EAAA00"}),
+            html.Div("This section will integrate MITRE TTP mappings and host-based reports.",
+                     style={"color": "#EEE"})
+        ])
+
+    # Tab 6 – Reporting
+    elif tab == "tab6":
+        return html.Div([
+            html.H3("Reporting", style={"color": "#EAAA00"}),
+            html.Div("Export vulnerability summaries, charts, and PDF reports here.",
+                     style={"color": "#EEE"})
+        ])
+
+    # Tab 7 – Voice Assistant
+    elif tab == "tab7":
+        return html.Div([
+            html.H3("Voice Assistant", style={"color": "#EAAA00"}),
+
+            html.Div([
+                html.Button("Start Voice", id="start-voice", n_clicks=0,
+                            style={"marginRight": "8px", "backgroundColor": "#EAAA00"}),
+                html.Button("Stop Voice", id="stop-voice", n_clicks=0),
+                html.Label("Use Browser TTS:"),
+                dcc.Checklist(id="tts-check",
+                              options=[{"label": "Speak replies", "value": "tts"}],
+                              value=[]),
+            ], style={"marginBottom": "12px"}),
+
+            html.Div(id="live-status", children="Status: Idle", style={"marginBottom": "10px", "color": "#EEE"}),
+
+            html.H4("Transcribed Text"),
+            html.Div(id="recognized-text",
+                     style={"whiteSpace": "pre-wrap", "background": "#111", "color": "#bfe", "padding": "8px"}),
+
+            html.H4("LLM Response"),
+            html.Div(id="llm-response",
+                     style={"whiteSpace": "pre-wrap", "background": "#111", "color": "#ffd", "padding": "8px",
+                            "marginTop": "8px"}),
+
+            dcc.Store(id="voice-store", data={"text": ""})
+        ])
+
+
+# === Callback: LLM Request ===
+@app.callback(Output("llm-output", "children"), Input("llm-btn", "n_clicks"), State("llm-input", "value"))
+def run_llm_request(n_clicks, text):
+    if n_clicks == 0 or not text:
+        return dash.no_update
+    return call_llm(text)
+
+
+# === Callback: Chatbot ===
+@app.callback(Output("chatbot-output", "children"),
+              Input("chatbot-btn", "n_clicks"),
+              State("chatbot-input", "value"))
+def run_chatbot(n_clicks, text):
+    if n_clicks == 0 or not text:
+        return dash.no_update
+    return call_llm(text)
+
+
+# === Callback: Voice Assistant LLM ===
+@app.callback(
+    [Output("llm-response", "children"),
+     Output("live-status", "children")],
+    Input("voice-store", "data"),
+    State("tts-check", "value"),
+    prevent_initial_call=True
+)
+def on_voice_text(data, tts_value):
+    if not data or not data.get("text"):
+        return dash.no_update, "Status: Idle"
+    text = data.get("text")
+    resp = call_llm(text)
+    return resp, f"Status: Received LLM reply for: \"{text[:60]}...\""
+
+
+# === Run App ===
+if __name__ == "__main__":
+    print(f"[+] DB path: {DB_PATH}")
+    app.run(host="0.0.0.0", port=8050, debug=True)

@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Unified Vuln-Intel Dashboard (Towson Edition)
+Author: Consolidated Research Dashboard
+Tabs:
+  1. Vulnerability Dashboard
+  2. LLM Request
+  3. Natural Language
+  4. Chatbot
+  5. Assessment (Nmap, Nessus, OpenVAS, Burp)
+  6. Reporting
+  7. Voice Assistant
+  8. System Health
+"""
+
+# ==========================================================
+#  CORE IMPORTS & CONFIG
+# ==========================================================
+import os, sys, json, base64, sqlite3, subprocess, threading, time, datetime
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import pandas as pd
+import plotly.express as px
+import requests
+from fpdf import FPDF
+import psutil
+
+# Dash + Bootstrap
+import dash
+from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx, no_update
+import dash_bootstrap_components as dbc
+
+# Local modules
+# from neo4j_integration import parse_nmap_xml  # deprecated
+from neo4j_integration import import_findings_to_neo4j, enrich_cves_from_nvd, init_constraints
+
+
+# ==========================================================
+#  GLOBAL PATHS & ENVIRONMENT
+# ==========================================================
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+REPORT_DIR = Path(f"{PROJECT_ROOT}/app/data/reports")
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+REPORT_DIR.mkdir(parents=True, exist_ok=True)
+Path(STATUS_LOG).write_text("")  # rotate log each boot
+
+# ==========================================================
+#  DATABASE UTILITIES
+# ==========================================================
+def load_findings():
+    """Load vulnerability data from SQLite"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        print(f"[!] DB load error: {e}")
+        return pd.DataFrame()
+
+def append_status(line: str):
+    """Write a timestamped line to status log"""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    with open(STATUS_LOG, "a") as f:
+        f.write(f"[{timestamp}] {line}\n")
+
+# ==========================================================
+#  DASH INITIALIZATION
+# ==========================================================
+external_stylesheets = [dbc.themes.DARKLY]
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=external_stylesheets)
+app.layout = html.Div([
+    html.H2("Towson University — Vulnerability Intelligence Dashboard", 
+            style={"color": "#EAAA00", "textAlign": "center"}),
+    html.H4("Dashboard initializing...", style={"textAlign": "center", "color": "#ccc"})
+])
+
+app.title = "Towson Vulnerability Intelligence Dashboard"
+server = app.server
+
+print(f"[+] DB path: {DB_PATH}")
+print("[+] Environment initialized successfully.")
+
+# ==========================================================
+#  VULNERABILITY DASHBOARD TAB
+# ==========================================================
+def serve_vuln_table():
+    df = load_findings()
+    if df.empty:
+        return html.Div("⚠️  No vulnerability data found in database.",
+                        style={"color": "#EAAA00", "marginTop": "1rem"})
+
+    # Limit columns to key vulnerability attributes
+    cols = ["id", "host", "port", "service", "title",
+            "severity", "cvss", "cve_id", "source"]
+    df = df[[c for c in cols if c in df.columns]]
+
+    return dash_table.DataTable(
+        id="findings-table",
+        columns=[{"name": i, "id": i} for i in df.columns],
+        data=df.to_dict("records"),
+        style_table={"overflowX": "auto", "backgroundColor": "#111"},
+        style_cell={
+            "backgroundColor": "#111",
+            "color": "#FFF",
+            "fontSize": "14px",
+            "padding": "6px",
+            "whiteSpace": "normal",
+        },
+        style_header={
+            "backgroundColor": "#EAAA00",
+            "color": "#000",
+            "fontWeight": "bold",
+        },
+        page_size=15,
+        sort_action="native",
+        filter_action="native",
+    )
+
+vuln_tab = dbc.Container(
+    [
+        html.H3("Vulnerability Dashboard", className="text-warning mb-3"),
+        dbc.Row([
+            dbc.Col(
+                dcc.Dropdown(
+                    id="source-filter",
+                    placeholder="Filter by Source",
+                    options=[
+                        {"label": "Nmap", "value": "Nmap"},
+                        {"label": "OpenVAS", "value": "OpenVAS"},
+                        {"label": "BurpSuite", "value": "BurpSuite"},
+                        {"label": "ZAP", "value": "ZAP"},
+                    ],
+                    multi=True,
+                ),
+                width=3,
+            ),
+            dbc.Col(
+                dcc.Dropdown(
+                    id="severity-filter",
+                    placeholder="Filter by Severity",
+                    options=[
+                        {"label": s, "value": s}
+                        for s in ["Critical", "High", "Medium", "Low"]
+                    ],
+                    multi=True,
+                ),
+                width=3,
+            ),
+        ], className="mb-3"),
+        html.Div(id="table-container", children=serve_vuln_table()),
+    ],
+    fluid=True,
+)
+
+@app.callback(
+    Output("table-container", "children"),
+    [Input("source-filter", "value"),
+     Input("severity-filter", "value")],
+)
+def update_table(sources, severities):
+    df = load_findings()
+    if df.empty:
+        return html.Div("No data available", style={"color": "#EAAA00"})
+    if sources:
+        df = df[df["source"].isin(sources)]
+    if severities:
+        df = df[df["severity"].isin(severities)]
+    return dash_table.DataTable(
+        columns=[{"name": i, "id": i} for i in df.columns],
+        data=df.to_dict("records"),
+        style_table={"overflowX": "auto"},
+        style_cell={"backgroundColor": "#111", "color": "#FFF"},
+        style_header={"backgroundColor": "#EAAA00", "color": "#000"},
+        page_size=15,
+    )
+
+# ==========================================================
+#  LLM REQUEST TAB
+# ==========================================================
+def call_llm(prompt: str):
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        return "(No OpenAI key found)"
+    try:
+        r = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        data = r.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM error: {e}"
+
+llm_tab = html.Div(
+    [
+        html.H3("🤖 LLM Vulnerability Analysis", className="text-warning"),
+        dcc.Textarea(
+            id="llm-prompt",
+            placeholder="Ask about vulnerabilities, CVEs, or mitigation steps...",
+            style={"width": "100%", "height": "150px"},
+        ),
+        html.Br(),
+        dbc.Button("Submit to LLM", id="llm-btn", color="warning"),
+        html.Div(
+            id="llm-output",
+            style={
+                "whiteSpace": "pre-wrap",
+                "marginTop": "10px",
+                "color": "#EAAA00",
+            },
+        ),
+    ]
+)
+
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True,
+)
+def process_llm(n, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    return call_llm(text)
+
+# ==========================================================
+#  NATURAL LANGUAGE + CHATBOT PLACEHOLDERS
+# ==========================================================
+nl_tab = html.Div([
+    html.H3("🗣 Natural Language Insights", className="text-warning"),
+    html.P("Use this area for NLP-based vulnerability summaries."),
+])
+
+chatbot_tab = html.Div([
+    html.H3("💬 Chatbot Assistant", className="text-warning"),
+    html.P("Interactive assistant for vulnerability queries."),
+])
+
+# ==========================================================
+#  NEO4J INTEGRATION HOOKS (Batch 3)
+# ==========================================================
+from neo4j_integration import (
+    init_constraints,
+    import_findings_to_neo4j,
+    enrich_cves_from_nvd
+)
+
+# Initialize Neo4j at startup
+try:
+    print("[+] Connecting to Neo4j and applying constraints...")
+    init_constraints()
+except Exception as e:
+    print(f"[!] Neo4j init failed: {e}")
+
+# Callback for Enrichment and Graph Push
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True
+)
+def process_llm(n, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+
+    if "neo4j" in text.lower():
+        try:
+            import_findings_to_neo4j()
+            enrich_cves_from_nvd()
+            return "✅ Neo4j graph updated and CVEs enriched successfully."
+        except Exception as e:
+            return f"❌ Neo4j enrichment failed: {e}"
+
+    # Default LLM response
+    return call_llm(text)
+
+# ==========================================================
+#  DASH SERVER ENTRY POINT
+# ==========================================================
+if __name__ == "__main__":
+    print("[+] Launching Vuln-Intel Dashboard on port 8050...")
+    app.run(host="0.0.0.0", port=8050, debug=True)

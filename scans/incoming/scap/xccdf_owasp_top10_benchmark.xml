@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           id="xccdf_aegis_benchmark_owasp-top10-2021"
+           resolved="1"
+           style="SCAP_1.2">
+
+  <status>accepted</status>
+  <title>AEGIS OWASP Top 10 (2021) Application Security Benchmark</title>
+  <description>
+    Application security assessment aligned with the OWASP Top 10 2021 categories.
+    Evaluates web applications for the most critical security risks as defined by
+    the Open Web Application Security Project.
+  </description>
+  <version>1.0.0</version>
+
+  <!-- ── RULES ─────────────────────────────────────────────────── -->
+
+  <Rule id="xccdf_aegis_rule_A01-broken-access-control" severity="high">
+    <title>A01:2021 — Broken Access Control</title>
+    <description>Access control enforces policy such that users cannot act outside their intended permissions. Failures lead to unauthorized information disclosure, modification, or destruction of data, or performing a business function outside the user's limits. CWE-200, CWE-284, CWE-285, CWE-352, CWE-639.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A02-cryptographic-failures" severity="high">
+    <title>A02:2021 — Cryptographic Failures</title>
+    <description>Previously known as Sensitive Data Exposure. The focus is on failures related to cryptography which often lead to sensitive data exposure or system compromise. Data transmitted in cleartext, use of deprecated cryptographic algorithms (MD5, SHA1, DES), or weak key generation. CWE-259, CWE-327, CWE-331.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A03-injection" severity="high">
+    <title>A03:2021 — Injection (SQL, XSS, Command)</title>
+    <description>User-supplied data is not validated, filtered, or sanitized by the application. SQL injection, Cross-site Scripting (XSS), and OS command injection remain critical threats. CWE-79 (XSS), CWE-89 (SQLi), CWE-78 (OS Command Injection).</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A04-insecure-design" severity="medium">
+    <title>A04:2021 — Insecure Design</title>
+    <description>A new category focusing on risks related to design and architectural flaws. Insecure design cannot be fixed by a perfect implementation. Missing or ineffective security controls, failure to account for business risk, missing rate limiting, and lack of threat modeling. CWE-209, CWE-256, CWE-501.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A05-security-misconfiguration" severity="medium">
+    <title>A05:2021 — Security Misconfiguration</title>
+    <description>Missing security hardening, improperly configured permissions, default credentials, unnecessary features enabled, error handling revealing stack traces. Default configurations are often insecure. CWE-16, CWE-611, CWE-1004.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A06-vulnerable-components" severity="medium">
+    <title>A06:2021 — Vulnerable and Outdated Components</title>
+    <description>Using components (libraries, frameworks, software modules) with known vulnerabilities. Components run with the same privileges as the application. If a vulnerable component is exploited, it can facilitate data loss or server takeover. CWE-1104.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A07-auth-failures" severity="high">
+    <title>A07:2021 — Identification and Authentication Failures</title>
+    <description>Confirmation of the user's identity, authentication, and session management is critical. Permits automated credential stuffing, brute force, default passwords, missing MFA, session fixation. CWE-287, CWE-384, CWE-613.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A08-integrity-failures" severity="medium">
+    <title>A08:2021 — Software and Data Integrity Failures</title>
+    <description>Code and infrastructure that does not protect against integrity violations. Applications relying on plugins, libraries, or modules from untrusted sources, repositories, and CDNs without integrity verification. Insecure CI/CD pipelines, auto-update without integrity verification. CWE-345, CWE-502, CWE-829.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A09-logging-monitoring" severity="medium">
+    <title>A09:2021 — Security Logging and Monitoring Failures</title>
+    <description>Without logging and monitoring, breaches cannot be detected. Insufficient logging, detection, monitoring, and active response allows attackers to further attack systems, maintain persistence, pivot, and tamper, extract, or destroy data. CWE-117, CWE-223, CWE-778.</description>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_A10-ssrf" severity="high">
+    <title>A10:2021 — Server-Side Request Forgery (SSRF)</title>
+    <description>SSRF flaws occur when a web application fetches a remote resource without validating the user-supplied URL. It allows an attacker to coerce the application to send a crafted request to an unexpected destination, even through firewalls, VPN, or other security controls. CWE-918.</description>
+  </Rule>
+
+  <!-- ── TEST RESULTS ──────────────────────────────────────────── -->
+  <TestResult id="xccdf_aegis_testresult_owasp-assessment"
+              end-time="2026-04-24T23:00:00">
+    <target>www.dvwa.co.uk</target>
+    <target-address>44.228.249.3</target-address>
+
+    <rule-result idref="xccdf_aegis_rule_A01-broken-access-control" severity="high">
+      <result>fail</result>
+      <message>Direct object reference vulnerability detected. User data accessible without proper authorization checks at /vulnerabilities/brute/ and /vulnerabilities/exec/.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A02-cryptographic-failures" severity="high">
+      <result>fail</result>
+      <message>Login credentials transmitted over HTTP without TLS on port 80. Session cookies lack Secure flag. Password storage mechanism not verified externally.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A03-injection" severity="high">
+      <result>fail</result>
+      <message>SQL injection confirmed at /vulnerabilities/sqli/ (parameter: id). Reflected XSS at /vulnerabilities/xss_r/ (parameter: name). Application is designed to be intentionally vulnerable (DVWA).</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A04-insecure-design" severity="medium">
+      <result>fail</result>
+      <message>Application has configurable security levels (low/medium/high/impossible) indicating design allows insecure modes. No rate limiting on login endpoint.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A05-security-misconfiguration" severity="medium">
+      <result>fail</result>
+      <message>phpinfo.php publicly accessible exposing full server configuration. PHP display_errors=On. Default credentials (admin/password) accepted.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A06-vulnerable-components" severity="medium">
+      <result>fail</result>
+      <message>PHP version detected may be outdated. Application uses jQuery without SRI (Subresource Integrity) verification. Server software versions disclosed in headers.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A07-auth-failures" severity="high">
+      <result>fail</result>
+      <message>Brute force login possible — no account lockout, no CAPTCHA, no rate limiting. Default credentials admin/password work. No multi-factor authentication available.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A08-integrity-failures" severity="medium">
+      <result>fail</result>
+      <message>File upload functionality at /vulnerabilities/upload/ accepts arbitrary files without integrity checking. No CSP header to prevent script injection from untrusted sources.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A09-logging-monitoring" severity="medium">
+      <result>fail</result>
+      <message>No evidence of security event logging for failed login attempts, injection attempts, or file upload activity. No monitoring or alerting mechanism detected.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_A10-ssrf" severity="high">
+      <result>fail</result>
+      <message>File inclusion vulnerability at /vulnerabilities/fi/ could be leveraged for SSRF. Server-side includes process user-controlled paths without URL/path validation.</message>
+    </rule-result>
+
+  </TestResult>
+</Benchmark>

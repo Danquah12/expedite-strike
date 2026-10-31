@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VulnIntel Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body style="font-family:sans-serif;margin:40px;">
+  <h1>Vulnerability Dashboard</h1>
+  <div id="severity_chart" style="width:600px;height:400px;"></div>
+  <script>
+  async function loadData(){
+    const res = await fetch('/api/stats/');
+    const data = await res.json();
+    const trace = {
+      x: data.map(d => d.severity),
+      y: data.map(d => d.count),
+      type: 'bar',
+      marker: {color: 'red'}
+    };
+    Plotly.newPlot('severity_chart', [trace], {title: 'Vulnerabilities by Severity'});
+  }
+  loadData();
+  </script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+/* =======================================================================
+   BATCH 14 — Ph.D Dark Mode Theme + Animations + BloodHound Visuals
+   This applies globally to the entire Dash app
+   ======================================================================= */
+
+/*  --------------------------------------------------------------
+    GLOBAL DARK MODE BODY
+    -------------------------------------------------------------- */
+body {
+    background-color: #0c0c0c !important;
+    color: #e1e1e1 !important;
+    font-family: 'Roboto', 'Segoe UI', sans-serif !important;
+}
+
+/*  --------------------------------------------------------------
+    TITLES / HEADERS
+    -------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+    color: #EAAA00 !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px;
+}
+
+/*  --------------------------------------------------------------
+    LABELS & FORM TEXT
+    -------------------------------------------------------------- */
+label {
+    color: #cccccc !important;
+    font-size: 15px !important;
+}
+
+/*  --------------------------------------------------------------
+    INPUTS & DROPDOWNS
+    -------------------------------------------------------------- */
+.Select-control, .Select--single > .Select-control {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: black !important;
+}
+
+.Select-menu-outer {
+    background-color: #222 !important;
+    border: 1px solid #444 !important;
+}
+
+.Select-option {
+    background-color: #222 !important;
+    color: #fff !important;
+}
+
+.Select-option:hover {
+    background-color: #333 !important;
+}
+
+/* Forces the dropdown VALUE text (graph type) to be black */
+.Select-value-label, .Select-value {
+    color: black !important;
+}
+
+
+/*  --------------------------------------------------------------
+    CARD / PANEL THEME
+    -------------------------------------------------------------- */
+.card, .card-body, .card-header {
+    background-color: #121212 !important;
+    border: 1px solid #333 !important;
+    color: #ddd !important;
+}
+
+/*  --------------------------------------------------------------
+    DATA TABLES
+    -------------------------------------------------------------- */
+.dash-table-container .dash-table {
+    background-color: #111 !important;
+}
+
+.dash-table-container .dash-spreadsheet-container {
+    background-color: #111 !important;
+}
+
+.dash-spreadsheet td {
+    background-color: #1a1a1a !important;
+    color: #fff !important;
+}
+
+.dash-spreadsheet th {
+    background-color: #EAAA00 !important;
+    color: #000 !important;
+    font-weight: bold !important;
+}
+
+/*  --------------------------------------------------------------
+    SCROLLBAR THEMING
+    -------------------------------------------------------------- */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* -------------------------------------------------------------------
+    CYTOSCAPE GRAPH AREA (BloodHound Inspired)
+    ------------------------------------------------------------------- */
+#neo4j-graph {
+    background: radial-gradient(#0f0f0f, #000000) !important;
+    border: 1px solid #222;
+    border-radius: 8px;
+    box-shadow: 0px 0px 25px rgba(255, 200, 0, 0.12);
+}
+
+/* Node glow effect on hover */
+cytoscape div:hover {
+    filter: brightness(1.2);
+}
+
+/* -------------------------------------------------------------------
+    NODE GLOW ANIMATIONS (CVSS severity-based)
+    ------------------------------------------------------------------- */
+@keyframes glow-critical {
+    from { box-shadow: 0 0 10px #ff073a; }
+    to { box-shadow: 0 0 25px #ff073a; }
+}
+
+@keyframes glow-high {
+    from { box-shadow: 0 0 10px #ff8800; }
+    to { box-shadow: 0 0 25px #ff8800; }
+}
+
+@keyframes glow-medium {
+    from { box-shadow: 0 0 10px #ffc107; }
+    to { box-shadow: 0 0 25px #ffc107; }
+}
+
+@keyframes glow-low {
+    from { box-shadow: 0 0 10px #28a745; }
+    to { box-shadow: 0 0 25px #28a745; }
+}
+
+/* These apply automatically based on cvss attribute */
+node[type='Vulnerability'][cvss >= 9] {
+    animation: glow-critical 1s infinite alternate;
+}
+node[type='Vulnerability'][cvss >= 7][cvss < 9] {
+    animation: glow-high 1.4s infinite alternate;
+}
+node[type='Vulnerability'][cvss >= 4][cvss < 7] {
+    animation: glow-medium 1.6s infinite alternate;
+}
+node[type='Vulnerability'][cvss < 4] {
+    animation: glow-low 1.7s infinite alternate;
+}
+
+/* -------------------------------------------------------------------
+    AI PANEL UI THEME
+    ------------------------------------------------------------------- */
+#ai-panel {
+    background-color: #101010 !important;
+    border: 1px solid #333 !important;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.ai-box {
+    background-color: #0f0f0f !important;
+    border: 1px solid #333 !important;
+    padding: 12px;
+    border-radius: 8px;
+    height: 260px;
+    overflow-y: auto;
+    font-size: 14px;
+    color: #f0f0f0;
+}
+
+/* -------------------------------------------------------------------
+    FLASHING CRITICAL ALERT
+    ------------------------------------------------------------------- */
+@keyframes flash-banner {
+    0% { background-color: #ff073a; }
+    50% { background-color: #b30000; }
+    100% { background-color: #ff073a; }
+}
+
+.alert-banner {
+    animation: flash-banner 0.8s infinite;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* -------------------------------------------------------------------
+   BUTTONS (Gold theme, PhD-level professional)
+   ------------------------------------------------------------------- */
+.btn-warning, .btn-primary, .btn-danger, .btn-success {
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    transition: 0.2s ease-in-out;
+}
+
+.btn-warning:hover,
+.btn-primary:hover,
+.btn-danger:hover,
+.btn-success:hover {
+    filter: brightness(1.2);
+}
+
+/* ======================================================================
+   BATCH 15 — CINEMATIC MODE + NODE HOVER PANELS + GRAPH SPOTLIGHT FX
+   ====================================================================== */
+
+
+/* ============================================================
+   1. NODE HOVER INTELLIGENCE PANEL (BloodHound style)
+   ============================================================ */
+
+#node-hover-panel {
+    position: absolute;
+    top: 80px;
+    right: 25px;
+    width: 260px;
+    background-color: #0f0f1a;
+    border: 1px solid #333;
+    padding: 12px;
+    color: #fff;
+    font-size: 13px;
+    border-radius: 8px;
+    z-index: 9999;
+    display: none;
+    box-shadow: 0px 0px 20px rgba(255, 220, 0, 0.25);
+    animation: fadeInPanel 0.3s ease-in-out;
+}
+
+@keyframes fadeInPanel {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ============================================================
+   2. GRAPH SPOTLIGHT EFFECT FOR ACTIVE NODE
+   ============================================================ */
+
+.node-active {
+    filter: brightness(2.2) drop-shadow(0px 0px 12px #ffd700);
+    transition: 0.25s ease-in-out;
+}
+
+.node-dimmed {
+    opacity: 0.25 !important;
+    transition: 0.4s ease-in-out;
+}
+
+
+/* ============================================================
+   3. CINEMATIC MODE — Dim Background + Highlight Graph Area
+   ============================================================ */
+
+#cinematic-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    z-index: 9950;
+    display: none;
+    animation: fadeInCinematic 0.5s ease-in-out;
+}
+
+@keyframes fadeInCinematic {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+#cinematic-exit-btn {
+    position: fixed;
+    top: 20px;
+    right: 25px;
+    z-index: 9999;
+    background-color: #EAAA00;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 6px;
+    display: none;
+    cursor: pointer;
+    box-shadow: 0px 0px 15px rgba(255, 215, 0, 0.65);
+}
+
+#cinematic-exit-btn:hover {
+    filter: brightness(1.15);
+}
+
+
+/* ============================================================
+   4. GRAPH “CAMERA ZOOM-IN” ANIMATION
+   ============================================================ */
+
+.graph-zoom-in {
+    animation: graphZoomIn 0.5s ease-out forwards;
+}
+
+@keyframes graphZoomIn {
+    0%   { transform: scale(0.75); opacity: 0.2; }
+    70%  { transform: scale(1.02); opacity: 0.9; }
+    100% { transform: scale(1.0); opacity: 1.0; }
+}
+
+
+/* ============================================================
+   5. GRAPH “CAMERA DOLLY OUT” ANIMATION
+   ============================================================ */
+
+.graph-zoom-out {
+    animation: graphZoomOut 0.4s ease-in forwards;
+}
+
+@keyframes graphZoomOut {
+    0%   { transform: scale(1.0); opacity: 1.0; }
+    100% { transform: scale(0.8); opacity: 0.7; }
+}
+
+
+/* ============================================================
+   6. AI CHATBOX “TYPEWRITER” EFFECT
+   ============================================================ */
+
+.typewriter-text {
+    overflow: hidden;
+    border-right: 2px solid #EAAA00;
+    white-space: nowrap;
+    animation: typing 2.2s steps(40, end),
+               blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink-caret {
+    50% { border-color: transparent; }
+}
+
+
+/* ============================================================
+   7. BUTTON FLOAT ANIMATION (subtle professional motion)
+   ============================================================ */
+
+.btn-animate:hover {
+    transform: translateY(-2px);
+    transition: transform 0.15s ease-in-out;
+}
+
+
+/* ============================================================
+   8. MITRE ATT&CK COLOR MAP (very accurate)
+   ============================================================ */
+
+.mitre-tactic {
+    background-color: #101928;
+    color: #6ccff6;
+}
+
+.mitre-technique {
+    background-color: #1a2738;
+    color: #f5f5f5;
+}
+
+.mitre-critical {
+    border-left: 4px solid #ff073a;
+}
+
+.mitre-high {
+    border-left: 4px solid #ff7b00;
+}
+
+.mitre-medium {
+    border-left: 4px solid #ffc300;
+}
+
+.mitre-low {
+    border-left: 4px solid #21d07a;
+}

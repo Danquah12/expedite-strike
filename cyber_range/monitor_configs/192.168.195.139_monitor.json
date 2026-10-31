@@ -1,0 +1,17 @@
+{
+  "domain": "192.168.195.139",
+  "target": "http://192.168.195.139:80",
+  "baseline_findings": 23,
+  "baseline_critical": 13,
+  "created": "2026-10-03 19:03:50.777500",
+  "schedule": "weekly",
+  "alerts": {
+    "new_critical": true,
+    "new_high": true,
+    "resolved": true
+  },
+  "notify": [
+    "security-team"
+  ],
+  "next_scan": "2026-10-10 19:03:50.777500"
+}

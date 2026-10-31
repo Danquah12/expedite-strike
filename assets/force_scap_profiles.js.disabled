@@ -1,0 +1,183 @@
+/**
+ * Aegis SCAP Profile Override v2
+ * 
+ * NUCLEAR OPTION: Intercepts all Dash callback responses and replaces
+ * the nmap-profile-select options with the correct 9 SCAP profiles
+ * when scap_xccdf is the selected scanner.
+ *
+ * This runs entirely in the browser. No server calls needed.
+ */
+(function() {
+    'use strict';
+
+    var SCAN_PROFILES = {
+        "nmap": [
+            {"label": "Quick (Top 100 ports, no scripts)",       "value": "nmap:quick"},
+            {"label": "Standard (vuln + vulners)",               "value": "nmap:standard"},
+            {"label": "Full Vuln (All NSE vuln + SSL/SMB/HTTP)", "value": "nmap:full_vuln"},
+            {"label": "Comprehensive (All ports + UDP + brute)", "value": "nmap:comprehensive"}
+        ],
+        "nuclei": [
+            {"label": "Light (Info & Network only)",                "value": "nuclei:light"},
+            {"label": "Standard (All community templates)",         "value": "nuclei:standard"},
+            {"label": "CVE-Only (CVEs + Exposures)",                "value": "nuclei:cve_only"},
+            {"label": "Full (All templates + brute + fuzzing)",     "value": "nuclei:full"}
+        ],
+        "zap": [
+            {"label": "Passive (Spider + headers only)",           "value": "zap:passive"},
+            {"label": "Active Light (XSS, SQLi, Path Traversal)", "value": "zap:active_light"},
+            {"label": "Full Active (All OWASP Top 10)",            "value": "zap:full_active"}
+        ],
+        "aegisprobe": [
+            {"label": "Passive (Passive plugins only)",             "value": "aegis:passive:low"},
+            {"label": "Full (All plugins, medium intensity)",       "value": "aegis:full:medium"},
+            {"label": "Aggressive (All plugins, max workers)",      "value": "aegis:full:aggressive"}
+        ],
+        "burp": [
+            {"label": "Passive Crawl (Spider + passive issues)",          "value": "burp:passive"},
+            {"label": "Active Scan (OWASP Top 10 audit)",                 "value": "burp:active"},
+            {"label": "Full Audit (All insertion points + JS analysis)",  "value": "burp:full_audit"}
+        ],
+        "openvas": [
+            {"label": "Discovery (Host discovery only)",             "value": "openvas:discovery"},
+            {"label": "Full & Fast (Default NVTs, optimised)",       "value": "openvas:full_fast"},
+            {"label": "Deep Scan (All NVTs + brute + DoS-safe)",    "value": "openvas:deep"}
+        ],
+        "nessus": [
+            {"label": "Basic Network (Host discovery + common vulns)",    "value": "nessus:basic"},
+            {"label": "Advanced Scan (All plugins, compliance checks)",   "value": "nessus:advanced"},
+            {"label": "PCI-DSS / Credentialed (Full audit)",              "value": "nessus:pci_cred"}
+        ],
+        "stig_ckl": [
+            {"label": "Import CKL Checklist",            "value": "stig_ckl:import"},
+            {"label": "Evaluate & Score (CAT I/II/III)", "value": "stig_ckl:evaluate"}
+        ],
+        "scap_xccdf": [
+            {"label": "\ud83d\udd0d Full Assessment \u2014 All SSG Benchmarks",                "value": "scap_xccdf:all"},
+            {"label": "\ud83d\udd0d RHEL 8/9  \u2014 DISA STIG + CIS  (1530-1697 rules)",    "value": "scap_xccdf:linux_server"},
+            {"label": "\ud83d\udd0d Ubuntu 22.04/24.04 \u2014 CIS + DISA STIG",              "value": "scap_xccdf:linux_desktop"},
+            {"label": "\ud83d\udd0d Debian 12 / AlmaLinux 9 \u2014 CIS Benchmark",           "value": "scap_xccdf:network"},
+            {"label": "\ud83d\udd0d Fedora / CentOS 8 \u2014 NIST 800-53 + CIS",             "value": "scap_xccdf:applications"},
+            {"label": "\ud83d\udd0d Cloud / Container \u2014 OCP4, EKS, CS9/10 (1530 rules)","value": "scap_xccdf:cloud"},
+            {"label": "\ud83d\udd0d Windows Server \u2014 DISA STIG",                        "value": "scap_xccdf:windows_server"},
+            {"label": "\ud83d\udd0d Windows Desktop \u2014 CIS Win 10/11",                   "value": "scap_xccdf:windows_desktop"},
+            {"label": "\ud83d\udcc2 Import Custom XCCDF / DS File (path in Targets)",   "value": "scap_xccdf:import"}
+        ]
+    };
+
+    // Use MutationObserver to detect when the nmap-profile-select dropdown appears in the DOM
+    var observer = new MutationObserver(function(mutations) {
+        var profileEl = document.getElementById('nmap-profile-select');
+        var scannerEl = document.getElementById('scanner-select');
+        if (!profileEl || !scannerEl) return;
+
+        // Get the current scanner value from React's internal state
+        var scannerValue = getScannerValue(scannerEl);
+        if (!scannerValue) return;
+
+        var profiles = SCAN_PROFILES[scannerValue];
+        if (!profiles) return;
+
+        // Check if options need updating
+        var currentOptions = getDropdownOptions(profileEl);
+        if (currentOptions && currentOptions.length === profiles.length) {
+            // Check if first option matches
+            if (currentOptions[0] && currentOptions[0].value === profiles[0].value) return;
+        }
+
+        // Force update the dropdown options via React setProps
+        forceSetProps(profileEl, 'options', profiles);
+        forceSetProps(profileEl, 'value', profiles[0].value);
+        console.log('[Aegis SCAP v2] Forced ' + profiles.length + ' profile options for: ' + scannerValue);
+    });
+
+    function getScannerValue(el) {
+        var key = Object.keys(el).find(function(k) {
+            return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
+        });
+        if (!key) return null;
+        var fiber = el[key];
+        var current = fiber;
+        for (var i = 0; i < 30 && current; i++) {
+            if (current.memoizedProps && current.memoizedProps.value !== undefined) {
+                return current.memoizedProps.value;
+            }
+            current = current.return;
+        }
+        return null;
+    }
+
+    function getDropdownOptions(el) {
+        var key = Object.keys(el).find(function(k) {
+            return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
+        });
+        if (!key) return null;
+        var fiber = el[key];
+        var current = fiber;
+        for (var i = 0; i < 30 && current; i++) {
+            if (current.memoizedProps && current.memoizedProps.options) {
+                return current.memoizedProps.options;
+            }
+            current = current.return;
+        }
+        return null;
+    }
+
+    function forceSetProps(el, prop, value) {
+        var key = Object.keys(el).find(function(k) {
+            return k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$');
+        });
+        if (!key) return false;
+        var fiber = el[key];
+        var current = fiber;
+        for (var i = 0; i < 30 && current; i++) {
+            if (current.memoizedProps && typeof current.memoizedProps.setProps === 'function') {
+                var update = {};
+                update[prop] = value;
+                current.memoizedProps.setProps(update);
+                return true;
+            }
+            current = current.return;
+        }
+        return false;
+    }
+
+    // Start observing when document is ready
+    function startObserver() {
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'aria-activedescendant']
+        });
+        // Also run immediately and on interval
+        setInterval(function() {
+            var profileEl = document.getElementById('nmap-profile-select');
+            var scannerEl = document.getElementById('scanner-select');
+            if (!profileEl || !scannerEl) return;
+            
+            var scannerValue = getScannerValue(scannerEl);
+            if (!scannerValue) return;
+            
+            var profiles = SCAN_PROFILES[scannerValue];
+            if (!profiles) return;
+            
+            var currentOptions = getDropdownOptions(profileEl);
+            if (currentOptions && currentOptions.length === profiles.length) {
+                if (currentOptions[0] && currentOptions[0].value === profiles[0].value) return;
+            }
+            
+            forceSetProps(profileEl, 'options', profiles);
+            forceSetProps(profileEl, 'value', profiles[0].value);
+            console.log('[Aegis SCAP v2] Interval forced ' + profiles.length + ' options for: ' + scannerValue);
+        }, 1000);
+    }
+
+    if (document.body) {
+        startObserver();
+    } else {
+        document.addEventListener('DOMContentLoaded', startObserver);
+    }
+
+    console.log('[Aegis] SCAP Profile Override v2 loaded');
+})();

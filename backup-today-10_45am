@@ -1,0 +1,1439 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University — AI-Augmented Vulnerability Intelligence Dashboard
+Fully integrated version (Batches 1–3 merged)
+"""
+
+# ==========================================================
+#  IMPORTS & CONFIGURATION
+# ==========================================================
+import os
+import sqlite3
+import psutil
+import pandas as pd
+import plotly.express as px
+import subprocess
+import time
+import requests
+from pathlib import Path
+from datetime import datetime
+
+# --- Dash Framework ---
+from dash import Dash, html, dcc, Input, Output, State, no_update, dash_table
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
+
+# --- Neo4j Integration ---
+from neo4j import GraphDatabase
+from neo4j_integration import import_nmap_hosts_to_neo4j, enrich_cves_from_nvd
+from neo4j_integration import run_full_pipeline
+# Add sound/animation components
+import dash_daq as daq
+from dash_extensions import EventListener
+
+import xml.etree.ElementTree as ET
+import os
+import time
+
+def parse_nmap_xml(xml_path):
+    if not os.path.exists(xml_path):
+        return {"error": "XML file does not exist"}
+
+    results = []
+
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+
+    for host in root.findall("host"):
+        address = host.find("address").get("addr")
+
+        # Extract hostname if present
+        hostname = None
+        hname_tag = host.find("hostnames/hostname")
+        if hname_tag is not None:
+            hostname = hname_tag.get("name")
+
+        # Extract open ports + service banners
+        for port in host.findall("ports/port"):
+            port_id = port.get("portid")
+            proto = port.get("protocol")
+
+            state = port.find("state").get("state")
+            service = port.find("service")
+
+            service_name = service.get("name") if service is not None else ""
+            product = service.get("product") if service is not None else ""
+            version = service.get("version") if service is not None else ""
+
+            results.append({
+                "ip": address,
+                "hostname": hostname,
+                "port": port_id,
+                "protocol": proto,
+                "state": state,
+                "service": service_name,
+                "product": product,
+                "version": version
+            })
+
+    return results
+
+
+def save_scan_to_database(results):
+    import sqlite3
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Ensure table exists
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_ip TEXT,
+            hostname TEXT,
+            port TEXT,
+            protocol TEXT,
+            state TEXT,
+            service TEXT,
+            product TEXT,
+            version TEXT
+        )
+    """)
+
+    for r in results:
+        cur.execute("""
+            INSERT INTO services (asset_ip, hostname, port, protocol, state, service, product, version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            r.get("ip"),
+            r.get("hostname"),
+            r.get("port"),
+            r.get("protocol"),
+            r.get("state"),
+            r.get("service"),
+            r.get("product"),
+            r.get("version"),
+        ))
+
+    conn.commit()
+    conn.close()
+
+# ==========================================================
+#  ENVIRONMENT SETUP (FINAL — VERIFIED WORKING)
+# ==========================================================
+
+import os
+from pathlib import Path
+
+# Absolute project root directory
+PROJECT_ROOT = "/root/vuln_intel"
+
+# Absolute SQLite database path (THIS is where import_scans.py writes)
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+
+# Status log path (inside the app folder)
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+
+# Ensure the status log directory exists
+Path(f"{PROJECT_ROOT}/app").mkdir(parents=True, exist_ok=True)
+
+# Create or reset the status log file on each startup
+Path(STATUS_LOG).write_text("=== Dashboard initialized ===\n")
+
+# Optional: OpenAI integration for chatbot/analysis modules
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-4o"
+
+# Debug output
+print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+print(f"[CONFIG] DB_PATH = {DB_PATH}")
+print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+print("[+] Environment initialized successfully.")
+
+# ==========================================================
+#  DASH INITIALIZATION
+# ==========================================================
+external_stylesheets = [dbc.themes.DARKLY]
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=external_stylesheets)
+app.title = "Towson Vulnerability Intelligence Dashboard"
+server = app.server
+
+print(f"[+] DB path: {DB_PATH}")
+print("[+] Environment initialized successfully.")
+
+# ==========================================================
+#  HELPER FUNCTIONS
+# ==========================================================
+def load_findings():
+    """Load vulnerability data from SQLite and normalize column names for dashboard."""
+    print("=== DEBUG: load_findings() CALLED ===")
+    print("[DEBUG] Using DB_PATH:", DB_PATH)
+    print("[DEBUG] File exists:", os.path.exists(DB_PATH))
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+
+        print("[DEBUG] Rows loaded BEFORE rename:", len(df))
+
+        # Normalize columns so Dash displays them correctly
+        df = df.rename(columns={
+            "asset": "Asset",
+            "port": "Port",
+            "service": "Service Product",
+            "version": "Version",
+            "cve": "CVE",
+            "severity": "Severity",
+            "cvss": "CVSS",
+            "cpe": "CPE",
+            "description": "Description"
+        })
+
+        print("[DEBUG] Columns AFTER rename:", df.columns.tolist())
+        print("[DEBUG] Rows loaded AFTER rename:", len(df))
+
+        return df
+
+    except Exception as e:
+        print("❌ Error loading findings:", e)
+        return pd.DataFrame(columns=[
+            "Asset", "Port", "Service Product", "Version",
+            "CVE", "Severity", "CVSS", "CPE", "Description"
+        ])
+
+# ==========================================================
+#  TAB 1: SYSTEM HEALTH
+# ==========================================================
+def system_health_layout():
+    cpu = psutil.cpu_percent()
+    mem = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
+
+    health_df = pd.DataFrame({
+        "Metric": ["CPU Usage", "Memory Usage", "Disk Usage"],
+        "Value": [cpu, mem, disk]
+    })
+    fig = px.bar(health_df, x="Metric", y="Value", text="Value", color="Value",
+                 color_continuous_scale="inferno", title="System Resource Utilization (%)")
+
+    return dbc.Container([
+        html.H3("🖥️ System Health Overview", className="text-warning mb-3"),
+        dcc.Graph(figure=fig),
+        html.Div(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                 style={"textAlign": "center", "color": "#bbb"})
+    ])
+
+# ==========================================================
+#  IMPORTS & CONFIGURATION
+# ==========================================================
+import os
+import sqlite3
+import psutil
+import pandas as pd
+import plotly.express as px
+import subprocess
+import time
+import requests
+from pathlib import Path
+from datetime import datetime
+
+# --- Dash Framework ---
+from dash import Dash, html, dcc, Input, Output, State, no_update, dash_table
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
+
+# --- Neo4j Integration ---
+from neo4j import GraphDatabase
+from neo4j_integration import import_nmap_hosts_to_neo4j, enrich_cves_from_nvd
+
+# ==========================================================
+#  ENVIRONMENT SETUP
+# ==========================================================
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+
+# Create or clear status log file
+Path(STATUS_LOG).write_text("=== Dashboard initialized ===\n")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-4o"
+
+print(f"[+] DB path: {DB_PATH}")
+print("[+] Environment initialized successfully.")
+
+
+# ==========================================================
+#  DASH INITIALIZATION
+# ==========================================================
+external_stylesheets = [dbc.themes.DARKLY]
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=external_stylesheets)
+app.title = "Towson Vulnerability Intelligence Dashboard"
+server = app.server
+
+
+# ==========================================================
+#  HELPER FUNCTIONS
+# ==========================================================
+def load_findings():
+    """Example helper for loading vulnerability data from SQLite."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        print(f"[+] Loaded {len(df)} findings from {DB_PATH}")
+        return df
+    except Exception as e:
+        print(f"[!] Could not load findings: {e}")
+        return pd.DataFrame()
+
+
+# ==========================================================
+#  TAB 2: VULNERABILITY DASHBOARD  (ENHANCED VERSION)
+# ==========================================================
+def vulnerability_tab():
+    return dbc.Container([
+        html.H3("📊 Vulnerability Dashboard", className="text-warning mb-3"),
+
+        # Refresh Button
+        html.Div([
+            dbc.Button("🔄 Refresh Dashboard", id="nessus-refresh", color="warning", className="mb-3")
+        ]),
+
+        # ====================== SUMMARY METRIC CARDS ======================
+        dbc.Row([
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Assets"),
+                dbc.CardBody(html.H3(id="metric-assets", className="text-center"))
+            ], color="dark", inverse=True), width=3),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Services"),
+                dbc.CardBody(html.H3(id="metric-services", className="text-center"))
+            ], color="secondary", inverse=True), width=3),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Vulnerabilities"),
+                dbc.CardBody(html.H3(id="metric-vulns", className="text-center"))
+            ], color="danger", inverse=True), width=3),
+        ], className="mb-4"),
+
+        # ====================== CVSS HEATMAP ======================
+        html.H4("🔥 CVSS Severity Heatmap", className="text-warning mt-4"),
+        dcc.Graph(id="cvss-heatmap", style={"height": "350px"}),
+
+        html.Div([
+            html.Span("🟥 Critical", style={"color": "#ff073a", "padding": "10px"}),
+            html.Span("🟧 High", style={"color": "#ff8800", "padding": "10px"}),
+            html.Span("🟨 Medium", style={"color": "#ffc107", "padding": "10px"}),
+            html.Span("🟩 Low", style={"color": "#28a745", "padding": "10px"}),
+        ], style={"textAlign": "center", "fontSize": "18px"}),
+
+        html.Br(),
+
+        # ====================== VULNS PER ASSET ======================
+        html.H4("🖥️ Vulnerabilities Per Asset", className="text-warning mt-4"),
+        dcc.Graph(id="vulns-by-asset"),
+
+        # ====================== TOP CVEs (Most Common) ======================
+        html.H4("🏆 Most Frequent CVEs", className="text-warning mt-4"),
+        dcc.Graph(id="top-vulns"),
+
+        html.Br(),
+
+        # ====================== ATTACK SURFACE GRAPH ======================
+        html.H4("🕸️ Attack Surface Graph", className="text-warning mt-4"),
+        cyto.Cytoscape(
+            id="vuln-graph",
+            layout={'name': 'cose'},
+            style={'width': '100%', 'height': '500px', 'backgroundColor': '#1b1b1b'},
+            elements=[],
+            stylesheet=[
+                {'selector': 'node[label="Asset"]', 'style': {
+                    'background-color': '#28a745', 'label': 'data(id)', 'font-size': '10px', 'color': '#fff'}},
+                {'selector': 'node[label="Service"]', 'style': {
+                    'background-color': '#007bff', 'label': 'data(id)', 'font-size': '9px', 'color': '#fff'}},
+                {'selector': 'node[label="Vulnerability"]', 'style': {
+                    'background-color': '#dc3545', 'label': 'data(id)', 'font-size': '8px', 'color': '#fff'}},
+                {'selector': 'edge', 'style': {'line-color': '#999'}}
+            ]
+        ),
+
+        html.Br(),
+
+        # ====================== FULL TABLE ======================
+        html.H4("📄 Full Vulnerability Report", className="text-warning mt-4"),
+        dash_table.DataTable(
+            id="vuln-table",
+            columns=[
+                {"name": "Asset", "id": "asset_ip"},
+                {"name": "Port", "id": "port"},
+                {"name": "Service Product", "id": "service_product"},
+                {"name": "Version", "id": "service_version"},
+                {"name": "CVE", "id": "cve"},
+                {"name": "Severity", "id": "severity"},
+                {"name": "CVSS", "id": "cvss"},
+                {"name": "CPE", "id": "cpe"},
+                {"name": "Description", "id": "description"},
+            ],
+            style_table={"overflowX": "auto", "backgroundColor": "#111"},
+            style_header={"backgroundColor": "#EAAA00", "color": "black", "fontWeight": "bold"},
+            style_cell={"backgroundColor": "#222", "color": "white", "padding": "6px"},
+            style_cell_conditional=[
+                {"if": {"column_id": "Description"}, "whiteSpace": "normal", "textAlign": "left"},
+                {"if": {"column_id": "cve"}, "whiteSpace": "normal"},
+            ],
+            markdown_options={"html": True},
+            page_size=15
+        ),
+
+        # ====================== AUTO REFRESH ELEMENTS ======================
+        dcc.Interval(id="interval-refresh", interval=30 * 1000, n_intervals=0),
+        html.Audio(id="audio-alert", src=None, autoPlay=True, controls=False, style={"display": "none"}),
+        html.Div(id="alert-banner"),
+
+        # ====================== TIMESTAMP ======================
+        html.Div(id="last-updated", style={"textAlign": "center", "color": "#bbb", "marginTop": "10px"})
+    ], fluid=True)
+
+
+# ==========================================================
+# ==========================================================
+#  CALLBACK: UPDATE DASHBOARD FROM NEO4J (CVSS + ALERTS + TIMESTAMP)
+# ==========================================================
+@app.callback(
+    [
+        Output("metric-assets", "children"),
+        Output("metric-services", "children"),
+        Output("metric-vulns", "children"),
+        Output("vuln-graph", "elements"),
+        Output("vuln-table", "data"),
+        Output("cvss-heatmap", "figure"),
+        Output("vulns-by-asset", "figure"),
+        Output("top-vulns", "figure"),
+        Output("audio-alert", "src"),
+        Output("alert-banner", "children"),
+        Output("last-updated", "children"),
+    ],
+
+
+    [
+        Input("interval-refresh", "n_intervals"),
+        Input("nessus-refresh", "n_clicks"),
+    ],
+    prevent_initial_call=False
+)
+def update_vuln_dashboard(_, refresh_clicks):
+    from neo4j import GraphDatabase
+    import plotly.express as px
+    import pandas as pd
+    from datetime import datetime
+    from neo4j_integration import enrich_cves_from_nvd
+
+    print("[+] Updating Vulnerability Dashboard...")
+
+    uri = "bolt://localhost:7687"
+    user = "neo4j"
+    password = "Adomaa12@"
+
+    assets, services, vulns = set(), set(), set()
+    nodes, edges, table_data, heatmap_data = [], [], [], []
+    new_critical_high = []
+
+    try:
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+        with driver.session() as session:
+
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+            OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, s.name AS service, s.port AS port,
+                   v.id AS vuln, v.cvss AS cvss
+            """
+
+            data = list(session.run(q))
+
+            # ----------------------------- CVSS Enrichment -----------------------------
+            missing = [rec["vuln"] for rec in data if rec["vuln"] and rec["cvss"] is None]
+            if missing:
+                print(f"[!] Enriching {len(missing)} missing CVSS scores...")
+                enrich_cves_from_nvd(limit=50)
+                data = list(session.run(q))
+
+            # ----------------------------- PROCESS RESULTS -----------------------------
+            for rec in data:
+                a, s, p, v, cvss = (
+                    rec["asset"], rec["service"], rec["port"], rec["vuln"], rec["cvss"]
+                )
+
+                if a: assets.add(a)
+                if s: services.add(s)
+                if v: vulns.add(v)
+
+                # Asset node
+                if a:
+                    nodes.append({"data": {"id": a, "label": "Asset"}})
+
+                # Service node
+                if s:
+                    sid = f"{s}:{p}"
+                    nodes.append({"data": {"id": sid, "label": "Service"}})
+                    edges.append({"data": {"source": a, "target": sid}})
+
+                # Vulnerability node
+                if v:
+                    nodes.append({"data": {"id": v, "label": "Vulnerability"}})
+                    edges.append({"data": {"source": sid, "target": v}})
+
+                # CVE hyperlink
+                if v and v.startswith("CVE-"):
+                    nvd_link = f"[{v}](https://nvd.nist.gov/vuln/detail/{v})"
+                else:
+                    nvd_link = v or "None"
+
+                # Severity Label
+                if cvss is None:
+                    severity = "Informational"
+                elif cvss >= 9.0:
+                    severity = "Critical"
+                elif cvss >= 7.0:
+                    severity = "High"
+                elif cvss >= 4.0:
+                    severity = "Medium"
+                else:
+                    severity = "Low"
+
+                severity_label = f"{nvd_link} ({severity})"
+
+                # Table row
+                table_data.append({
+                    "Asset": a or "",
+                    "Service": s or "",
+                    "Port": p or "",
+                    "Vulnerability": severity_label
+                })
+
+                # Alerts
+                if cvss and cvss >= 7.0:
+                    new_critical_high.append(v)
+
+                # Heatmap
+                if v and cvss is not None:
+                    heatmap_data.append({"Vulnerability": v, "CVSS": float(cvss)})
+
+        driver.close()
+
+    except Exception as e:
+        print(f"[!] Neo4j error: {e}")
+        empty_fig = px.scatter(title="⚠️ Error loading data")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # ----------------------------- Vulnerabilities Per Asset -----------------------------
+    if table_data:
+        df_table = pd.DataFrame(table_data)
+        vulns_asset_fig = px.bar(
+            df_table,
+            x="Asset",
+            title="Vulnerabilities Per Asset",
+            labels={"Asset": "Asset", "count": "Vulnerability Count"},
+        )
+        vulns_asset_fig.update_layout(
+            plot_bgcolor="#111", paper_bgcolor="#111", font_color="#fff"
+        )
+    else:
+        vulns_asset_fig = px.bar(title="No data available")
+
+    # ----------------------------- Top CVEs -----------------------------
+    if table_data:
+        df_table = pd.DataFrame(table_data)
+        df_table["CVE"] = df_table["Vulnerability"].str.extract(r'(CVE-\d+-\d+)')
+
+        top = (
+            df_table["CVE"]
+            .value_counts()
+            .rename_axis("CVE")
+            .reset_index(name="Count")
+            .head(10)
+        )
+
+        top_vulns_fig = px.bar(
+            top,
+            x="CVE",
+            y="Count",
+            title="Top 10 Most Frequent CVEs",
+        )
+        top_vulns_fig.update_layout(
+            plot_bgcolor="#111", paper_bgcolor="#111", font_color="#fff"
+        )
+    else:
+        top_vulns_fig = px.bar(title="No CVE data available")
+
+        
+        return (
+            "0", "0", "0", [], [], empty_fig,
+            None,
+            html.Div("⚠️ Error connecting to Neo4j", style={"color": "red"}),
+            f"Last updated: {timestamp}"
+        )
+
+    # ----------------------------- Deduplicate Nodes -----------------------------
+    unique_nodes = {}
+    for n in nodes:
+        unique_nodes[n["data"]["id"]] = n
+    elements = list(unique_nodes.values()) + edges
+
+    # ----------------------------- Heatmap -----------------------------
+    if heatmap_data:
+        df = pd.DataFrame(heatmap_data)
+        fig = px.density_heatmap(
+            df, x="Vulnerability", y="CVSS",
+            color_continuous_scale="RdYlGn_r",
+            title="CVSS Severity Distribution"
+        )
+        fig.update_layout(
+            plot_bgcolor="#111",
+            paper_bgcolor="#111",
+            font_color="#fff"
+        )
+    else:
+        fig = px.scatter(title="No CVSS data available")
+
+    # ----------------------------- Alerts -----------------------------
+    if new_critical_high:
+        audio_src = "/assets/alert.mp3"
+        alert_banner = html.Div(
+            f"🚨 {len(new_critical_high)} High/Critical vulnerabilities detected!",
+            style={
+                "backgroundColor": "#ff073a",
+                "padding": "12px",
+                "color": "white",
+                "textAlign": "center",
+                "fontWeight": "bold"
+            }
+        )
+    else:
+        audio_src = None
+        alert_banner = ""
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[+] Dashboard updated: {len(assets)} assets, {len(services)} services, {len(vulns)} vulnerabilities.")
+
+    return (
+        str(len(assets)),
+        str(len(services)),
+        str(len(vulns)),
+        elements,
+        table_data,
+        fig,
+        vulns_asset_fig,
+        top_vulns_fig,
+        audio_src,
+        alert_banner,
+        f"Last updated: {timestamp}"
+    )
+
+
+# ==========================================================
+#  TAB 3: LLM REQUEST
+# ==========================================================
+llm_tab = html.Div([
+    html.H3("🧠 LLM Request Interface", className="text-warning mb-3"),
+    html.P("Summarize or analyze findings using OpenAI GPT-4o."),
+    dcc.Textarea(id="llm-prompt", placeholder="Ask about vulnerabilities...", style={"width": "100%", "height": "150px"}),
+    html.Br(),
+    dbc.Button("Run LLM Analysis", id="llm-btn", color="warning"),
+    html.Div(id="llm-output", style={"whiteSpace": "pre-wrap", "marginTop": "10px", "color": "#EAAA00"})
+])
+
+@app.callback(Output("llm-output", "children"), Input("llm-btn", "n_clicks"), State("llm-prompt", "value"), prevent_initial_call=True)
+def process_llm(n, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    return call_llm(text)
+
+# ==========================================================
+#  TAB 4: CHATBOT (Placeholder)
+# ==========================================================
+chatbot_tab = html.Div([
+    html.H3("💬 Chatbot", className="text-warning mb-3"),
+    html.P("Conversational interface under development.")
+])
+
+# ==========================================================
+#  TAB 5: ASSESSMENT
+# ==========================================================
+assessment_tab = html.Div([
+    html.H3("🧪 Automated Vulnerability Scanning", className="text-warning mb-3"),
+    html.P("Select a scanner and specify targets for assessment."),
+
+    # Scanner selection dropdown
+    dcc.Dropdown(
+        id="scanner-select",
+        options=[
+            {"label": "Nmap (Network Discovery)", "value": "nmap"},
+            {"label": "OpenVAS (Vulnerability Scan)", "value": "openvas"},
+            {"label": "Nessus", "value": "nessus"},
+            {"label": "Burp Suite (Web App Scan)", "value": "burp"},
+        ],
+        placeholder="Select scanner",
+        style={"width": "50%"},
+    ),
+
+    # Target IP input box
+    dcc.Input(
+        id="target-ip",
+        type="text",
+        placeholder="Enter target IP(s) — comma or space separated",
+        style={"width": "50%"},
+    ),
+
+    html.Br(), html.Br(),
+
+    # Run scan button
+    dbc.Button("Run Scan", id="scan-btn", color="warning"),
+
+    # Status output
+    html.Div(
+        id="scan-status",
+        style={"marginTop": "15px", "color": "#EAAA00"},
+    ),
+])
+
+# ==========================================================
+#  ASSESSMENT TAB LAYOUT — CLEAN + FIXED
+# ==========================================================
+assessment_tab = html.Div([
+
+    html.H3("🧪 Automated Vulnerability Scanning", className="text-warning mb-3"),
+    html.P("Select a scanner and specify targets for assessment."),
+
+    # Scanner selection dropdown
+    dcc.Dropdown(
+        id="scanner-select",
+        options=[
+            {"label": "Nmap (Network Discovery)", "value": "nmap"},
+            {"label": "OpenVAS (Vulnerability Scan)", "value": "openvas"},
+            {"label": "Nessus", "value": "nessus"},
+            {"label": "Burp Suite (Web App Scan)", "value": "burp"},
+        ],
+        placeholder="Select scanner",
+        style={"width": "50%"},
+    ),
+
+    # Target IP input box
+    dcc.Input(
+        id="target-ip",
+        type="text",
+        placeholder="Enter target IP(s) — comma or space separated",
+        style={"width": "50%"},
+    ),
+
+    html.Br(), html.Br(),
+
+    # Run scan button
+    dbc.Button("Run Scan", id="scan-btn", color="warning"),
+
+    # Status output
+    html.Div(
+        id="scan-status",
+        style={"marginTop": "15px", "color": "#EAAA00"},
+    ),
+
+    html.Hr(style={"marginTop": "40px", "marginBottom": "40px"}),
+
+    # ==========================================================
+    #  STEP 1 — UPLOAD SUBNET / IP LIST
+    # ==========================================================
+    html.H4("Upload Subnets or IP Lists", className="text-info"),
+
+    dcc.Upload(
+        id="upload-ip-file",
+        children=html.Div([
+            "📤 Drag & Drop or ",
+            html.A("Select File", style={"color": "#00BCF2"})
+        ]),
+        style={
+            "width": "100%",
+            "height": "120px",
+            "lineHeight": "120px",
+            "borderWidth": "2px",
+            "borderStyle": "dashed",
+            "borderRadius": "10px",
+            "textAlign": "center",
+            "backgroundColor": "#f8f9fa",
+            "cursor": "pointer",
+        },
+        multiple=False,
+    ),
+
+    html.Br(),
+
+    html.Div(
+        id="uploaded-ip-preview",
+        style={
+            "whiteSpace": "pre-wrap",
+            "backgroundColor": "#1b1b1b",
+            "color": "white",
+            "padding": "12px",
+            "borderRadius": "8px",
+            "minHeight": "120px",
+        },
+    ),
+
+    html.Br(),
+
+    html.Button(
+        "Start Scan From Upload",
+        id="button-start-scan",
+        n_clicks=0,
+        style={
+            "background": "#28a745",
+            "color": "white",
+            "padding": "10px 20px",
+            "borderRadius": "6px"},
+    ),
+
+    html.Br(),
+    html.Div(
+        id="upload-scan-status",
+        style={"marginTop": "20px", "fontWeight": "bold"},
+    ),
+
+])
+
+
+
+    # Your existing Assessment components continue below this…
+#])
+
+
+# ==========================================================
+#  ASSESSMENT CALLBACKS
+# ==========================================================
+
+import base64
+import re
+import os
+from pathlib import Path
+
+# -------- Helper: Extract IPs/Subnets --------
+def extract_ips(text):
+    """
+    Extract IPv4 addresses and CIDR ranges from uploaded files.
+    Supports examples:
+    192.168.1.1
+    192.168.1.0/24
+    10.0.0.0/16
+    """
+    pattern = r"\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b"
+    return re.findall(pattern, text)
+
+
+# -------- Callback 1: Process Uploaded File --------
+@app.callback(
+    Output("uploaded-ip-preview", "children"),
+    Input("upload-ip-file", "contents"),
+    State("upload-ip-file", "filename"),
+    prevent_initial_call=True
+)
+def handle_uploaded_ip_file(contents, filename):
+
+    if contents is None:
+        return "No file uploaded yet."
+
+    try:
+        # Decode Base64 file
+        content_type, content_string = contents.split(",")
+        decoded = base64.b64decode(content_string).decode("utf-8", errors="ignore")
+
+        # Extract IPs/subnets
+        ips = extract_ips(decoded)
+
+        if not ips:
+            return f"❌ No valid IPs or subnets found in '{filename}'."
+
+        return (
+            f"📄 **File:** {filename}\n\n"
+            f"🔍 **Detected {len(ips)} Target(s):**\n\n" +
+            "\n".join(ips)
+        )
+
+    except Exception as e:
+        return f"❌ Error processing file: {str(e)}"
+
+
+# -------- Callback 2: Start Scan & Reconcile With Existing Nmap Feeds --------
+@app.callback(
+    Output("upload-scan-status", "children"),
+    Input("button-start-scan", "n_clicks"),
+    State("uploaded-ip-preview", "children"),
+    prevent_initial_call=True
+)
+def start_uploaded_scan(n_clicks, preview):
+
+    if n_clicks == 0:
+        return dash.no_update
+
+    if preview is None or "Detected" not in preview:
+        return "❌ Cannot start scan — no valid uploaded targets."
+
+    # Parse targets from preview box
+    raw_lines = preview.split("\n")
+    ips = [line.strip()
+           for line in raw_lines
+           if re.match(r"(?:\d{1,3}\.){3}\d{1,3}", line)]
+
+    if not ips:
+        return "❌ No valid IP addresses to scan."
+
+    # =============================
+    # Save targets to Nmap file
+    # =============================
+    target_dir = "/root/vuln_intel/feeds/nmap"
+    Path(target_dir).mkdir(parents=True, exist_ok=True)
+
+    target_file = f"{target_dir}/upload_targets.txt"
+    Path(target_file).write_text("\n".join(ips))
+
+    # Output XML file (consistent with existing naming convention)
+    output_file = f"{target_dir}/scan_uploaded.xml"
+
+    # =============================
+    # Run the Nmap scan (same flags as your main pipeline)
+    # =============================
+    cmd = f"nmap -sV -T4 -iL {target_file} -oX {output_file}"
+    os.system(cmd)
+
+    # =============================
+    # Merge & Import into SQLite + Neo4j
+    # =============================
+    import_script = "/root/vuln_intel/app/import_scans.py"
+    os.system(f"python3 {import_script}")
+
+    # =============================
+    # Return user-friendly status
+    # =============================
+    return (
+        f"✅ Scan completed for {len(ips)} target(s).\n"
+        f"📁 **Results saved:** {output_file}\n"
+        f"🗄 **Merged into database (vuln_intel.db)** via import_scans.py\n"
+        f"🌐 **Neo4j graph updated**\n"
+        f"📊 Dashboard auto-refresh will display new vulnerabilities."
+    )
+
+
+
+
+# ==========================================================
+#  CALLBACK: Run Scanner (Nmap/OpenVAS/etc.)
+# ==========================================================
+@app.callback(
+    Output("scan-status", "children"),
+    Input("scan-btn", "n_clicks"),
+    State("scanner-select", "value"),
+    State("target-ip", "value"),
+    prevent_initial_call=True,
+)
+def trigger_scan(n, scanner, target):
+    import subprocess, os, time
+
+    if not scanner or not target:
+        return "⚠️ Please select a scanner and provide target(s)."
+
+    # Normalize IP list (handles commas, spaces, mixed)
+    normalized = target.replace(",", " ")
+    targets = [t.strip() for t in normalized.split() if t.strip()]
+
+    if not targets:
+        return "⚠️ Invalid target format."
+
+    # ---------------------- NMAP ----------------------
+    if scanner == "nmap":
+
+        # Ensure scan directory exists
+        os.makedirs("/root/vuln_intel/scans", exist_ok=True)
+
+        # Unique XML output filename
+        xml_output = f"/root/vuln_intel/scans/nmap_scan_{int(time.time())}.xml"
+
+        # Build the Nmap command with XML output enabled
+        cmd = [
+            "nmap",
+            "-sV",
+            "-O",
+            "-v",
+            "-oX", xml_output,
+        ] + targets
+
+        try:
+            # ------------------------------------------------------
+            # 1. STREAM OUTPUT TO TERMINAL LIVE
+            # ------------------------------------------------------
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+            verbose_log = ""   # store verbose output for dashboard
+
+            for line in process.stdout:
+                print(line, end="")      # live output to Kali terminal
+                verbose_log += line      # append to dashboard log
+
+            process.wait()
+
+            # ------------------------------------------------------
+            # 2. PARSE XML + SAVE TO SQLITE DATABASE
+            # ------------------------------------------------------
+            scan_results = parse_nmap_xml(xml_output)
+            save_scan_to_database(scan_results)
+
+            # ------------------------------------------------------
+            # 3. RETURN FORMATTED RESULTS TO DASHBOARD
+            # ------------------------------------------------------
+            return html.Pre(
+                f"✅ Nmap Scan Complete!\n"
+                f"🖥️ Targets: {', '.join(targets)}\n"
+                f"📄 XML Saved: {xml_output}\n"
+                f"🔍 Parsed Services: {len(scan_results)}\n\n"
+                "------------------ NMAP VERBOSE OUTPUT ------------------\n"
+                f"{verbose_log}",
+                style={"color": "#EAAA00", "whiteSpace": "pre-wrap"},
+            )
+
+        except Exception as e:
+            return f"❌ Error running Nmap: {str(e)}"
+
+    # ---------------------- OTHER SCANNERS ----------------------
+    return f"Triggered {scanner} scan for: {targets}"
+
+
+# ==========================================================
+#  PLACEHOLDER TABS (Reporting, Voice, Attack)
+# ==========================================================
+reporting_tab = html.Div([html.H3("📄 Reporting (Under Development)")])
+voice_tab = html.Div([html.H3("🎙️ Voice Assistant (Under Development)")])
+attack_tab = html.Div([html.H3("🕸️ Attack Path Analysis (Neo4j Integration)")])
+
+# ==========================================================
+#  TAB 8: NEO4J GRAPHS VISUALIZATION
+# ==========================================================
+import dash_cytoscape as cyto
+from dash import dcc, html
+
+def neo4j_graphs_tab():
+    return html.Div(
+        [
+            html.H3("🧠 Neo4j Graph Visualizations", className="text-warning mb-3"),
+
+            # Category dropdown
+            html.Label("Graph Category:", className="text-light"),
+            dcc.Dropdown(
+                id="graph-category",
+                options=[
+                    {"label": "Core Relationship Graphs", "value": "core"},
+                    {"label": "Vulnerability Analysis", "value": "vuln"},
+                    {"label": "Attack Path Graphs", "value": "attack"},
+                    {"label": "Network Topology", "value": "network"},
+                ],
+                value="core",
+                clearable=False,
+                style={"color": "black"},
+            ),
+            html.Br(),
+
+            # Graph type dropdown
+            html.Label("Graph Type:", className="text-light"),
+            dcc.Dropdown(id="graph-type", placeholder="Select..."),
+            html.Br(),
+
+            # Cytoscape visualization area
+            cyto.Cytoscape(
+                id="neo4j-graph",
+                layout={"name": "cose"},
+                style={"width": "100%", "height": "600px", "backgroundColor": "#111"},
+                elements=[],
+                stylesheet=[
+                    {"selector": "node", "style": {"label": "data(label)", "color": "white"}},
+                    {"selector": "edge", "style": {"line-color": "#EAAA00"}},
+                ],
+            ),
+
+            html.Div(id="graph-info", className="text-warning mt-3"),
+        ],
+        style={"backgroundColor": "#111", "padding": "20px"},
+    )
+
+# ==========================================================
+#  GRAPH CATEGORY → GRAPH TYPE MAPPING
+# ==========================================================
+GRAPH_TYPES = {
+    "Core Relationship Graphs": [
+        {"label": "Attack Path Graph", "value": "attack_path"},
+        {"label": "Asset-Service Map", "value": "asset_service"},
+        {"label": "Vulnerability Link Graph", "value": "vuln_link"},
+        {"label": "Service Dependency Graph", "value": "service_dep"},
+    ],
+    "Advanced Analysis Graphs": [
+        {"label": "High-Risk Asset Heatmap", "value": "risk_heatmap"},
+        {"label": "CVSS Severity Distribution", "value": "cvss_distribution"},
+        {"label": "CVE Propagation Chain", "value": "cve_chain"},
+    ],
+}
+
+# ==========================================================
+#  NEO4J GRAPH TAB LAYOUT
+# ==========================================================
+def neo4j_graph_tab():
+    return html.Div([
+        html.H3("🧠 Neo4j Graph Visualizations", className="text-warning mb-4"),
+
+        html.Div([
+            html.Label("Graph Category:", className="text-light"),
+            dcc.Dropdown(
+                id="graph-category",
+                options=[
+                    {"label": "Core Relationship Graphs", "value": "Core Relationship Graphs"},
+                    {"label": "Advanced Analysis Graphs", "value": "Advanced Analysis Graphs"},
+                ],
+                value="Core Relationship Graphs",
+                clearable=False,
+                style={"width": "60%", "marginBottom": "20px"}
+            ),
+
+            html.Label("Graph Type:", className="text-light"),
+            dcc.Dropdown(
+                id="graph-type",
+                placeholder="Select...",
+                options=[],
+                style={"width": "60%", "marginBottom": "30px"}
+            ),
+        ]),
+
+        html.Hr(style={"borderColor": "#EAAA00"}),
+
+        html.Div(id="graph-title", className="text-warning text-center mb-3"),
+
+        cyto.Cytoscape(
+            id="neo4j-graph",
+            layout={"name": "cose"},
+            style={"width": "100%", "height": "600px", "backgroundColor": "#1b1b1b"},
+            elements=[],
+            stylesheet=[
+                {"selector": "node", "style": {"label": "data(label)", "color": "#fff"}},
+                {"selector": "node[type='Asset']", "style": {"background-color": "#28a745"}},
+                {"selector": "node[type='Service']", "style": {"background-color": "#007bff"}},
+                {"selector": "node[type='Vulnerability']", "style": {"background-color": "#dc3545"}},
+                {"selector": "edge", "style": {"line-color": "#aaa"}}
+            ]
+        ),
+    ], style={"padding": "20px"})
+    
+
+# ==========================================================
+#  CALLBACK: POPULATE GRAPH TYPE OPTIONS
+# ==========================================================
+@app.callback(
+    Output("graph-type", "options"),
+    Input("graph-category", "value")
+)
+def update_graph_type_dropdown(selected_category):
+    """
+    Dynamically populate Graph Type dropdown based on selected category.
+    """
+    if not selected_category:
+        return []
+    return GRAPH_TYPES.get(selected_category, [])
+
+
+# ==========================================================
+#  CALLBACK: LOAD NEO4J GRAPH DATA BASED ON SELECTION
+# ==========================================================
+@app.callback(
+    [Output("neo4j-graph", "elements",allow_duplicate=True),
+    Output("graph-title", "children",allow_duplicate = True)],
+
+    Input("graph-type", "value"),
+    prevent_initial_call=True
+)
+def load_selected_graph(graph_type):
+    """
+    Load Neo4j graph data for selected visualization type.
+    """
+    if not graph_type:
+        return no_update, ""
+
+    from neo4j import GraphDatabase
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "Adomaa12@"))
+    elements = []
+    title = ""
+
+    try:
+        with driver.session() as session:
+            if graph_type == "attack_path":
+                title = "🔥 Attack Path Graph"
+                query = """
+                MATCH p=(a:Asset)-[:RUNS_SERVICE|:HAS_VULNERABILITY*1..3]->(v:Vulnerability)
+                RETURN p LIMIT 50
+                """
+            elif graph_type == "asset_service":
+                title = "🖥️ Asset-Service Map"
+                query = """
+                MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+                RETURN a,s
+                """
+            elif graph_type == "vuln_link":
+                title = "🕸️ Vulnerability Link Graph"
+                query = """
+                MATCH (s:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+                RETURN s,v
+                """
+            elif graph_type == "service_dep":
+                title = "⚙️ Service Dependency Graph"
+                query = """
+                MATCH (s1:Service)-[:DEPENDS_ON]->(s2:Service)
+                RETURN s1,s2
+                """
+            elif graph_type == "cvss_distribution":
+                title = "📊 CVSS Severity Distribution Graph"
+                query = """
+                MATCH (v:Vulnerability)
+                RETURN v
+                """
+            elif graph_type == "cve_chain":
+                title = "🔗 CVE Propagation Chain"
+                query = """
+                MATCH p=(v1:Vulnerability)-[:RELATED_TO*1..3]->(v2:Vulnerability)
+                RETURN p LIMIT 50
+                """
+            else:
+                return [], f"⚠️ Unknown graph type: {graph_type}"
+
+            # Run Neo4j query and format data for Cytoscape
+            records = session.run(query)
+            for record in records:
+                for key, node in record.items():
+                    if hasattr(node, "id") and hasattr(node, "labels"):
+                        label = list(node.labels)[0]
+                        node_id = str(node.id)
+                        elements.append({
+                            "data": {"id": node_id, "label": node.get("host") or node.get("name") or node.get("id") or label, "type": label}
+                        })
+
+            # Add edges if the query returned paths
+            for record in records:
+                if "p" in record:
+                    for rel in record["p"].relationships:
+                        elements.append({
+                            "data": {
+                                "source": str(rel.start_node.id),
+                                "target": str(rel.end_node.id)
+                            }
+                        })
+
+    except Exception as e:
+        print(f"[!] Error loading {graph_type} graph: {e}")
+        title = f"⚠️ Error loading {graph_type} graph"
+    finally:
+        driver.close()
+
+    return elements, title
+
+
+# ==========================================================
+#  CALLBACK: Build Graph Elements from Neo4j
+# ==========================================================
+@app.callback(
+    [Output("neo4j-graph", "elements"),
+     Output("graph-info", "children")],
+    Input("graph-type", "value")
+)
+def load_selected_graph(graph_type):
+    from neo4j_integration import get_driver
+    driver = get_driver()
+    elements = []
+    message = "⚠️ No records found."
+    q = ""
+
+    try:
+        # ------------------- CORE GRAPHS -------------------
+        if graph_type == "attack_path":
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, s.name AS service, v.id AS vuln, v.cvss AS cvss
+            """
+            message = "🔺 Attack Path Graph"
+
+        elif graph_type == "service_vuln":
+            q = """
+            MATCH (s:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN s.name AS service, v.id AS vuln, v.cvss AS cvss
+            """
+            message = "🔹 Service–Vulnerability Graph"
+
+        elif graph_type == "asset_dep":
+            q = """
+            MATCH (a1:Asset)-[:RUNS_SERVICE]->(s:Service)<-[:RUNS_SERVICE]-(a2:Asset)
+            RETURN a1.host AS asset1, s.name AS service, a2.host AS asset2
+            """
+            message = "🧩 Asset Dependency Graph"
+
+        elif graph_type == "network_topo":
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+            RETURN a.host AS asset, s.name AS service
+            """
+            message = "🌐 Network Topology Graph"
+
+        elif graph_type == "cvss_heat":
+            q = """
+            MATCH (v:Vulnerability)
+            RETURN v.id AS vuln, v.cvss AS cvss
+            """
+            message = "🔥 CVSS Risk Heat Graph"
+
+        # ------------------- RUN QUERY -------------------
+        with driver.session() as session:
+            records = list(session.run(q))
+            for r in records:
+                record = dict(r)
+                for key, val in record.items():
+                    if val is None:
+                        continue
+                    if "asset" in key:
+                        elements.append({'data': {'id': val, 'label': 'Asset'}})
+                    elif "service" in key:
+                        elements.append({'data': {'id': val, 'label': 'Service'}})
+                    elif "vuln" in key:
+                        color = "#dc3545"
+                        if record.get("cvss"):
+                            score = float(record["cvss"])
+                            if score >= 9: color = "#ff073a"
+                            elif score >= 7: color = "#ff8800"
+                            elif score >= 4: color = "#ffc107"
+                            else: color = "#28a745"
+                        elements.append({'data': {'id': val, 'label': 'Vulnerability'}, 'classes': color})
+
+                # Create edges
+                fields = list(record.values())
+                if len(fields) >= 2:
+                    elements.append({'data': {'source': str(fields[0]), 'target': str(fields[1])}})
+
+        driver.close()
+        return elements, f"{message} — {len(elements)} elements."
+
+    except Exception as e:
+        driver.close()
+        return [], f"❌ Error loading {graph_type}: {e}"
+
+
+# ==========================================================
+#  ADD ATTACK PATH TAB TO TAB NAVIGATION
+# ==========================================================
+# Locate your dcc.Tabs definition and ensure you add:
+# dcc.Tab(label="Attack Path Graph", value="tab8"),
+
+# Example:
+# dcc.Tabs(id="tabs", value="tab1", children=[
+#     dcc.Tab(label="System Health", value="tab1"),
+#     dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+#     dcc.Tab(label="LLM Request", value="tab3"),
+#     dcc.Tab(label="Cloud Inventory", value="tab4"),
+#     dcc.Tab(label="Incident Feed", value="tab5"),
+#     dcc.Tab(label="Assets & Scans", value="tab6"),
+#     dcc.Tab(label="Reports", value="tab7"),
+#     dcc.Tab(label="Attack Path Graph", value="tab8"),
+# ])
+
+# ==========================================================
+#  TAB SWITCHING LOGIC (Add this to your existing tab router)
+# ==========================================================
+
+
+
+# ==========================================================
+#  MAIN DASHBOARD LAYOUT
+# ==========================================================
+app.layout = html.Div([
+    html.H2("Towson University — Vulnerability Intelligence Dashboard",
+            style={"color": "#EAAA00", "textAlign": "center", "marginBottom": "15px", "marginTop": "10px"}),
+    dcc.Tabs(id="tabs", value="tab1", className="custom-tabs", children=[
+        dcc.Tab(label="System Health", value="tab1"),
+        dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+        dcc.Tab(label="LLM Request", value="tab3"),
+        dcc.Tab(label="Chatbot", value="tab4"),
+        dcc.Tab(label="Assessment", value="tab5"),
+        dcc.Tab(label="Reporting", value="tab6"),
+        dcc.Tab(label="Voice Assistant", value="tab7"),
+        dcc.Tab(label="Neo4j Graphs", value="tab8"),
+
+    ]),
+    html.Div(id="tabs-content", style={"padding": "20px"}),
+], style={"backgroundColor": "#1C1C1C", "minHeight": "100vh"})
+
+# ==========================================================
+#  TAB SWITCHING LOGIC (Safe version with error handling)
+# ==========================================================
+from dash import html
+
+@app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
+def render_tab(tab):
+    try:
+        if tab == "tab1":
+            if 'system_health_layout' in globals():
+                return system_health_layout()
+            else:
+                return html.Div("⚠️ system_health_layout() not found", style={"color": "orange"})
+
+        elif tab == "tab2":
+            if 'vulnerability_tab' in globals():
+                return vulnerability_tab()
+            else:
+                return html.Div("⚠️ vulnerability_tab() not found", style={"color": "orange"})
+
+        elif tab == "tab3":
+            return llm_tab if 'llm_tab' in globals() else html.Div("⚠️ llm_tab missing")
+
+        elif tab == "tab4":
+            return chatbot_tab if 'chatbot_tab' in globals() else html.Div("⚠️ chatbot_tab missing")
+
+        elif tab == "tab5":
+            return assessment_tab if 'assessment_tab' in globals() else html.Div("⚠️ assessment_tab missing")
+
+        elif tab == "tab6":
+            return reporting_tab if 'reporting_tab' in globals() else html.Div("⚠️ reporting_tab missing")
+
+        elif tab == "tab7":
+            return voice_tab if 'voice_tab' in globals() else html.Div("⚠️ voice_tab missing")
+
+        # ✅ Updated Tab 8 — unified Neo4j Graphs visualization hub
+        elif tab == "tab8":
+            if 'neo4j_graphs_tab' in globals():
+                return neo4j_graphs_tab()
+            else:
+                return html.Div("⚠️ neo4j_graphs_tab() not found", style={"color": "orange"})
+
+        else:
+            return html.Div("⚠️ Invalid tab selected.", style={"color": "orange"})
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[!] Tab rendering failed for {tab}: {e}\n{tb}")
+        return html.Div([
+            html.H4(f"⚠️ Error loading {tab}", style={"color": "red"}),
+            html.Pre(str(e), style={"whiteSpace": "pre-wrap", "color": "#ffaaaa"})
+        ])
+
+# ==========================================================
+#  LAUNCH DASHBOARD
+# ==========================================================
+if __name__ == "__main__":
+    print("✅ Dashboard ready on http://127.0.0.1:8050")
+    app.run(host="0.0.0.0", port=8050, debug=True)

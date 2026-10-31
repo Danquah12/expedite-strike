@@ -1,0 +1,397 @@
+/* ===========================================================
+   PhD DARK MODE — GLOBAL THEME
+   =========================================================== */
+
+body {
+    background-color: #141820 !important;
+    color: #e8e8e8 !important;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h4, h5 {
+    font-weight: 600;
+    color: #00e6e6 !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+    background: #111;
+}
+
+/* ===========================================================
+   PANEL + CARD DESIGN (BloodHound Style)
+   =========================================================== */
+
+.phd-panel,
+#ai-panel-wrapper,
+#ai-output-wrapper,
+#node-info-panel,
+#attack-path-panel {
+    background: #1e2230 !important;
+    border: 1px solid #2e3450 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 10px #000 inset;
+}
+
+/* Buttons */
+button, .btn, .btn-danger, .btn-primary {
+    border-radius: 6px !important;
+    font-weight: bold;
+    transition: 0.25s ease-in-out;
+}
+
+button:hover, .btn:hover {
+    transform: scale(1.02);
+    filter: brightness(1.15);
+}
+
+/* ===========================================================
+   INPUTS / DROPDOWNS / TEXT FIELDS
+   =========================================================== */
+
+input, textarea, select, .Select-control, .dash-dropdown {
+    background-color: #252a36 !important;
+    color: #e6e6e6 !important;
+    border: 1px solid #3a4055 !important;
+    border-radius: 6px !important;
+}
+
+input:focus, textarea:focus {
+    border-color: #00e6e6 !important;
+    box-shadow: 0px 0px 6px #00cccc;
+}
+
+/* Dropdown text */
+.Select-menu-outer {
+    background-color: #1e2230 !important;
+    border: 1px solid #3a4055 !important;
+}
+
+/* Dropdown options */
+.VirtualizedSelectOption {
+    background-color: #252a36 !important;
+    color: #e6e6e6 !important;
+}
+.VirtualizedSelectFocusedOption {
+    background-color: #003366 !important;
+}
+
+/* ===========================================================
+   TABLES
+   =========================================================== */
+
+.dash-table-container {
+    background-color: #1a1e28 !important;
+}
+
+.dash-table-container .dash-spreadsheet-container {
+    background-color: #1a1e28 !important;
+}
+
+.dash-spreadsheet td, .dash-spreadsheet th {
+    background-color: #252a36 !important;
+    color: #e6e6e6 !important;
+    border-color: #3a4055 !important;
+}
+
+.dash-spreadsheet tr:hover {
+    background-color: #2c3347 !important;
+}
+
+/* Table header highlight */
+.dash-spreadsheet th {
+    background-color: #005eff !important;
+    color: white !important;
+}
+
+/* ===========================================================
+   CYTOSCAPE GRAPH THEME
+   =========================================================== */
+
+#neo4j-graph {
+    background-color: #151922 !important;
+    border: 1px solid #2e3450;
+    border-radius: 8px;
+}
+
+/* Node glow effect */
+cytoscape node {
+    transition: 0.25s ease-in-out;
+}
+cytoscape node:hover {
+    filter: brightness(1.35);
+    box-shadow: 0 0 10px #00e6e6;
+}
+
+/* Edge highlight on hover */
+cytoscape edge:hover {
+    line-color: #00ffff !important;
+}
+
+/* ===========================================================
+   AI PANEL — SPECIAL STYLING
+   =========================================================== */
+
+#ai-output, #ai-nvd-output, #ai-vulners-output, #ai-exploitdb-output {
+    background-color: #1e2230 !important;
+    border: 1px solid #3a4055 !important;
+    color: #e6e6e6 !important;
+}
+
+/* Status Text */
+#ai-status-text {
+    color: #00cccc !important;
+}
+
+/* Expandable sections */
+details summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #00e6e6 !important;
+    padding: 6px 0;
+}
+
+details {
+    margin-top: 10px;
+    background-color: #1e2230 !important;
+    border: 1px solid #2e3450 !important;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+/* ===========================================================
+   CONTEXT MENU
+   =========================================================== */
+
+#context-menu {
+    position: absolute;
+    background-color: #1e2230;
+    border: 1px solid #3a4055;
+    border-radius: 6px;
+    padding: 8px;
+    display: none;
+    z-index: 9999;
+    color: #e6e6e6;
+}
+
+#context-menu div:hover {
+    background-color: #003366;
+    cursor: pointer;
+}
+
+/* ===========================================================
+   FLASHING ALERT BANNER (Critical CVEs)
+   =========================================================== */
+
+@keyframes flash-critical {
+    0% { background-color: #ff0022; }
+    50% { background-color: #990011; }
+    100% { background-color: #ff0022; }
+}
+
+.alert-critical {
+    animation: flash-critical 1s infinite;
+    font-weight: 700;
+    padding: 12px;
+    color: #fff !important;
+    border-radius: 6px;
+}
+
+/* ===========================================================
+   ATTACK PATH PANEL
+   =========================================================== */
+
+#attack-path-panel {
+    border-left: 3px solid #00ffff !important;
+    padding: 15px !important;
+    background-color: #1a1e28 !important;
+}
+
+/* Attack steps */
+.attack-step {
+    padding: 6px 0;
+    border-bottom: 1px solid #333;
+}
+
+/* ===========================================================
+   FOOTER / TIMESTAMPS
+   =========================================================== */
+
+#last-updated {
+    color: #777 !important;
+    font-size: 12px;
+    text-align: center;
+    padding-top: 10px;
+}
+
+/* ===========================================================
+   LIGHTNING GOLD — ACTIVE TAB HIGHLIGHT
+   =========================================================== */
+
+/* Lightning shimmer keyframe */
+@keyframes lightning-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+/* Electric vibrate / shake keyframe */
+@keyframes electric-shake {
+    0%,  100% { transform: translateX(0)    rotate(0deg);   }
+    10%        { transform: translateX(-2px) rotate(-0.4deg); }
+    20%        { transform: translateX(2px)  rotate(0.4deg);  }
+    30%        { transform: translateX(-2px) rotate(-0.3deg); }
+    40%        { transform: translateX(2px)  rotate(0.3deg);  }
+    50%        { transform: translateX(-1px) rotate(-0.2deg); }
+    60%        { transform: translateX(1px)  rotate(0.2deg);  }
+    70%        { transform: translateX(-1px) rotate(-0.1deg); }
+    80%        { transform: translateX(1px)  rotate(0.1deg);  }
+    90%        { transform: translateX(0)    rotate(0deg);   }
+}
+
+/* Active / selected tab — gold lightning background + electric shake */
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link,
+.tab-container .nav-link.active,
+.nav-link.active {
+    background: linear-gradient(
+        105deg,
+        #b8860b 0%,
+        #ffd700 30%,
+        #fffacd 50%,
+        #ffd700 70%,
+        #b8860b 100%
+    ) !important;
+    background-size: 200% auto !important;
+    animation: lightning-shimmer 2.5s linear infinite !important;
+    color: #0d0d0d !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #ffd700 !important;
+    border-radius: 6px 6px 0 0 !important;
+    box-shadow:
+        0 0 8px #ffd700,
+        0 0 18px rgba(255, 215, 0, 0.5),
+        inset 0 0 6px rgba(255, 215, 0, 0.2) !important;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.6) !important;
+    transform-origin: center bottom;
+}
+
+/* Hover preview for idle tabs — subtle gold tint */
+.nav-tabs .nav-link:not(.active):hover,
+.nav-link:not(.active):hover {
+    background: rgba(255, 215, 0, 0.12) !important;
+    color: #ffd700 !important;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.4) !important;
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.25) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Keep non-active tabs readable */
+.nav-tabs .nav-link:not(.active),
+.nav-link:not(.active) {
+    color: #c0c0c0 !important;
+    border-bottom: 2px solid transparent !important;
+}
+
+
+/* ── Specialised nav active pulse ─────────────────────────────── */
+@keyframes nav-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); border-color: #ffaa00; color: #ffaa00; }
+  50%  { box-shadow: 0 0 0 8px rgba(255, 170, 0, 0);  border-color: #ff6b35; color: #ff6b35; }
+  100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); border-color: #ffaa00; color: #ffaa00; }
+}
+
+.nav-section-active > a,
+.nav-section-active .nav-link {
+    animation: nav-pulse 1.4s ease-in-out infinite !important;
+    border: 1px solid #ffaa00 !important;
+    border-radius: 6px !important;
+    background: rgba(255,170,0,0.08) !important;
+    color: #ffaa00 !important;
+    font-weight: 700 !important;
+    padding: 4px 10px !important;
+}
+
+/* ── Nav section active pulse — unique colour per section ─── */
+@keyframes nav-pulse-platform    { 0%,100%{box-shadow:0 0 0 0 rgba(0,188,212,.7);border-color:#00bcd4;color:#00bcd4}50%{box-shadow:0 0 0 8px rgba(0,188,212,0);border-color:#00e5ff;color:#00e5ff} }
+@keyframes nav-pulse-recon       { 0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,.7);border-color:#4caf50;color:#4caf50}50%{box-shadow:0 0 0 8px rgba(76,175,80,0);border-color:#69f070;color:#69f070} }
+@keyframes nav-pulse-attack      { 0%,100%{box-shadow:0 0 0 0 rgba(255,152,0,.7);border-color:#ff9800;color:#ff9800}50%{box-shadow:0 0 0 8px rgba(255,152,0,0);border-color:#ffcc02;color:#ffcc02} }
+@keyframes nav-pulse-redteam     { 0%,100%{box-shadow:0 0 0 0 rgba(244,67,54,.7);border-color:#f44336;color:#f44336}50%{box-shadow:0 0 0 8px rgba(244,67,54,0);border-color:#ff6b6b;color:#ff6b6b} }
+@keyframes nav-pulse-defence     { 0%,100%{box-shadow:0 0 0 0 rgba(33,150,243,.7);border-color:#2196f3;color:#2196f3}50%{box-shadow:0 0 0 8px rgba(33,150,243,0);border-color:#64baff;color:#64baff} }
+@keyframes nav-pulse-specialised { 0%,100%{box-shadow:0 0 0 0 rgba(255,170,0,.7);border-color:#ffaa00;color:#ffaa00}50%{box-shadow:0 0 0 8px rgba(255,170,0,0);border-color:#ff6b35;color:#ff6b35} }
+@keyframes nav-pulse-grc         { 0%,100%{box-shadow:0 0 0 0 rgba(156,39,176,.7);border-color:#9c27b0;color:#ce93d8}50%{box-shadow:0 0 0 8px rgba(156,39,176,0);border-color:#e040fb;color:#e040fb} }
+
+.nav-active-platform > a,    .nav-active-platform .nav-link    { animation:nav-pulse-platform    1.4s ease-in-out infinite !important; border:1px solid #00bcd4 !important; border-radius:6px !important; background:rgba(0,188,212,.08) !important; color:#00bcd4 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-recon > a,       .nav-active-recon .nav-link       { animation:nav-pulse-recon       1.4s ease-in-out infinite !important; border:1px solid #4caf50 !important; border-radius:6px !important; background:rgba(76,175,80,.08)  !important; color:#4caf50 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-attack > a,      .nav-active-attack .nav-link      { animation:nav-pulse-attack      1.4s ease-in-out infinite !important; border:1px solid #ff9800 !important; border-radius:6px !important; background:rgba(255,152,0,.08)  !important; color:#ff9800 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-redteam > a,     .nav-active-redteam .nav-link     { animation:nav-pulse-redteam     1.4s ease-in-out infinite !important; border:1px solid #f44336 !important; border-radius:6px !important; background:rgba(244,67,54,.08)  !important; color:#f44336 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-defence > a,     .nav-active-defence .nav-link     { animation:nav-pulse-defence     1.4s ease-in-out infinite !important; border:1px solid #2196f3 !important; border-radius:6px !important; background:rgba(33,150,243,.08) !important; color:#2196f3 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-specialised > a, .nav-active-specialised .nav-link { animation:nav-pulse-specialised 1.4s ease-in-out infinite !important; border:1px solid #ffaa00 !important; border-radius:6px !important; background:rgba(255,170,0,.08)  !important; color:#ffaa00 !important; font-weight:700 !important; padding:4px 10px !important; }
+.nav-active-grc > a,         .nav-active-grc .nav-link         { animation:nav-pulse-grc         1.4s ease-in-out infinite !important; border:1px solid #9c27b0 !important; border-radius:6px !important; background:rgba(156,39,176,.08) !important; color:#ce93d8 !important; font-weight:700 !important; padding:4px 10px !important; }
+
+/* ===========================================================
+   EXPEDITE STRIKE EXTERNAL PENTEST — ANIMATION KEYFRAMES
+   =========================================================== */
+
+/* Tool chip blink — active tool in progress bar */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+/* Traffic light LEDs */
+@keyframes tl-blink-r {
+    0%, 100% { background: #ff2200; box-shadow: 0 0 12px #ff2200, 0 0 28px rgba(255,34,0,.4); }
+    50%      { background: #3a0000; box-shadow: none; }
+}
+
+@keyframes tl-blink-a {
+    0%, 100% { background: #ff9800; box-shadow: 0 0 12px #ff9800, 0 0 28px rgba(255,152,0,.4); }
+    50%      { background: #3a2a00; box-shadow: none; }
+}
+
+/* Phase progress bar — scan running pulse on active segment */
+@keyframes phase-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+}
+
+/* Active phase chip — dramatic bright strobe flash */
+@keyframes phase-strobe {
+    0%   {
+        opacity: 1;
+        filter: brightness(1) saturate(1);
+        box-shadow: 0 0 8px currentColor, 0 0 20px currentColor;
+        text-shadow: none;
+    }
+    15%  {
+        opacity: 1;
+        filter: brightness(3.5) saturate(2);
+        box-shadow: 0 0 30px white, 0 0 60px white, 0 0 90px currentColor;
+        text-shadow: 0 0 12px white, 0 0 24px white;
+    }
+    30%  {
+        opacity: 0.1;
+        filter: brightness(0.3) saturate(0.5);
+        box-shadow: none;
+        text-shadow: none;
+    }
+    60%  {
+        opacity: 1;
+        filter: brightness(2.8) saturate(1.8);
+        box-shadow: 0 0 25px white, 0 0 50px white, 0 0 80px currentColor;
+        text-shadow: 0 0 10px white, 0 0 20px white;
+    }
+    100% {
+        opacity: 0.15;
+        filter: brightness(0.2);
+        box-shadow: none;
+        text-shadow: none;
+    }
+}

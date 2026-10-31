@@ -1,0 +1,32 @@
+import os
+from parsers import nmap_parser, openvas_parser, zap_parser
+from merge_feeds import load_findings_to_db, deduplicate
+import logging
+
+DB_PATH = "/root/vuln_intel/vuln_intel.db"
+
+def import_xml(path):
+    """
+    Detect the scanner type from filename, parse using proper parser,
+    deduplicate, and insert into vuln_intel.db.
+    """
+    name = os.path.basename(path).lower()
+    if "nmap" in name or "scan" in name:
+        findings = nmap_parser.parse_nmap(path)
+        src = "nmap"
+    elif "openvas" in name or "report" in name:
+        findings = openvas_parser.parse_openvas(path)
+        src = "openvas"
+    elif "zap" in name:
+        findings = zap_parser.parse_zap(path)
+        src = "zap"
+    else:
+        raise ValueError(f"Unknown scanner type for {path}")
+
+    logging.info(f"[+] Parsed {len(findings)} findings from {src}")
+    if not findings:
+        return
+
+    findings = deduplicate(findings)
+    load_findings_to_db(findings, DB_PATH)
+    logging.info(f"[✓] Imported {len(findings)} findings from {src}")

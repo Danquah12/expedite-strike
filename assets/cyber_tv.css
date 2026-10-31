@@ -1,0 +1,31 @@
+
+/* CyberTV Home Station animations */
+@keyframes ticker {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.tv-live {
+  animation: blink 1.2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes avatarBob {
+  0%   { transform: translateY(0px) scale(1.00); }
+  100% { transform: translateY(-4px) scale(1.02); }
+}
+#anchor-avatar-img {
+  border-radius: 8px;
+  transition: filter 0.3s;
+}
+
+/* ── Admin Dashboard ─────────────────────────────────── */
+.admin-nav-item:hover {
+    color: #fff !important;
+    background: rgba(255,255,255,0.04) !important;
+    border-left-color: #ffcc00 !important;
+}
+.admin-nav-item { user-select: none; }

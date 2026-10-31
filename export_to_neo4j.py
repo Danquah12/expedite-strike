@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""
+export_to_neo4j.py
+Reads findings from a SQLite DB and upserts them into Neo4j.
+Compatible with Neo4j 5.x.
+"""
+
+import os
+import sqlite3
+import math
+import logging
+from typing import Iterable
+
+import pandas as pd
+from neo4j import GraphDatabase
+from dotenv import load_dotenv
+
+# Load .env from project root (~/vuln_intel/.env)
+proj_root = os.path.expanduser("~/vuln_intel")
+load_dotenv(dotenv_path=os.path.join(proj_root, ".env"))
+
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PW = os.getenv("NEO4J_PW")
+SQLITE_PATH = os.getenv("SQLITE_PATH", "/root/vuln_intel/app/data/findings.db")
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "200"))
+
+if not NEO4J_PW:
+    raise SystemExit("ERROR: NEO4J_PW not set. Put it in ~/vuln_intel/.env or export it in your shell.")
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+
+def fetch_findings(sqlite_path: str) -> pd.DataFrame:
+    logging.info("Connecting to SQLite: %s", sqlite_path)
+    conn = sqlite3.connect(sqlite_path)
+    query = """
+    SELECT id, asset_id, host, port, title, severity, cvss, cve_id,
+           description, evidence, source, import_date
+    FROM findings
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    logging.info("Fetched %d rows from findings table", len(df))
+    return df
+
+
+def chunked_iter(df: pd.DataFrame, size: int) -> Iterable[pd.DataFrame]:
+    total = len(df)
+    for start in range(0, total, size):
+        yield df.iloc[start:start + size]
+
+
+def upsert_batch(tx, rows):
+    """
+    Neo4j 5-compatible upsert using FOREACH/CASE to avoid illegal WITH...WHERE constructs.
+    """
+    cypher = """
+    UNWIND $rows AS row
+
+    MERGE (a:Asset {host: row.host})
+      ON CREATE SET a.asset_id = row.asset_id
+      ON MATCH SET a.asset_id = coalesce(a.asset_id, row.asset_id)
+
+    WITH a, row,
+         CASE
+             WHEN row.cve_id IS NOT NULL AND trim(row.cve_id) <> '' THEN row.cve_id
+             ELSE null
+         END AS cid
+
+    FOREACH (_ IN CASE WHEN cid IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (v:Vulnerability {cve_id: cid})
+        SET v.title = coalesce(row.title, v.title),
+            v.severity = coalesce(row.severity, v.severity),
+            v.cvss = CASE WHEN row.cvss IS NOT NULL THEN toFloat(row.cvss) ELSE v.cvss END,
+            v.description = coalesce(row.description, v.description)
+        MERGE (a)-[:HAS_VULNERABILITY]->(v)
+    )
+
+    FOREACH (_ IN CASE WHEN cid IS NULL THEN [1] ELSE [] END |
+        MERGE (v:Vulnerability {title: coalesce(row.title, '<no-title>')})
+        SET v.severity = coalesce(row.severity, v.severity),
+            v.cvss = CASE WHEN row.cvss IS NOT NULL THEN toFloat(row.cvss) ELSE v.cvss END,
+            v.description = coalesce(row.description, v.description)
+        MERGE (a)-[:HAS_VULNERABILITY]->(v)
+    )
+
+    WITH a, row
+    MERGE (s:Source {name: coalesce(row.source, 'unknown')})
+      ON CREATE SET s.first_seen = row.import_date
+      ON MATCH SET s.last_seen = row.import_date
+
+    // If import_date is null, set default "unknown"
+    WITH a, s, row, coalesce(row.import_date, 'unknown') AS safe_date
+    MERGE (a)-[:HAS_SCAN {import_date: safe_date}]->(s)
+    """
+    tx.run(cypher, rows=list(rows))
+
+
+def main():
+    logging.info("Starting export_to_neo4j")
+    df = fetch_findings(SQLITE_PATH)
+    if df.empty:
+        logging.info("No findings found, exiting.")
+        return
+
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PW))
+    total = len(df)
+    batches = math.ceil(total / BATCH_SIZE)
+    logging.info("Will push %d rows in %d batches (batch size %d)", total, batches, BATCH_SIZE)
+
+    with driver:
+        with driver.session() as session:
+            batch_no = 0
+            for chunk in chunked_iter(df, BATCH_SIZE):
+                batch_no += 1
+                rows = []
+                for _, r in chunk.iterrows():
+                    rows.append({
+                        "id": int(r["id"]) if not pd.isna(r["id"]) else None,
+                        "asset_id": int(r["asset_id"]) if not pd.isna(r.get("asset_id")) else None,
+                        "host": str(r["host"]) if not pd.isna(r.get("host")) else "<unknown-host>",
+                        "port": str(r["port"]) if not pd.isna(r.get("port")) else None,
+                        "title": str(r["title"]) if not pd.isna(r.get("title")) else None,
+                        "severity": str(r["severity"]) if not pd.isna(r.get("severity")) else None,
+                        "cvss": float(r["cvss"]) if ("cvss" in r and not pd.isna(r["cvss"])) else None,
+                        "cve_id": str(r["cve_id"]).strip() if not pd.isna(r.get("cve_id")) else None,
+                        "description": str(r["description"]) if not pd.isna(r.get("description")) else None,
+                        "evidence": str(r["evidence"]) if not pd.isna(r.get("evidence")) else None,
+                        "source": str(r["source"]) if not pd.isna(r.get("source")) else None,
+                        "import_date": str(r["import_date"]) if not pd.isna(r.get("import_date")) else None,
+                    })
+                logging.info("Pushing batch %d/%d (rows: %d)", batch_no, batches, len(rows))
+                try:
+                    session.execute_write(upsert_batch, rows)
+                except Exception as e:
+                    logging.exception("Error while writing batch %d: %s", batch_no, e)
+                    raise
+    logging.info("Finished pushing to Neo4j")
+
+
+if __name__ == "__main__":
+    main()

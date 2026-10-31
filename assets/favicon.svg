@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="g">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="shine" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFF5A0"/>
+      <stop offset="60%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#0d1117"/>
+  <polygon points="32,5 56,18 56,40 32,58 8,40 8,18"
+           fill="none" stroke="url(#shine)" stroke-width="3.5"
+           filter="url(#g)"/>
+  <polygon points="32,14 48,23 48,37 32,50 16,37 16,23"
+           fill="#FFD70018"/>
+  <text x="32" y="40" text-anchor="middle"
+        font-family="monospace" font-size="20" font-weight="bold"
+        fill="url(#shine)" filter="url(#g)">A</text>
+</svg>

@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulnintel-app
+  namespace: vulnintel
+  labels:
+    app: vulnintel
+    component: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vulnintel
+      component: web
+  template:
+    metadata:
+      labels:
+        app: vulnintel
+        component: web
+    spec:
+      containers:
+        - name: vulnintel
+          image: vulnintel/grc-platform:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: vulnintel-secrets
+                  key: database-url
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vulnintel-secrets
+                  key: openai-api-key
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vulnintel-secrets
+                  key: neo4j-password
+            - name: REDIS_URL
+              value: redis://vulnintel-redis:6379/0
+            - name: KAFKA_BOOTSTRAP
+              value: vulnintel-kafka:9092
+            - name: GRC_MONITOR_INTERVAL
+              value: "3600"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /api/grc/monitor/status
+              port: 9000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/grc/monitor/status
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: scan-data
+              mountPath: /mnt/scans
+      volumes:
+        - name: scan-data
+          persistentVolumeClaim:
+            claimName: vulnintel-scans
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vulnintel-app
+  namespace: vulnintel
+spec:
+  type: ClusterIP
+  selector:
+    app: vulnintel
+    component: web
+  ports:
+    - port: 9000
+      targetPort: 9000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vulnintel-ingress
+  namespace: vulnintel
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - grc.yourdomain.com
+      secretName: vulnintel-tls
+  rules:
+    - host: grc.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vulnintel-app
+                port:
+                  number: 9000
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vulnintel-hpa
+  namespace: vulnintel
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vulnintel-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vulnintel-scans
+  namespace: vulnintel
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vulnintel
+  labels:
+    app: vulnintel
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vulnintel-secrets
+  namespace: vulnintel
+type: Opaque
+stringData:
+  database-url: "postgresql://vulnintel:changeme@vulnintel-postgres:5432/vulnintel"
+  openai-api-key: "sk-REPLACE_ME"
+  neo4j-password: "Adomaa12@"

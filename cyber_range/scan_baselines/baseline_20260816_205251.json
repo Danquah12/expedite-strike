@@ -1,0 +1,5489 @@
+{
+  "timestamp": "2026-08-16T20:52:51.525788",
+  "name": "baseline_20260816_205251",
+  "findings": [
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.139",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.140",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.137",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.128",
+      "severity": "Low",
+      "host": "192.168.195.128",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.146",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.254",
+      "severity": "Low",
+      "host": "192.168.195.254",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.1",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.137",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.139",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Recon",
+      "title": "Host Discovered: 192.168.195.140",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:21 (ftp)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "vsftpd Backdoor: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:22 (ssh)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:23 (telnet)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Telnet Cleartext: 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:25 (smtp)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:53 (domain)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.139:80",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:111 (rpcbind)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:445 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:512 (exec)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:513 (login)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:514 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:1099 (java-rmi)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:1524 (bindshell)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:2049 (nfs)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:2121 (ccproxy-ftp)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:3306 (mysql)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "MySQL Exposed: 192.168.195.139:3306",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:3632 (distccd)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:5432 (postgresql)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "PostgreSQL Exposed: 192.168.195.139:5432",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:5900 (vnc)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6000 (X11)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6667 (irc)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:6697 (irc)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8009 (ajp13)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8180 (http)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:8787 (drb)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:33374 (status)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:35438 (nlockmgr)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:36306 (java-rmi)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.139:38675 (mountd)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:22 (ssh)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:80",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:143 (imap)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:443 (https)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:443",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:445 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.140",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:5001 (java-object)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:8080 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.140:8080",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.140:8081 (http)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.137:5040 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.137:5357 (http)",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:135 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:445 (microsoft-ds)",
+      "severity": "Medium",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.146",
+      "severity": "Critical",
+      "host": "192.168.195.146",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:5985 (http)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:47001 (http)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49152 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49153 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49154 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49155 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49156 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.146:49157 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:80 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:80",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:135 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:139 (netbios-ssn)",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:443 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:443",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:445 (microsoft-ds)",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "SMB EternalBlue Candidate: 192.168.195.1",
+      "severity": "Critical",
+      "host": "192.168.195.1",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:902 (vmware-auth)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:912 (vmware-auth)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5040 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5357 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5432 (postgresql)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "PostgreSQL Exposed: 192.168.195.1:5432",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:5433 (postgresql)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:7680 (pando-pub)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8000 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8080 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-VulnScan",
+      "title": "Web App Surface: 192.168.195.1:8080",
+      "severity": "Medium",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:8089 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9011 (http)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9390 (tcpwrapped)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:9392 (unknown)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49664 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49665 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49666 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49667 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49668 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Scan",
+      "title": "Open Port: 192.168.195.1:49671 (msrpc)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: 'favicon.ico' Based Fingerprinting (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: 'favicon.ico' Based Fingerprinting (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: /doc directory browsable",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Anonymous FTP Login Reporting",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'ap_pregsub()' Function Local Denial of Service Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'ap_pregsub()' Function Local Denial of Service Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'ap_pregsub()' Function Local Denial of Service Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_auth_digest' Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_deflate' Denial Of Service Vulnerability (Jul 2009)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_lua' Denial of Service Vulnerability -01 (May 2015)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_lua' Denial of Service Vulnerability -01 (May 2015)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_lua' Denial of Service Vulnerability -01 (May 2015)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_ftp' Module Command Injection Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_ftp' Module DoS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_ftp' Wildcard Characters XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_http.c' Denial Of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_http.c' Denial Of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'mod_proxy_http.c' Denial Of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'Options' and 'AllowOverride' Directives Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'Whitespace Defects' Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'Whitespace Defects' Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server 'Whitespace Defects' Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.49 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.54 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.55 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.58 'mod_macro' Out-of-bounds Read Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.59 Multiple Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.60 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.64 Multiple Vulnerabilities - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server < 2.4.66 SSI Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server <= 2.4.51 Buffer Overflow Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server <= 2.4.52 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server CRLF Injection Vulnerability (Dec 2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server DoS Vulnerability (Jul 2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server DoS Vulnerability (May 2011) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server End of Life (EOL) Detection - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server ETag Header Information Disclosure Weakness",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server ETag Header Information Disclosure Weakness",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Log Escape Filtering Vulnerability (Jul 2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Man-in-the-Middle Attack Vulnerability (Jul 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Remote Denial of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Remote Denial of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Remote Denial of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Security Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Security Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Security Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Vulnerabilities (Feb 2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Vulnerabilities (Jan 2012) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Vulnerabilities (Jun 2017) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Vulnerabilities (Mar 2014) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Multiple Vulnerabilities (Sep 2014) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server OPTIONS Memory Leak Vulnerability (Optionsbleed) - Version Check",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server OPTIONS Memory Leak Vulnerability (Optionsbleed) - Version Check",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server OPTIONS Memory Leak Vulnerability (Optionsbleed) - Version Check",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server Privilege Escalation Vulnerability (Mar 2012) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache HTTP Server XSS Vulnerability (Sep 2012) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_perl 'Apache::Status' and 'Apache2::Status' XSS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_perl 'Apache::Status' and 'Apache2::Status' XSS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_perl Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_perl Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_python Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_python Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_ssl Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache mod_ssl Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Struts Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 'CGI Servlet' MITM Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 'MemoryUserDatabase' Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 'sendfile' Request Attributes Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 'Transfer-Encoding' Information Disclosure and Denial Of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 5.5.x < 5.5.32, 7.0.x < 7.0.6 XSS Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 5.5.x < 5.5.34 Multiple Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat 5.5.x < 5.5.35, 7.0.x < 7.0.23 DoS Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat <= 5.5.25 CSRF Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat AJP Protocol Security Bypass Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Authentication Bypass Vulnerability (Nov 2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Authentication Header Realm Name Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat CGI Security Constraint Bypass Vulnerability (May 2025) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat DoS Vulnerability (Feb 2023) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat DoS Vulnerability (Jul 2024) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat DoS Vulnerability (Jul 2025) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat End of Life (EOL) Detection - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat HTTP/2 Protocol DoS Vulnerability (MadeYouReset) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Information Disclosure Vulnerability (Mar 2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Manager/Host Manager/Server Status Default/Hardcoded Credentials (HTTP)",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple DoS Vulnerabilities (Jul 2025) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple DoS Vulnerabilities (Mar 2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple Vulnerabilities (Dec 2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple Vulnerabilities (Jan 2010)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple Vulnerabilities (Jul/Sep 2008)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple Vulnerabilities (Jun 2009)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Multiple Vulnerabilities (Jun 2025) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat RCE Vulnerability (Mar 2025) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat RCE Vulnerability (Nov 2016)",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Rewrite Rule Bypass Vulnerability (Apr 2025) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Security bypass vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat SecurityManager Security Bypass Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Server Administration Default/Hardcoded Credentials (HTTP)",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Apache Tomcat Session Fixation Vulnerability (Aug 2025) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Axway SecureTransport MFT Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Check if Mailserver answer to VRFY and EXPN requests",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Cleartext Transmission of Sensitive Information via HTTP",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Cleartext Transmission of Sensitive Information via HTTP",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: CPython Man In The Middle Attack Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: CPython Man In The Middle Attack Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Database Open Access Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: DCE/RPC and MSRPC Services Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: DCE/RPC and MSRPC Services Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: DCE/RPC and MSRPC Services Enumeration Reporting",
+      "severity": "Medium",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Diffie-Hellman Ephemeral Key Exchange DoS Vulnerability (SSH, D(HE)ater)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Diffie-Hellman Ephemeral Key Exchange DoS Vulnerability (SSH, D(HE)ater)",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Diffie-Hellman Ephemeral Key Exchange DoS Vulnerability (SSL/TLS, D(HE)ater)",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Diffie-Hellman Ephemeral Key Exchange DoS Vulnerability (SSL/TLS, D(HE)ater)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Diffie-Hellman Ephemeral Key Exchange DoS Vulnerability (SSL/TLS, D(HE)ater)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: DNS Server Detection (TCP)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: EasyPHP Webserver <= 12.1 Multiple Vulnerabilities - Active Check",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Eclipse Jetty Information Disclosure Vulnerability (GHSA-gwcr-j4wh-j3cq)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Enabled Directory Listing/Indexing Detection (HTTP)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Enabled Directory Listing/Indexing Detection (HTTP)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: FTP Banner Detection",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: FTP Brute Force Logins With Default Credentials Reporting",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: FTP Unencrypted Cleartext Login",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Greenbone Security Assistant (GSA) Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Brute Force Logins With Default Credentials Reporting",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Debugging Methods (TRACE/TRACK) Enabled",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Debugging Methods (TRACE/TRACK) Enabled",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Debugging Methods (TRACE/TRACK) Enabled",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Security Headers Detection",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server Banner Enumeration",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.146",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.137",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: HTTP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: IMAP Server type and version",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND 'buffer.c' Assertion Failure Denial of Service Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND 'buffer.c' Script Remote Denial of Service Vulnerability (Jan 2016)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND 'lightweight resolver protocol' Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND AXFR Response Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Cache Poisoning Vulnerability (CVE-2021-25220) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Cache-Poisoning Vulnerability (CVE-2025-40776, Birthday Attack) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Delegation Handling Denial of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Denial of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Denial of Service Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Denial of Service Vulnerability (CVE-2015-5477)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Denial of Service Vulnerability (CVE-2015-8000)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Denial of Service Vulnerability (CVE-2015-8704)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DNS RDATA Handling Remote DoS Vulnerability (Jan 2016)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DNSSEC Bogus NXDOMAIN Response Remote Cache Poisoning Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DNSSEC Query Response Additional Section Remote Cache Poisoning Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (Aug 2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2011-1910) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2011-4313) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2012-1667) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2016-1285) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2016-1286) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2021-25215) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2021-25219)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2022-2795) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2022-38177) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2023-3341) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2023-4408) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND DoS Vulnerability (CVE-2024-1975) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND End of Life (EOL) Detection - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Information Disclosure Vulnerability (CVE-2017-3142) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND lwresd Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Multiple DoS Vulnerabilities (CVE-2020-8616, CVE-2020-8617) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Multiple DoS Vulnerabilities (CVE-2023-50387, CVE-2023-50868, KeyTrap) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND NSID Request Denial of Service Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND OpenSSL DSA_verify() Security Bypass Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Policies Vulnerability (CVE-2018-5741) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Remote Dynamic Update Message DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Resolver Cache Vulnerability (Jan 2016)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND RTYPE ANY Query Denial of Service Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: ISC BIND Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery 1.0.3 < 3.5.0 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery 1.2 < 3.5.0 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery < 1.6.3 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery < 1.9.0 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery < 1.9.0 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery < 3.0.0 XSS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery < 3.4.0 Object Extensions Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: jQuery End of Life (EOL) Detection - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MariaDB / Oracle MySQL Detection (MySQL Protocol)",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Microsoft SMB Signing Disabled",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Microsoft SMB Signing Disabled",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Microsoft Windows SMB Accessible Shares",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Microsoft Windows SMB Accessible Shares",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Mort Bay / Eclipse Jetty Detection (HTTP)",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL 'ALTER DATABASE' Remote DoS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL 'sql_parse.cc' Multiple Format String Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL / MariaDB Default Credentials (MySQL Protocol)",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL 5.0.51a Unspecified RCE Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL 5.x Unspecified Buffer Overflow Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL < 5.0.88, 5.1.x < 5.1.41 DoS and Spoofing Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL < 5.1.41 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Authenticated Access Restrictions Bypass Vulnerability (CVE-2008-7247) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Empty Bit-String Literal Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Multiple Denial of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL MyISAM Table Privileges Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Mysqld Multiple Denial Of Service Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Privilege Escalation Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: MySQL Server Buffer Overflow Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Obtain list of all port mapper registered programs via RPC",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 10.1 Multiple Vulnerabilities",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 10.1 Multiple Vulnerabilities",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.1 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.1 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.2 Unspecified Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.2 Unspecified Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.3 Unspecified Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.3 Unspecified Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.3p2 RCE Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.3p2 RCE Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.6 Multiple Vulnerabilities (Terrapin Attack)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH < 9.6 Multiple Vulnerabilities (Terrapin Attack)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH <= 7.9 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH <= 7.9 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH <= 8.6 Command Injection Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenBSD OpenSSH <= 8.6 Command Injection Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'child_set_env()' Function Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'child_set_env()' Function Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'schnorr.c' Remote Memory Corruption Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'schnorr.c' Remote Memory Corruption Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'ssh-keysign.c' Local Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 'ssh-keysign.c' Local Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH 4.4 < 4.9 Permission, Privileges and Access Controls Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 5.1 Exposure of Sensitive Information to an Unauthorized Actor Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.1p2 DoS Vulnerability (Jan 2016)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.1p2 DoS Vulnerability (Jan 2016)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.2 X11 Forwarding Security Bypass Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.3 DoS and User Enumeration Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.4 Multiple Vulnerabilities (Jan 2017) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.6 'sftp-server' Security Bypass Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH < 7.8 User Enumeration Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 5.6 Improper Authentication Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 5.6 Improper Authentication Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 5.8 Multiple DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 5.8 Multiple DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 7.2p1 Xauth Command Injection Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 7.2p1 Xauth Command Injection Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 7.2p2 Privilege Escalation Vulnerability (May 2016)",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH <= 7.2p2 Privilege Escalation Vulnerability (May 2016)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH CBC Mode Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Certificate Validation Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Certificate Validation Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Information Disclosure Vulnerability (CVE-2016-20012)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Information Disclosure Vulnerability (CVE-2016-20012)",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSH Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: openssh-server Forced Command Handling Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: openssh-server Forced Command Handling Information Disclosure Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'bn_wexpend()' Error Handling Unspecified Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'bn_wexpend()' Error Handling Unspecified Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'dtls1_retrieve_buffered_fragment()' Remote Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'dtls1_retrieve_buffered_fragment()' Remote Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'ssl3_get_record()' Remote Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 'ssl3_get_record()' Remote Denial of Service Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 0.9.8 Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL 0.9.8 Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL < 0.9.8s, 1.0.x < 1.0.0f Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL < 0.9.8s, 1.0.x < 1.0.0f Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL Cryptographic Message Syntax Memory Corruption Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL Cryptographic Message Syntax Memory Corruption Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL Multiple Vulnerabilities (Nov 2010)",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OpenSSL Multiple Vulnerabilities (Nov 2010)",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Operating System (OS) End of Life (EOL) Detection",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL < 5.1.49 Multiple DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL < 5.1.51 Multiple DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL < MySQL 5.1.49 'TEMPORARY InnoDB' Tables DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Backronym Vulnerability (Jun 2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Denial Of Service Vulnerability (Feb 2017) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle Mysql Security Updates (jan2012-366304) 03 - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle Mysql Security Updates (jan2012-366304) 04 - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server 5.0 < 5.0.93 / 5.1 < 5.1.50 SQL Injection Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.62 / 5.4.x <= 5.5.22 Security Update (cpujul2012) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.62 / 5.4.x <= 5.5.23 Security Update (cpujul2012) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.63 Security Update (cpuapr2013) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.65 / 5.5 <= 5.5.27 Security Update (cpujan2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.66 / 5.5 <= 5.5.28 Security Update (cpuapr2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.66 / 5.5 <= 5.5.28 Security Update (cpujan2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.67 / 5.5 <= 5.5.29 / 5.6 <= 5.6.10 Security Update (cpuapr2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.67 / 5.5 <= 5.5.29 Security Update (cpuapr2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.1.68 / 5.5 <= 5.5.30 / 5.6 <= 5.6.10 Security Update (cpuapr2013) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.31 / 5.6 <= 5.6.11 Security Update (cpujan2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.38 / 5.6 <= 5.6.19 Security Update (cpuoct2014) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.38 Security Update (cpuoct2014) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.39 / 5.6 <= 5.6.20 Security Update (cpuoct2014) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.45 / 5.6 <= 5.6.26 Security Update (cpujan2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.45 / 5.6 <= 5.6.26 Security Update (cpujul2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.46 / 5.6 <= 5.6.27 / 5.7.9 Security Update (cpujan2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.46 / 5.6 <= 5.6.27 Security Update (cpujan2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.46 Security Update (cpuapr2016v3) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.46 Security Update (cpujan2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.47 / 5.6 <= 5.6.28 / 5.7 <= 5.7.10 Security Update (cpuapr2016v3) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.48 / 5.6 <= 5.6.29 / 5.7 <= 5.7.10 Security Update (cpujul2016) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.48 / 5.6 <= 5.6.29 / 5.7 <= 5.7.11 Security Update (cpuapr2016v3) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.48 / 5.6 <= 5.6.29 / 5.7 <= 5.7.11 Security Update (cpujul2016) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.49 / 5.6 <= 5.6.30 / 5.7 <= 5.7.12 Security Update (cpujul2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.50 / 5.6 <= 5.6.31 / 5.7 <= 5.7.13 Security Update (cpuoct2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.51 / 5.6 <= 5.6.32 / 5.7 <= 5.7.14 Security Update (cpuoct2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.51 Security Update (cpuoct2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.5.52 / 5.6 <= 5.6.33 / 5.7 <= 5.7.15 Security Update (cpuoct2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.42 / 5.7 <= 5.7.24 / 8.0 <= 8.0.13 Security Update (cpuapr2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.42 / 5.7 <= 5.7.24 / 8.0 <= 8.0.13 Security Update (cpujan2019) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.43 / 5.7 <= 5.7.25 / 8.0 <= 8.0.15 Security Update (cpuapr2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.44 / 5.7 <= 5.7.18 Security Update (cpujul2019) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.44 / 5.7 <= 5.7.26 / 8.0 <= 8.0.16 Security Update (cpujul2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.44 / 5.7 <= 5.7.26 / 8.0 <= 8.0.16 Security Update (cpuoct2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.45 / 5.7 <= 5.7.27 / 8.0 <= 8.0.17 Security Update (cpuoct2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.45 / 5.7 <= 5.7.27 Security Update (cpuoct2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.46 / 5.7 <= 5.7.26 Security Update (cpuapr2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.46 Security Update (cpujan2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.48 Security Update (cpujul2020) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.49 / 5.7 <= 5.7.31 / 8.0 <= 8.0.21 Security Update (cpuoct2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.50 / 5.7 <= 5.7.30 / 8.0 <= 8.0.17 Security Update (cpujan2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.6.50 / 5.7 <= 5.7.32 / 8.0 <= 8.0.22 Security Update (cpujan2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.29 / 8.0 <= 8.0.19 Security Update (cpuapr2021) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.30 / 8.0 <= 8.0.17 Security Update (cpuapr2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.32 / 8.0 <= 8.0.22 Security Update (cpuapr2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.33 / 8.0 <= 8.0.23 Security Update (cpuapr2021) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.33 Security Update (cpuapr2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.34 / 8.0 <= 8.0.25 Security Update (cpujul2021) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.35 / 8.0 <= 8.0.26 Security Update (cpuoct2021) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.36 / 8.0 <= 8.0.27 Security Update (cpujan2022) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.36 / 8.0 <= 8.0.27 Security Update (cpuoct2022) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.37 / 8.0 <= 8.0.28 Security Update (cpuapr2022) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.38 / 8.0 <= 8.0.29 Security Update (cpujul2022) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.39 / 8.0 <= 8.0.16 Security Update (cpuoct2022) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.39 / 8.0 <= 8.0.29 Security Update (cpuoct2022) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.39 / 8.0 <= 8.0.30 Security Update (cpuoct2022) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.40 Security Update (cpujan2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.40, 8.x <= 8.0.31 Security Update (cpuapr2023) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.40, 8.x <= 8.0.31 Security Update (cpujan2023) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.41, 8.x <= 8.0.30 Security Update (cpuapr2023) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.41, 8.x <= 8.0.31 Security Update (cpuapr2023) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.41, 8.x <= 8.0.32 Security Update (cpuapr2023) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.41, 8.x <= 8.0.32 Security Update (cpujul2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.42, 8.x <= 8.0.31 Security Update (cpuoct2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.42, 8.x <= 8.0.33 Security Update (cpujul2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.42, 8.x <= 8.0.33 Security Update (cpuoct2023) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.43, 8.x <= 8.0.31 Security Update (cpuoct2023) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 5.7.43, 8.x <= 8.0.34, 8.1.0 Security Update (cpuoct2023) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.35 Security Update (cpuoct2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.38, 8.1 <= 8.4.1, 9.0 <= 9.0.1 Security Update (cpuoct2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.39, 8.1 <= 8.4.0 Security Update (cpuoct2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.39, 8.1 <= 8.4.1, 9.0 <= 9.0.1 Security Update (cpuoct2024) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.39, 8.1 <= 8.4.2, 9.0 <= 9.0.1 Security Update (cpuoct2024) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.41, 8.1 <= 8.4.4, 9.0 <= 9.2.0 Security Update (cpuapr2025) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Oracle MySQL Server <= 8.0.43, 8.1.x <= 8.4.7, 9.0.0 <= 9.4.0 Security Update (cpuoct2025) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: OS Detection Consolidation and Reporting",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: Perl Detection Consolidation",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'CVE-2017-7189' Improper Input Validation Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'CVE-2019-13224' Use-After-Free Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'ext/imap/php_imap.c' Use After Free DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'mb_strcut()' Function Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'open_basedir' Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 'SplObjectStorage' Unserializer Arbitrary Code Execution Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 4.3.x < 5.2.7 Buffer Overflow Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 4.4.x < 4.4.9, 5.2.x < 5.2.8 DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 4.x, 5.2.6 DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.11, 5.3.x < 5.3.1 Multiple Vulnerabilities (Dec 2009)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.12, 5.3.0 Buffer Overflow Vulnerability",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.14, 5.3.x < 5.3.3 Multiple Information Disclosure Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.14, 5.3.x < 5.3.3 Multiple RCE Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.14, 5.3.x < 5.3.3 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.15, 5.3.x < 5.3.4 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.17, 5.3.x < 5.3.5 DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.2.x < 5.2.7 Buffer Overflow Vulnerability (Jan 2015)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.3.1 Multiple DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.3.x < 5.3.7 Multiple Security Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.4.44, 5.5.x < 5.5.28, 5.6.x < 5.6.12 Multiple Vulnerabilities (Mar 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.2.9 Memory Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.3.3 Information Disclosure Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.3.4 Improper Input Validation Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.3.9 Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.4.29, 5.5.x < 5.5.13 Multiple DoS Vulnerabilities (Jun 2014)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.4.4 Memory Leak Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.6.34, 7.x < 7.0.28, 7.1.x < 7.1.15, 7.2.x < 7.2.3 Stack Buffer Overflow Vulnerability (Mar 2018) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 5.6.39, 7.x < 7.0.33, 7.1.x < 7.1.26, 7.2.x < 7.2.14 DoS Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP 5.x < 7.1.20, 7.2.x < 7.2.8, 7.3.0alpha1 < 7.3.0alpha3 DoS Vulnerability - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 4.4.5, 5.1.x < 5.1.7, 5.2.x < 5.2.6 DoS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.10 JPEG Image Processing DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.12 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.13 Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.14 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.15 Security Bypass Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.15, 5.3.x < 5.3.4 DoS Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.5 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.6 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.6 Multiple Vulnerabilities (Aug 2008)",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.7 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.2.8 XSS Vulnerability",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.1 Multiple Vulnerabilities",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.22, 5.4.x < 5.4.12 SOAP Parser Multiple Information Disclosure Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.28, 5.4.x < 5.4.23, 5.5.x < 5.5.7 RCE Vulnerability (Dec 2013)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.29, 5.4.x < 5.4.24, 5.5.x < 5.5.8 RCE Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.3 Multiple Vulnerabilities",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.4 Multiple Security Bypass Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.4 Multiple Vulnerabilities",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.6 Remote Integer Overflow Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.3.7 Use After Free Vulnerability",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.32, 5.5.x < 5.5.16 DoS Vulnerability",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.38, 5.5.x < 5.5.22, 5.6.x < 5.6.6 Multiple RCE Vulnerabilities (Jul 2015) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.38, 5.5.x < 5.5.22, 5.6.x < 5.6.6 XSS Vulnerability (Aug 2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.39, 5.5.x < 5.5.23, 5.6.x < 5.6.7 Multiple Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.40, 5.5.x < 5.5.24, 5.6.x < 5.6.8 Improper Input Validation Vulnerability (Jun 2015) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.40, 5.5.x < 5.5.24, 5.6.x < 5.6.8 Multiple Vulnerabilities - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.41, 5.5.x < 5.5.25, 5.6.x < 5.6.9 Multiple Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.42, 5.5.x < 5.5.26, 5.6.x < 5.6.10 Multiple Vulnerabilities (Aug 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.43, 5.5.x < 5.5.27, 5.6.x < 5.6.11 Multiple Vulnerabilities (Mar 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.44, 5.5.x < 5.5.28, 5.6.x < 5.6.12 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.44, 5.5.x < 5.5.28, 5.6.x < 5.6.12, 7.x < 7.0.4 DoS and Information Disclosure Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.45, 5.5.x < 5.5.29, 5.6.x < 5.6.13 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.4.45, 5.5.x < 5.5.29, 5.6.x < 5.6.13 RCE Vulnerability (Mar 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.2 Session Fixation Vulnerability (Aug 2013)",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.21, 5.6.x < 5.6.5 Multiple DoS Vulnerabilities (Jan 2015)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.22, 5.6.x < 5.6.6 XXE Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.24, 5.6.x < 5.6.8 DoS Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.27, 5.6.x < 5.6.11 Arbitrary Code Execution Vulnerability (Aug 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.28, 5.6.x < 5.6.12 DoS Vulnerability (Jul 2016) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.30, 5.6.x < 5.6.14 Multiple DoS Vulnerabilities - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.31, 5.6.x < 5.6.17, 7.x < 7.0.2 DoS Vulnerability (Aug 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.31, 5.6.x < 5.6.17, 7.x < 7.0.2 Out of Bounds Read Memory Corruption Vulnerability (Mar 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.32, 5.6.x < 5.6.18, 7.x < 7.0.3 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.32, 5.6.x < 5.6.18, 7.x < 7.0.3 Privilege Escalation Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.33, 5.6.x < 5.6.19 Multiple Vulnerabilities (Apr 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.34, 5.6.x < 5.6.20, 7.x < 7.0.5 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.35, 5.6.x < 5.6.21, 7.x < 7.0.6 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.36, 5.6.x < 5.6.22 Multiple Vulnerabilities (Aug 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.36, 5.6.x < 5.6.22, 7.x < 7.0.7 Multiple Vulnerabilities (Aug 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.37, 5.6.x < 5.6.23 Multiple Vulnerabilities (Aug 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.37, 5.6.x < 5.6.23, 7.x < 7.0.8 Multiple Vulnerabilities (Aug 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.5.38, 5.6.x < 5.6.24, 7.0.x < 7.0.9 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.0 DoS Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.12 Multiple DoS Vulnerabilities - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.18, 7.x < 7.0.3 DoS Vulnerability (Jul 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.24, 7.x <= 7.0.8 Multiple Vulnerabilities (Jul 2016) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.25, 7.x < 7.0.10 Multiple Vulnerabilities (Sep 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.26 DoS Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.26, 7.x < 7.0.11 Multiple Vulnerabilities (Sep 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.27, 7.x < 7.0.12 Multiple DoS Vulnerabilities (Oct 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.28, 7.x < 7.0.13 Multiple Vulnerabilities (Nov 2016) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.29, 7.0.x < 7.0.14 DoS Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.30, 7.x < 7.0.15, 7.1.x < 7.1.1 Multiple Vulnerabilities (Jan 2017) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.31 DoS Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.31, 7.0.x < 7.0.21, 7.1.x < 7.1.7 Multiple Vulnerabilities (Jul 2017) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.31, 7.x < 7.0.17, 7.1.x < 7.1.3 DoS Vulnerability (Jul 2017) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.32, 7.x < 7.0.24, 7.1.x < 7.1.11 Heap Based Buffer Overflow Vulnerability - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.33, 7.x < 7.0.27, 7.1.x < 7.1.13, 7.2.x < 7.2.1 Multiple Vulnerabilities - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.35, 7.x < 7.0.29, 7.1.x < 7.1.16, 7.2.x < 7.2.4 Security Bypass Vulnerability (May 2018) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.36, 7.x < 7.0.30, 7.1.x < 7.1.17, 7.2.x < 7.2.5 Multiple Vulnerabilities (May 2018) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.5 Multiple Vulnerabilities (Jan 2015)",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 5.6.7 DoS Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.0.12 RCE / DoS Vulnerability - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.1.33, 7.2.x < 7.2.24, 7.3.x < 7.3.11 RCE Vulnerability - Version Check",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.26 Multiple Vulnerabilities (Dec 2019) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.27, 7.3.x < 7.3.14, 7.4.x < 7.4.2 Multiple Vulnerabilities (Jan 2020) - Linux",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.28 Multiple Vulnerabilities (Feb 2020) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.29 Multiple Vulnerabilities (Mar 2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.30, 7.3 < 7.3.17, 7.4 < 7.4.5 DoS Vulnerability (Apr 2020) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.31, 7.3 < 7.3.18, 7.4 < 7.4.6 Multiple DoS Vulnerabilities (May 2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.33, 7.3 < 7.3.21, 7.4 < 7.4.9 DoS Vulnerability (Aug 2020) - Linux",
+      "severity": "Low",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.2.34, 7.3 < 7.3.23, 7.4 < 7.4.11 Multiple Vulnerabilities (Oct 2020) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.3.26, 7.4.x < 7.4.14, 8.0.x < 8.0.1 Filter Vulnerability (Jan 2021) - Linux",
+      "severity": "Medium",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OpenVAS",
+      "title": "OpenVAS: PHP < 7.3.27, 7.4.x < 7.4.15, 8.0.x < 8.0.2 NULL Deference Vulnerability (Feb 2021) - Linux",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "FTP Credential Access: msfadmin:msfadmin: 192.168.195.139:21",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "FTP Anonymous Login + Data Exfiltration: 192.168.195.139:21",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "vsftpd 2.3.4 Backdoor RCE \u2192 Root Shell: 192.168.195.139:21",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SSH User Shell: msfadmin:msfadmin: 192.168.195.139:22",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (12 endpoints): 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SQL Injection \u2192 Data Extraction: 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "phpMyAdmin No-Auth Access: 192.168.195.139:80",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "NFS World-Readable Exports: 192.168.195.139:111",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.139:139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.139:445",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Java RMI Registry Exploit: 192.168.195.139:1099",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Ingreslock Root Shell (port 1524): 192.168.195.139:1524",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "rsh Remote Command Execution: 192.168.195.139:1524",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "NFS World-Readable Exports: 192.168.195.139:2049",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "DistCC Command Execution: 192.168.195.139:3632",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1210"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PostgreSQL Access: postgres:postgres: 192.168.195.139:5432",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "X11 Unauthenticated Display Access: 192.168.195.139:6000",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1113"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (7 endpoints): 192.168.195.139:8180",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Tomcat Manager RCE: tomcat:tomcat: 192.168.195.139:8180",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: suid_privesc: 192.168.195.139:22",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1548.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: suid_privesc: 192.168.195.139:22",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1548.001"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "PrivEsc: kernel_exploit: 192.168.195.139:22",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (11 endpoints): 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SQL Injection \u2192 Data Extraction: 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "phpMyAdmin No-Auth Access: 192.168.195.140:80",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.140:139",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 143: 192.168.195.140:143",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.140:445",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 5001: 192.168.195.140:5001",
+      "severity": "Low",
+      "host": "192.168.195.140",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.140:8080",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.140:8081",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.146:139",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "SMB Null Session Enumeration: 192.168.195.146:445",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021.002"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 912: 192.168.195.1:912",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (1 endpoints): 192.168.195.1:8000",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.1:8080",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "HTTP Discovery (3 endpoints): 192.168.195.1:9011",
+      "severity": "Critical",
+      "host": "192.168.195.1",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-Exploit",
+      "title": "Banner: port 9392: 192.168.195.1:9392",
+      "severity": "Low",
+      "host": "192.168.195.1",
+      "mitre_id": "T1046"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A01: 1 Access Control Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 2 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A04: 2 Design Flaws",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 4 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A06: 6 Vulnerable Components",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A07: 2 Auth Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 1 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A01: 1 Access Control Failures",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1083"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 1 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 15 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 2 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 4 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A06: 3 Vulnerable Components",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A07: 1 Auth Failures",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1078"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A10: 1 SSRF",
+      "severity": "Critical",
+      "host": "192.168.195.140",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A05: 2 Misconfigurations",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1190"
+    },
+    {
+      "module": "AutoPentest-OWASP",
+      "title": "OWASP A02: 1 Crypto Failures",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1557"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Info Disclosure: 192.168.195.139:80/phpinfo.php",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1082"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "NFS Exports: 192.168.195.139",
+      "severity": "Critical",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Outdated Apache: 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PrivEsc",
+      "title": "Outdated Apache: 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1068"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-PostEx",
+      "title": "Credential Surfaces on 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1110"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.139 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.140 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.137 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.146 \u2192 192.168.195.1",
+      "severity": "High",
+      "host": "192.168.195.1",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.139",
+      "severity": "High",
+      "host": "192.168.195.139",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.140",
+      "severity": "High",
+      "host": "192.168.195.140",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    },
+    {
+      "module": "AutoPentest-Lateral",
+      "title": "Lateral: 192.168.195.1 \u2192 192.168.195.146",
+      "severity": "High",
+      "host": "192.168.195.146",
+      "mitre_id": "T1021"
+    }
+  ],
+  "stats": {
+    "hosts": 10,
+    "ports": 76,
+    "vulns": 516,
+    "exploited": 38,
+    "creds": 9,
+    "privesc": 0,
+    "owasp": 23
+  },
+  "hosts": [
+    "192.168.195.139",
+    "192.168.195.140",
+    "192.168.195.137",
+    "192.168.195.128",
+    "192.168.195.146",
+    "192.168.195.254",
+    "192.168.195.1",
+    "192.168.195.137",
+    "192.168.195.139",
+    "192.168.195.140"
+  ],
+  "exploits": [
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "FTP-DEFAULT-CREDS",
+      "exploit": "FTP Credential Access: msfadmin:msfadmin",
+      "proof": "FTP login msfadmin:msfadmin SUCCESS. Files: vulnerable",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "FTP-ANON",
+      "exploit": "FTP Anonymous Login + Data Exfiltration",
+      "proof": "Anonymous login OK. Banner: 220 (vsFTPd 2.3.4). Files(0): ",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 21,
+      "cve": "CVE-2011-2523",
+      "exploit": "vsftpd 2.3.4 Backdoor RCE \u2192 Root Shell",
+      "proof": "BACKDOOR SHELL on :6200!\n  $ id: uid=0(root) gid=0(root)\n  $ whoami: root\n  $ uname -a: Linux metasploitable 2.6.24-16-server #1 SMP Thu Apr 10 13:58:00 UTC 2008 i686 GNU/Linux\n  $ cat /etc/shadow | head -5: root:$1$/avpfBJ1$x0z8w5UF9Iv./DR9E9Lid.:14747:0:99999:7:::\ndaemon:*:14684:0:99999:7:::\nbin:*",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "SSH-BRUTE",
+      "exploit": "SSH User Shell: msfadmin:msfadmin",
+      "proof": "SSH LOGIN SUCCESS: msfadmin:msfadmin\n  Identity: uid=1000(msfadmin) gid=1000(msfadmin) groups=4(adm),20(dialout),24(cdrom),25(floppy),29(audio),30(di\n  Users: root, daemon, bin, sys, sync, games, man, lp, mail, news, uucp, proxy, www-data, backup, list\n  SUID binaries (privesc): /bin/umount\n/bin/fus",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (12 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /phpMyAdmin/ (200)\n  /dvwa/ (302)\n  /dvwa/login.php (200)\n  /mutillidae/ (200)\n  /mutillidae/index.php (200)\n  /twiki/ (200)\n  /tikiwiki/ (200)\n  /dav/ (200)\n  /cgi-bin/ (403)\n  /server-status (403)\n  /.htpasswd (403)\n  SENSITIVE DATA:\n    /: Admin panel accessible\n",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "SQLi",
+      "exploit": "SQL Injection \u2192 Data Extraction",
+      "proof": "SQL Injection confirmed:\n  Mutillidae SQLi: table found",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 80,
+      "cve": "PMA-NOAUTH",
+      "exploit": "phpMyAdmin No-Auth Access",
+      "proof": "phpMyAdmin accessible at /phpMyAdmin/ \u2014 NO AUTH!\n  Can read/write entire database.\n  Data: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\" dir=\"lt",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 111,
+      "cve": "NFS-EXPORT",
+      "exploit": "NFS World-Readable Exports",
+      "proof": "NFS Exports: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:31 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00013s latency).\n\nPORT    STATE SERVICE\n111/tcp open  rpcbind\n| nfs-statfs: \n|   Filesystem  1K-blocks  Used       Available  Use%  Maxfilesize  Maxlink\n|_  /           7",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:31 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nHost script results:\n|_smb-enum-groups: ERROR: Script execution faile",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:31 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nHost script results:\n|_smb-enum-groups: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1099,
+      "cve": "JAVA-RMI",
+      "exploit": "Java RMI Registry Exploit",
+      "proof": "Java RMI exploitable: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:31 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT     STATE SERVICE\n1099/tcp open  rmiregistry\n| rmi-vuln-classloader: \n|   VULNERABLE:\n|   RMI registry default configuration remote code exec",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1524,
+      "cve": "INGRESLOCK-BACKDOOR",
+      "exploit": "Ingreslock Root Shell (port 1524)",
+      "proof": "INGRESLOCK BACKDOOR: Root shell on port 1524!\n  id: root@metasploitable:/# uid=0(root) gid=0(root) groups=0(root)\nroot@metasploitable:/#\n  $ whoami: root\nroot@metasploitable:/#\n  $ cat /etc/shadow | head -3: root:$1$/avpfBJ1$x0z8w5UF9Iv./DR9E9Lid.:14747:0:99999:7:::\ndaemon:*:14684:0:99999:7:::\nbin:*",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 1524,
+      "cve": "RSH-NOAUTH",
+      "exploit": "rsh Remote Command Execution",
+      "proof": "rsh access: root@metasploitable:/#",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 2049,
+      "cve": "NFS-EXPORT",
+      "exploit": "NFS World-Readable Exports",
+      "proof": "NFS Exports: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:31 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT     STATE SERVICE\n2049/tcp open  nfs\nMAC Address: 00:0C:29:05:D7:6A (VMware)\n\nNmap done: 1 IP address (1 host up) scanned in 0.80 seconds\n",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 3632,
+      "cve": "CVE-2004-2687",
+      "exploit": "DistCC Command Execution",
+      "proof": "DistCC RCE: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:32 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00013s latency).\n\nPORT     STATE SERVICE\n3632/tcp open  distccd\n| distcc-cve2004-2687: \n|   VULNERABLE:\n|   distcc Daemon Command Execution\n|     State: VULNERABLE (Exploi",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 5432,
+      "cve": "POSTGRES-DEFAULT",
+      "exploit": "PostgreSQL Access: postgres:postgres",
+      "proof": "PostgreSQL LOGIN: postgres:postgres\n  version: [('PostgreSQL 8.3.1 on i486-pc-linux-gnu, compiled by GCC cc (GCC) 4.2.3 (Ubuntu 4.2.3-2ubuntu4)',)]\n  databases: [('template1',), ('template0',), ('postgres',)]\n  users: [('postgres', 'md53175bce1d3201d16594cebf9d7eb3f9d')]\n  tables: []\n",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 6000,
+      "cve": "X11-NOAUTH",
+      "exploit": "X11 Unauthenticated Display Access",
+      "proof": "X11 no-auth! Can capture display. Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:32 -0400\nNmap scan report for 192.168.195.139\nHost is up (0.00s latency).\n\nPORT     STATE SERVICE\n6000/tcp open  X11\nMAC Address: 00:0C:29:05:D",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 8180,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (7 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /admin (302)\n  /admin/ (200)\n  /manager/html (401)\n  /webdav/ (200)\n  /manager/status (401)\n  /host-manager/html (401)\n  SENSITIVE DATA:\n    /: Admin panel accessible\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 8180,
+      "cve": "TOMCAT-DEFAULT",
+      "exploit": "Tomcat Manager RCE: tomcat:tomcat",
+      "proof": "Tomcat Manager: tomcat:tomcat at /manager/html\nCan deploy WAR files \u2192 Remote Code Execution!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "suid_privesc",
+      "exploit": "PrivEsc: suid_privesc",
+      "proof": "SUID nmap found \u2014 known privilege escalation vector!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "suid_privesc",
+      "exploit": "PrivEsc: suid_privesc",
+      "proof": "SUID mount found \u2014 known privilege escalation vector!",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.139",
+      "port": 22,
+      "cve": "kernel_exploit",
+      "exploit": "PrivEsc: kernel_exploit",
+      "proof": "Kernel 2.6.24-16-server \u2014 vulnerable to DirtyCow (CVE-2016-5195), Multiple kernel exploits",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (11 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /phpmyadmin/ (200)\n  /dvwa/ (302)\n  /dvwa/login.php (200)\n  /mutillidae/ (200)\n  /mutillidae/index.php (200)\n  /tikiwiki/ (302)\n  /joomla/administrator/ (200)\n  /cgi-bin/ (200)\n  /server-status (403)\n  /.htpasswd (403)\n  SENSITIVE DATA:\n    /: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "SQLi",
+      "exploit": "SQL Injection \u2192 Data Extraction",
+      "proof": "SQL Injection confirmed:\n  Mutillidae SQLi: table found",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 80,
+      "cve": "PMA-NOAUTH",
+      "exploit": "phpMyAdmin No-Auth Access",
+      "proof": "phpMyAdmin accessible at /phpmyadmin/ \u2014 NO AUTH!\n  Can read/write entire database.\n  Data: <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n    \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\" dir=\"lt",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:33 -0400\nNmap scan report for 192.168.195.140\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:86:5E:7D (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution faile",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 143,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 143",
+      "proof": "Service banner: * OK [CAPABILITY IMAP4rev1 UIDPLUS CHILDREN NAMESPACE THREAD=ORDEREDSUBJECT THREAD=REFERENCES SORT QUOTA IDLE ACL ACL2=UNION] Courier-IMAP ready. Copy",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:33 -0400\nNmap scan report for 192.168.195.140\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:86:5E:7D (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 5001,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 5001",
+      "proof": "Service banner: \u0000\u0005",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 8080,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  /manager/html (401)\n  /manager/status (401)\n  /host-manager/html (401)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.140",
+      "port": 8081,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /admin (302)\n  /admin/ (200)\n  SENSITIVE DATA:\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.146",
+      "port": 139,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:33 -0400\nNmap scan report for 192.168.195.146\nHost is up (0.00088s latency).\n\nPORT    STATE SERVICE\n139/tcp open  netbios-ssn\nMAC Address: 00:0C:29:73:FE:EC (VMware)\n\nHost script results:\n|_smb-enum-shares: ERROR: Script execution fa",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.146",
+      "port": 445,
+      "cve": "SMB-NULL-SESSION",
+      "exploit": "SMB Null Session Enumeration",
+      "proof": "SMB Enum: Starting Nmap 7.98 ( https://nmap.org ) at 2026-08-16 20:33 -0400\nNmap scan report for 192.168.195.146\nHost is up (0.00s latency).\n\nPORT    STATE SERVICE\n445/tcp open  microsoft-ds\nMAC Address: 00:0C:29:73:FE:EC (VMware)\n\nHost script results:\n|_smb-enum-groups: ERROR: Script execution fail",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 912,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 912",
+      "proof": "Service banner: 220 VMware Authentication Daemon Version 1.0, ServerDaemonProtocol:SOAP, MKSDisplayProtocol:VNC , , , \r\n",
+      "severity": "Low",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 8000,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (1 endpoints)",
+      "proof": "Accessible endpoints:\n  /robots.txt (200)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 8080,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (200)\n  /cgi-bin/ (403)\n  /.htpasswd (403)",
+      "severity": "High",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 9011,
+      "cve": "HTTP-ADMIN",
+      "exploit": "HTTP Discovery (3 endpoints)",
+      "proof": "Accessible endpoints:\n  / (302)\n  /admin (200)\n  /admin/ (200)\n  SENSITIVE DATA:\n    /admin: Admin panel accessible\n    /admin/: Admin panel accessible",
+      "severity": "Critical",
+      "verified": true
+    },
+    {
+      "host": "192.168.195.1",
+      "port": 9392,
+      "cve": "BANNER-GRAB",
+      "exploit": "Banner: port 9392",
+      "proof": "Service banner: HTTP/1.1 405 Method Not Allowed\r\nDate: Mon, 17 Aug 2026 00:40:09 GMT\r\nConnection: close\r\nContent-Type: text/html; charset=utf-8\r\nExpires: -1\r\nCache-Co",
+      "severity": "Low",
+      "verified": true
+    }
+  ],
+  "credentials": []
+}

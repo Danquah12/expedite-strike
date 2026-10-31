@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           id="xccdf_aegis_benchmark_web-server-security"
+           resolved="1"
+           style="SCAP_1.2">
+
+  <status>accepted</status>
+  <title>AEGIS Web Server Security Benchmark</title>
+  <description>
+    Security configuration assessment for web servers based on CIS and NIST 800-53
+    controls. Evaluates TLS configuration, security headers, access controls, and
+    common misconfigurations.
+  </description>
+  <version>1.0.0</version>
+
+  <!-- ── RULES ─────────────────────────────────────────────────── -->
+
+  <Rule id="xccdf_aegis_rule_tls-version" severity="high">
+    <title>Enforce TLS 1.2 or Higher</title>
+    <description>The server must only support TLS 1.2 or TLS 1.3. SSLv3 and TLS 1.0/1.1 are deprecated and vulnerable to POODLE, BEAST, and downgrade attacks (NIST SP 800-52r2).</description>
+    <fixtext>Disable SSLv3, TLS 1.0, and TLS 1.1 in the server configuration. For nginx: ssl_protocols TLSv1.2 TLSv1.3; For Apache: SSLProtocol -all +TLSv1.2 +TLSv1.3</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_hsts-header" severity="high">
+    <title>HTTP Strict Transport Security (HSTS) Header Required</title>
+    <description>The Strict-Transport-Security header must be present with a minimum max-age of 31536000 (1 year). Without HSTS, users are vulnerable to SSL stripping and downgrade attacks.</description>
+    <fixtext>Add header: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_csp-header" severity="medium">
+    <title>Content Security Policy (CSP) Header Required</title>
+    <description>A Content-Security-Policy header must be configured to prevent XSS, clickjacking, and code injection attacks. CSP restricts the sources from which content can be loaded.</description>
+    <fixtext>Add header: Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_x-frame-options" severity="medium">
+    <title>X-Frame-Options Header Required</title>
+    <description>X-Frame-Options must be set to DENY or SAMEORIGIN to prevent clickjacking attacks where the page is embedded in a malicious iframe.</description>
+    <fixtext>Add header: X-Frame-Options: DENY (or SAMEORIGIN if framing from same origin is required)</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_x-content-type-options" severity="low">
+    <title>X-Content-Type-Options Header Required</title>
+    <description>The X-Content-Type-Options: nosniff header prevents MIME-type sniffing, which can lead to XSS attacks via content-type confusion.</description>
+    <fixtext>Add header: X-Content-Type-Options: nosniff</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_server-header-disclosure" severity="medium">
+    <title>Server Version Disclosure Must Be Suppressed</title>
+    <description>The Server HTTP response header must not reveal software name or version information. Version disclosure enables targeted attacks against known vulnerabilities in specific versions.</description>
+    <fixtext>For nginx: server_tokens off; For Apache: ServerTokens Prod and ServerSignature Off</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_directory-listing" severity="high">
+    <title>Directory Listing Must Be Disabled</title>
+    <description>Web server directory listing (autoindex) must be disabled. Exposed directory listings reveal internal file structure, backup files, configuration files, and other sensitive data to attackers.</description>
+    <fixtext>For nginx: autoindex off; For Apache: Options -Indexes in httpd.conf or .htaccess</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_secure-cookies" severity="high">
+    <title>Session Cookies Must Have Secure and HttpOnly Flags</title>
+    <description>All session cookies must include the Secure flag (HTTPS-only transmission) and HttpOnly flag (prevents JavaScript access). Missing flags allow session hijacking via XSS or network sniffing.</description>
+    <fixtext>Set cookie flags: Set-Cookie: session=value; Secure; HttpOnly; SameSite=Strict</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_cors-policy" severity="medium">
+    <title>CORS Policy Must Not Use Wildcard Origin</title>
+    <description>Access-Control-Allow-Origin must not be set to '*' in production. Wildcard CORS allows any website to make authenticated requests to the application, potentially leading to data theft.</description>
+    <fixtext>Replace Access-Control-Allow-Origin: * with specific trusted domains. Use Access-Control-Allow-Credentials: false if wildcard is necessary.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_default-credentials" severity="high">
+    <title>Default Administrative Credentials Must Be Changed</title>
+    <description>All default usernames and passwords for web applications, databases, and management interfaces must be changed before deployment. Default credentials are publicly documented and trivially exploitable.</description>
+    <fixtext>Change all default passwords. Implement strong password policy (minimum 12 characters, complexity requirements). Enable MFA for administrative access.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_error-handling" severity="medium">
+    <title>Verbose Error Messages Must Be Disabled in Production</title>
+    <description>Stack traces, debug output, and detailed error messages must not be displayed to end users. Verbose errors reveal internal paths, database schemas, and technology stack information useful for exploitation.</description>
+    <fixtext>Set display_errors=Off in PHP. Use custom error pages. Configure production logging to file with generic user-facing error messages.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_admin-path" severity="medium">
+    <title>Administrative Interfaces Must Not Use Default Paths</title>
+    <description>Administrative panels accessible at predictable paths (/admin, /wp-admin, /phpmyadmin, /console) are primary targets for brute-force and credential stuffing attacks.</description>
+    <fixtext>Rename admin paths to non-default URLs. Restrict admin access by IP whitelist. Implement rate limiting and account lockout on login endpoints.</fixtext>
+  </Rule>
+
+  <!-- ── TEST RESULTS ──────────────────────────────────────────── -->
+  <TestResult id="xccdf_aegis_testresult_web-server-scan"
+              end-time="2026-04-24T23:00:00">
+    <target>www.dvwa.co.uk</target>
+    <target-address>44.228.249.3</target-address>
+
+    <rule-result idref="xccdf_aegis_rule_tls-version" severity="high">
+      <result>fail</result>
+      <message>TLS 1.0 and TLS 1.1 are enabled on port 443. Only TLS 1.2+ should be permitted.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_hsts-header" severity="high">
+      <result>fail</result>
+      <message>Strict-Transport-Security header is missing from HTTPS responses.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_csp-header" severity="medium">
+      <result>fail</result>
+      <message>No Content-Security-Policy header detected. XSS protections are incomplete.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_x-frame-options" severity="medium">
+      <result>fail</result>
+      <message>X-Frame-Options header is absent. Page is vulnerable to clickjacking.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_x-content-type-options" severity="low">
+      <result>fail</result>
+      <message>X-Content-Type-Options: nosniff is not set.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_server-header-disclosure" severity="medium">
+      <result>fail</result>
+      <message>Server header reveals: nginx/1.22.1. Software version is disclosed.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_directory-listing" severity="high">
+      <result>fail</result>
+      <message>Directory listing is enabled on /images/ and /docs/ paths exposing file structure.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_secure-cookies" severity="high">
+      <result>fail</result>
+      <message>Session cookie 'PHPSESSID' is missing Secure and HttpOnly flags.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_cors-policy" severity="medium">
+      <result>fail</result>
+      <message>Access-Control-Allow-Origin is set to '*' (wildcard).</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_default-credentials" severity="high">
+      <result>fail</result>
+      <message>Default credentials admin/password detected on login page.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_error-handling" severity="medium">
+      <result>fail</result>
+      <message>PHP display_errors=On. Full stack traces visible in error responses, revealing /var/www/html/dvwa/ path.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_admin-path" severity="medium">
+      <result>pass</result>
+      <message>Administrative interface uses non-default path.</message>
+    </rule-result>
+
+  </TestResult>
+</Benchmark>

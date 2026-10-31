@@ -1,0 +1,1956 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University — AI-Augmented Vulnerability Intelligence Dashboard
+Batch 1 — Clean Imports + Config + Helper Functions
+"""
+
+# ==========================================================
+#  IMPORTS
+# ==========================================================
+import os
+import sqlite3
+import psutil
+import pandas as pd
+import plotly.express as px
+import subprocess
+import time
+import requests
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from datetime import datetime
+
+# --- Dash Framework ---
+from dash import (
+    Dash, html, dcc,
+    Input, Output, State,
+    dash_table, no_update
+)
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
+
+# --- Neo4j Integration ---
+from neo4j import GraphDatabase
+from neo4j_integration import (
+    import_nmap_hosts_to_neo4j,
+    enrich_cves_from_nvd,
+    run_full_pipeline
+)
+
+# ==========================================================
+#  GLOBAL CONFIGURATION
+# ==========================================================
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+
+# Create or overwrite log file
+Path(STATUS_LOG).write_text("=== Dashboard initialized ===\n")
+
+# OpenAI (optional LLM)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-4o"
+
+print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+print(f"[CONFIG] DB_PATH = {DB_PATH}")
+print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+print("[+] Environment initialized successfully.")
+
+# ==========================================================
+#  DASH INITIALIZATION
+# ==========================================================
+external_stylesheets = [dbc.themes.DARKLY]   # THEME = DARK (option A)
+app = Dash(__name__, suppress_callback_exceptions=True,
+           external_stylesheets=external_stylesheets)
+app.title = "Towson Vulnerability Intelligence Dashboard"
+server = app.server
+
+# ==========================================================
+#  HELPER: LOAD FINDINGS FROM SQLITE
+# ==========================================================
+def load_findings():
+    """Load vulnerability findings from SQLite with safe fallback."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query(
+            "SELECT * FROM findings ORDER BY id DESC LIMIT 2000",
+            conn
+        )
+        conn.close()
+
+        # Standardize column names
+        df = df.rename(columns={
+            "asset": "Asset",
+            "host": "Asset",
+            "service": "Service",
+            "port": "Port",
+            "cve": "CVE",
+            "severity": "Severity",
+            "cvss": "CVSS",
+            "description": "Description",
+        })
+
+        print(f"[+] Loaded {len(df)} findings from SQLite")
+        return df
+
+    except Exception as e:
+        print(f"❌ SQLite error: {e}")
+        return pd.DataFrame(columns=[
+            "Asset", "Service", "Port", "CVE", "Severity", "CVSS", "Description"
+        ])
+
+# ==========================================================
+#  HELPER: PARSE NMAP XML → PYTHON STRUCTURE
+# ==========================================================
+def parse_nmap_xml(xml_path):
+    """Parse Nmap XML output and extract services, ports, versions."""
+    if not os.path.exists(xml_path):
+        return []
+
+    results = []
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+
+    for host in root.findall("host"):
+        # IP address
+        addr_tag = host.find("address")
+        ip = addr_tag.get("addr") if addr_tag is not None else "Unknown"
+
+        # Hostname
+        hn_tag = host.find("hostnames/hostname")
+        hostname = hn_tag.get("name") if hn_tag is not None else None
+
+        # Ports & Services
+        for port in host.findall("ports/port"):
+            port_id = port.get("portid")
+            protocol = port.get("protocol")
+
+            state = port.find("state").get("state")
+
+            svc_tag = port.find("service")
+            service_name = svc_tag.get("name") if svc_tag is not None else ""
+            product = svc_tag.get("product") if svc_tag is not None else ""
+            version = svc_tag.get("version") if svc_tag is not None else ""
+
+            results.append({
+                "ip": ip,
+                "hostname": hostname,
+                "port": port_id,
+                "protocol": protocol,
+                "state": state,
+                "service": service_name,
+                "product": product,
+                "version": version,
+            })
+
+    return results
+
+# ==========================================================
+#  HELPER: SAVE NMAP RESULTS → SQLITE DATABASE
+# ==========================================================
+def save_scan_to_database(results):
+    """Store parsed Nmap scan results into services table."""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Ensure table exists
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_ip TEXT,
+            hostname TEXT,
+            port TEXT,
+            protocol TEXT,
+            state TEXT,
+            service TEXT,
+            product TEXT,
+            version TEXT
+        )
+    """)
+
+    for r in results:
+        cur.execute("""
+            INSERT INTO services (asset_ip, hostname, port, protocol, state, service, product, version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            r["ip"], r["hostname"],
+            r["port"], r["protocol"],
+            r["state"], r["service"],
+            r["product"], r["version"]
+        ))
+
+    conn.commit()
+    conn.close()
+    print(f"[+] Inserted {len(results)} service records")
+
+# ==========================================================
+#  HELPER: CALL OPENAI LLM
+# ==========================================================
+def call_llm(prompt):
+    """Query OpenAI GPT for analysis."""
+    if not OPENAI_API_KEY:
+        return "⚠️ OPENAI_API_KEY not configured."
+
+    try:
+        r = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            json={
+                "model": OPENAI_MODEL,
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=20
+        )
+        data = r.json()
+        return data["choices"][0]["message"]["content"]
+
+    except Exception as e:
+        return f"❌ LLM Error: {e}"
+
+
+
+# ==========================================================
+#  TAB 1 — SYSTEM HEALTH
+# ==========================================================
+def system_health_tab():
+    cpu = psutil.cpu_percent()
+    mem = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
+
+    health_df = pd.DataFrame({
+        "Metric": ["CPU Usage", "Memory Usage", "Disk Usage"],
+        "Value": [cpu, mem, disk]
+    })
+
+    fig = px.bar(
+        health_df, x="Metric", y="Value", text="Value",
+        color="Value", color_continuous_scale="Inferno",
+        title="System Resource Utilization (%)"
+    )
+
+    return dbc.Container([
+        html.H3("🖥 System Health Overview", className="text-warning mb-3"),
+        dcc.Graph(figure=fig),
+        html.Div(
+            f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            style={"textAlign": "center", "color": "#bbb"}
+        )
+    ])
+
+
+# ==========================================================
+#  TAB 2 — VULNERABILITY DASHBOARD
+# ==========================================================
+def vulnerability_tab():
+    return dbc.Container([
+        html.H3("📊 Vulnerability Dashboard", className="text-warning mb-4"),
+
+        dbc.Button("🔄 Refresh Dashboard", id="nessus-refresh",
+                   color="warning", className="mb-3"),
+
+        # Metrics Row
+        dbc.Row([
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Assets"),
+                dbc.CardBody(html.H3(id="metric-assets",
+                                     className="text-center"))
+            ], color="dark", inverse=True), width=3),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Services"),
+                dbc.CardBody(html.H3(id="metric-services",
+                                     className="text-center"))
+            ], color="secondary", inverse=True), width=3),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Vulnerabilities"),
+                dbc.CardBody(html.H3(id="metric-vulns",
+                                     className="text-center"))
+            ], color="danger", inverse=True), width=3),
+        ], className="mb-4"),
+
+        # Graph
+        html.H5("Attack Surface Graph", className="text-light"),
+        cyto.Cytoscape(
+            id="vuln-graph",
+            layout={"name": "cose"},
+            style={"width": "100%", "height": "450px",
+                   "backgroundColor": "#1b1b1b"},
+            elements=[],
+            stylesheet=[
+                {"selector": 'node[label="Asset"]',
+                 "style": {"background-color": "#28a745",
+                           "label": "data(id)", "color": "white"}},
+                {"selector": 'node[label="Service"]',
+                 "style": {"background-color": "#007bff",
+                           "label": "data(id)", "color": "white"}},
+                {"selector": 'node[label="Vulnerability"]',
+                 "style": {"background-color": "#dc3545",
+                           "label": "data(id)", "color": "white"}},
+                {"selector": "edge", "style": {"line-color": "#999"}}
+            ]
+        ),
+
+        html.Br(),
+
+        # Heatmap
+        html.H5("CVSS Severity Heatmap", className="text-light"),
+        dcc.Graph(id="cvss-heatmap"),
+
+        html.Div([
+            html.Span("🟥 Critical", style={"color": "#ff073a", "padding": "10px"}),
+            html.Span("🟧 High", style={"color": "#ff8800", "padding": "10px"}),
+            html.Span("🟨 Medium", style={"color": "#ffc107", "padding": "10px"}),
+            html.Span("🟩 Low", style={"color": "#28a745", "padding": "10px"}),
+        ], style={"textAlign": "center"}),
+
+        # Table
+        html.Hr(),
+        dash_table.DataTable(
+            id="vuln-table",
+            columns=[
+                {"name": "Asset", "id": "Asset"},
+                {"name": "Service", "id": "Service"},
+                {"name": "Port", "id": "Port"},
+                {"name": "Vulnerability", "id": "Vulnerability",
+                 "presentation": "markdown"},
+            ],
+            markdown_options={"html": True},
+            page_size=10,
+            style_table={"overflowX": "auto"},
+            style_header={"backgroundColor": "#EAAA00",
+                          "color": "black", "fontWeight": "bold"},
+            style_cell={"backgroundColor": "#222", "color": "white"}
+        ),
+
+        dcc.Interval(id="interval-refresh", interval=30_000, n_intervals=0),
+        html.Audio(id="audio-alert", style={"display": "none"}),
+        html.Div(id="alert-banner"),
+        html.Div(id="last-updated", style={"color": "#bbb"})
+    ], fluid=True)
+
+
+# ==========================================================
+#  TAB 3 — NEO4J GRAPH VISUALIZER
+# ==========================================================
+
+GRAPH_DEFINITIONS = {
+    "Core Relationship Graphs": [
+        "Asset-Service-Vulnerability Graph",
+        "Service-Port Graph",
+        "Host-Service Dependency Graph",
+        "Vulnerability Propagation Graph"
+    ],
+    "Network Topology Graphs": [
+        "Network Topology Map",
+        "Subnet Communication Graph",
+        "Port Exposure Graph"
+    ],
+    "Vulnerability Exposure Graphs": [
+        "CVSS Severity Heat Graph",
+        "Critical Asset Exposure Graph",
+        "Vulnerability Cluster Graph"
+    ],
+    "Attack Path Graphs": [
+        "Potential Attack Paths",
+        "Privilege Escalation Graph",
+        "Lateral Movement Graph",
+    ],
+    "Service & Port Mapping Graphs": [
+        "Service Version Distribution",
+        "Open Port Map",
+        "High-Risk Service Graph"
+    ],
+    "CVE Intelligence Graphs": [
+        "CVE-CWE Graph",
+        "CVE-Exploit Graph",
+        "Vendor/Product Vulnerability Graph"
+    ]
+}
+
+def neo4j_graphs_tab():
+    return html.Div([
+        html.H3("🌐 Neo4j Graph Visualizations",
+                className="text-warning mb-3"),
+
+        html.Label("Graph Category:", className="text-light"),
+        dcc.Dropdown(
+            id="graph-category",
+            options=[{"label": c, "value": c} for c in GRAPH_DEFINITIONS],
+            placeholder="Select Category",
+            clearable=False,
+            style={"width": "50%"}
+        ),
+
+        html.Br(),
+
+        html.Label("Graph Type:", className="text-light"),
+        dcc.Dropdown(
+            id="graph-type",
+            placeholder="Select...",
+            style={"width": "50%"}
+        ),
+
+        html.Br(),
+
+        dbc.Button("Generate Graph",
+                   id="graph-generate-btn",
+                   color="warning",
+                   className="mb-3"),
+
+        html.Div(id="graph-status", className="text-info mb-3"),
+
+        cyto.Cytoscape(
+            id="graph-view",
+            layout={"name": "cose"},
+            style={"width": "100%", "height": "700px",
+                   "backgroundColor": "#1b1b1b"},
+            elements=[]
+        )
+    ])
+
+
+# ==========================================================
+#  BATCH 2 — UI LAYOUT: ALL TABS
+# ==========================================================
+
+import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
+from dash import dcc, html, dash_table
+
+# ==========================================================
+#  TAB 1 — SYSTEM HEALTH
+# ==========================================================
+def system_health_layout():
+    cpu = psutil.cpu_percent()
+    mem = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
+
+    health_df = pd.DataFrame({
+        "Metric": ["CPU Usage", "Memory Usage", "Disk Usage"],
+        "Value": [cpu, mem, disk]
+    })
+
+    fig = px.bar(
+        health_df, x="Metric", y="Value", text="Value",
+        color="Value", color_continuous_scale="inferno",
+        title="System Resource Utilization (%)"
+    )
+
+    return dbc.Container([
+        html.H3("🖥️ System Health Overview", className="text-warning mb-3"),
+        dcc.Graph(figure=fig),
+        html.Div(
+            f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            style={"textAlign": "center", "color": "#bbb"}
+        )
+    ])
+
+
+# ==========================================================
+#  TAB 2 — VULNERABILITY DASHBOARD
+# ==========================================================
+def vulnerability_tab():
+    return dbc.Container([
+        html.H3("📊 Vulnerability Dashboard", className="text-warning mb-4"),
+
+        dbc.Button(
+            "🔄 Refresh Dashboard",
+            id="nessus-refresh",
+            color="warning",
+            className="mb-4"
+        ),
+
+        # METRICS CARDS
+        dbc.Row([
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Assets"),
+                dbc.CardBody(html.H3(id="metric-assets", className="text-center"))
+            ], color="dark", inverse=True), width=4),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Services"),
+                dbc.CardBody(html.H3(id="metric-services", className="text-center"))
+            ], color="secondary", inverse=True), width=4),
+
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Total Vulnerabilities"),
+                dbc.CardBody(html.H3(id="metric-vulns", className="text-center"))
+            ], color="danger", inverse=True), width=4),
+        ], className="mb-4"),
+
+        # GRAPH VIEW
+        html.H5("Network Attack Surface Graph", className="text-light"),
+        cyto.Cytoscape(
+            id="vuln-graph",
+            layout={"name": "cose"},
+            style={"width": "100%", "height": "500px", "backgroundColor": "#1b1b1b"},
+            elements=[],
+            stylesheet=[
+                {'selector': 'node[label="Asset"]',
+                 'style': {'background-color': '#28a745', 'label': 'data(id)', 'color': 'white'}},
+                {'selector': 'node[label="Service"]',
+                 'style': {'background-color': '#007bff', 'label': 'data(id)', 'color': 'white'}},
+                {'selector': 'node[label="Vulnerability"]',
+                 'style': {'background-color': '#dc3545', 'label': 'data(id)', 'color': 'white'}},
+                {'selector': 'edge', 'style': {'line-color': '#999'}}
+            ]
+        ),
+
+        html.Br(),
+
+        # HEATMAP
+        html.H5("CVSS Severity Heatmap", className="text-light"),
+        dcc.Graph(id="cvss-heatmap"),
+
+        html.Div([
+            html.Span("🟥 Critical", style={"color": "#ff073a", "padding": "10px"}),
+            html.Span("🟧 High", style={"color": "#ff8800", "padding": "10px"}),
+            html.Span("🟨 Medium", style={"color": "#ffc107", "padding": "10px"}),
+            html.Span("🟩 Low", style={"color": "#28a745", "padding": "10px"})
+        ], style={"textAlign": "center"}),
+
+        html.Br(),
+
+        # DATA TABLE
+        dash_table.DataTable(
+            id="vuln-table",
+            columns=[
+                {"name": "Asset", "id": "Asset"},
+                {"name": "Service", "id": "Service"},
+                {"name": "Port", "id": "Port"},
+                {"name": "Vulnerability", "id": "Vulnerability", "presentation": "markdown"},
+            ],
+            markdown_options={"html": True},
+            style_table={"overflowX": "auto"},
+            style_cell={"backgroundColor": "#222", "color": "white"},
+            style_header={"backgroundColor": "#EAAA00", "color": "black"},
+            page_size=12
+        ),
+
+        dcc.Interval(id="interval-refresh", interval=30 * 1000, n_intervals=0),
+        html.Audio(id="audio-alert", autoPlay=True, style={"display": "none"}),
+        html.Div(id="alert-banner"),
+
+        html.Div(id="last-updated", className="text-center text-muted mt-3")
+    ], fluid=True)
+
+
+# ==========================================================
+#  TAB 3 — NEO4J GRAPH SUITE (ENTERPRISE)
+# ==========================================================
+# ==========================================================
+#  TAB 3 — NEO4J GRAPH SUITE (ENTERPRISE)
+# ==========================================================
+
+neo4j_graph_tab = html.Div(
+    [
+        html.H3("🌐 Neo4j Graph Suite — Enterprise View",
+                className="text-warning mb-4"),
+
+        # -----------------------------
+        #  CATEGORY SELECTION
+        # -----------------------------
+        html.Label("Graph Category:", className="text-info"),
+        dcc.Dropdown(
+            id="graph-category",
+            options=[{"label": c, "value": c} for c in GRAPH_DEFINITIONS.keys()],
+            placeholder="Select graph category…",
+            clearable=False,
+            style={"width": "45%", "marginBottom": "15px"},
+        ),
+
+        # -----------------------------
+        #  GRAPH TYPE SELECTION
+        # -----------------------------
+        html.Label("Graph Type:", className="text-info"),
+        dcc.Dropdown(
+            id="graph-type",
+            options=[],
+            placeholder="Select graph type…",
+            clearable=False,
+            style={"width": "45%", "marginBottom": "20px"},
+        ),
+
+        # -----------------------------
+        #  GENERATE BUTTON
+        # -----------------------------
+        dbc.Button(
+            "⚡ Generate Graph",
+            id="graph-generate-btn",
+            color="warning",
+            className="mb-3",
+        ),
+
+        html.Div(id="graph-status",
+                 className="text-warning mb-3"),
+
+        # -----------------------------
+        #  CYTOSCAPE GRAPH CANVAS
+        # -----------------------------
+        cyto.Cytoscape(
+            id="graph-view",
+            layout={"name": "cose"},
+            style={"width": "100%", "height": "720px", "backgroundColor": "#111"},
+            elements=[],
+            stylesheet=[
+                # Asset Nodes
+                {
+                    "selector": 'node[label = "Asset"]',
+                    "style": {
+                        "background-color": "#28a745",
+                        "label": "data(id)",
+                        "font-size": "12px",
+                        "color": "white",
+                    },
+                },
+                # Service Nodes
+                {
+                    "selector": 'node[label = "Service"]',
+                    "style": {
+                        "background-color": "#007bff",
+                        "label": "data(id)",
+                        "font-size": "11px",
+                        "color": "white",
+                    },
+                },
+                # Vulnerability Nodes
+                {
+                    "selector": 'node[label = "Vulnerability"]',
+                    "style": {
+                        "background-color": "#dc3545",
+                        "label": "data(id)",
+                        "font-size": "10px",
+                        "color": "white",
+                    },
+                },
+                # Edges
+                {
+                    "selector": "edge",
+                    "style": {
+                        "line-color": "#888",
+                        "width": 2,
+                        "target-arrow-shape": "triangle",
+                        "target-arrow-color": "#888",
+                    },
+                },
+            ],
+        ),
+    ],
+    style={"padding": "20px", "backgroundColor": "#111"},
+)
+
+
+# ==========================================================
+#  TAB 4 — LLM REQUEST
+# ==========================================================
+llm_tab = html.Div([
+    html.H3("🧠 LLM Analysis", className="text-warning mb-3"),
+    dcc.Textarea(
+        id="llm-prompt",
+        placeholder="Ask about vulnerabilities, assets, attack paths…",
+        style={"width": "100%", "height": "180px"}
+    ),
+    html.Br(),
+    dbc.Button("Run LLM Analysis", id="llm-btn", color="warning"),
+    html.Div(id="llm-output", className="mt-3 text-warning", style={"whiteSpace": "pre-wrap"})
+])
+
+
+# ==========================================================
+#  TAB 5 — CHATBOT
+# ==========================================================
+chatbot_tab = html.Div([
+    html.H3("💬 Security Chatbot", className="text-warning mb-3"),
+    html.P("Chat features in development…")
+])
+
+
+# ==========================================================
+#  TAB 6 — REPORTING
+# ==========================================================
+reporting_tab = html.Div([
+    html.H3("📄 Reporting Module", className="text-warning mb-3"),
+    html.P("PDF/HTML/Excel reporting under development…")
+])
+
+
+# ==========================================================
+#  TAB 7 — VOICE ASSISTANT
+# ==========================================================
+voice_tab = html.Div([
+    html.H3("🎙️ Voice Assistant", className="text-warning mb-3"),
+    html.P("Voice-driven security analysis coming soon…")
+])
+
+
+# ==========================================================
+#  BATCH 3 — CALLBACKS (ALL FUNCTIONALITY)
+# ==========================================================
+
+# ----------------------------------------------------------
+# Helper: Extract IPv4 + CIDR from uploaded file
+# ----------------------------------------------------------
+def extract_ips(text):
+    import re
+    pattern = r"\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b"
+    return re.findall(pattern, text)
+
+
+# ----------------------------------------------------------
+# Callback: Load uploaded subnet/IP text file
+# ----------------------------------------------------------
+@app.callback(
+    Output("uploaded-ip-preview", "children"),
+    Input("upload-ip-file", "contents"),
+    State("upload-ip-file", "filename"),
+    prevent_initial_call=True
+)
+def process_uploaded_ip_file(contents, filename):
+    if contents is None:
+        raise PreventUpdate
+
+    import base64
+
+    content_type, content_string = contents.split(",")
+    decoded = base64.b64decode(content_string).decode("utf-8")
+
+    ips = extract_ips(decoded)
+    if not ips:
+        return "⚠️ No valid IPs or subnets found."
+
+    return f"📄 Uploaded: {filename}\n🔍 Parsed Targets:\n" + "\n".join(ips)
+
+
+# ----------------------------------------------------------
+# Callback: Run scan using UPLOADED IP list
+# ----------------------------------------------------------
+@app.callback(
+    Output("upload-scan-status", "children"),
+    Input("button-start-scan", "n_clicks"),
+    State("uploaded-ip-preview", "children"),
+    prevent_initial_call=True
+)
+def run_uploaded_scan(n, preview_text):
+    if not n:
+        raise PreventUpdate
+
+    if not preview_text:
+        return "⚠️ No uploaded targets detected."
+
+    # Extract IPs again
+    ips = extract_ips(preview_text)
+    if not ips:
+        return "⚠️ Could not detect IPs."
+
+    targets = ips
+    timestamp = int(time.time())
+    xml_output = f"/root/vuln_intel/scans/nmap_scan_{timestamp}.xml"
+
+    cmd = ["nmap", "-A", "-sV", "-sC", "-O", "-oX", xml_output] + targets
+
+    try:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        verbose = ""
+
+        for line in process.stdout:
+            verbose += line
+
+        process.wait()
+
+        parsed = parse_nmap_xml(xml_output)
+        save_scan_to_database(parsed)
+
+        import_nmap_hosts_to_neo4j(parsed)
+
+        return html.Pre(
+            f"✅ Scan Completed!\nTargets: {targets}\nFile: {xml_output}\n\n{verbose}",
+            style={"color": "#EAAA00"}
+        )
+
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+
+# ----------------------------------------------------------
+# Callback: Manual scanner input (Normal Scan)
+# ----------------------------------------------------------
+@app.callback(
+    Output("scan-status", "children"),
+    Input("scan-btn", "n_clicks"),
+    State("scanner-select", "value"),
+    State("target-ip", "value"),
+    prevent_initial_call=True
+)
+def trigger_scan(n, scanner, targets):
+    if not targets:
+        return "⚠️ Please provide target IP(s)."
+
+    parsed_targets = [t.strip() for t in targets.replace(",", " ").split() if t.strip()]
+    timestamp = int(time.time())
+    xml_output = f"/root/vuln_intel/scans/nmap_scan_{timestamp}.xml"
+
+    if scanner == "nmap":
+        cmd = ["nmap", "-sV", "-O", "-oX", xml_output] + parsed_targets
+    else:
+        return f"⚠️ Scanner '{scanner}' not yet implemented."
+
+    try:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        verbose = ""
+
+        for line in p.stdout:
+            verbose += line
+
+        p.wait()
+
+        parsed = parse_nmap_xml(xml_output)
+        save_scan_to_database(parsed)
+        import_nmap_hosts_to_neo4j(parsed)
+
+        return html.Pre(
+            f"✅ Scan Complete!\nTargets: {parsed_targets}\nSaved: {xml_output}\n\n{verbose}",
+            style={"color": "#EAAA00"}
+        )
+
+    except Exception as e:
+        return f"❌ Scan Error: {str(e)}"
+
+
+# ----------------------------------------------------------
+# Callback: Neo4j Graph Category → Graph Type
+# ----------------------------------------------------------
+@app.callback(
+    Output("graph-type", "options"),
+    Input("graph-category", "value")
+)
+def update_graph_type(selected_category):
+    if not selected_category:
+        return []
+    return [{"label": t, "value": t} for t in GRAPH_DEFINITIONS.get(selected_category, [])]
+
+
+# ----------------------------------------------------------
+# Callback: Generate Neo4j Graph
+# ----------------------------------------------------------
+@app.callback(
+    Output("graph-view", "elements"),
+    Output("graph-status", "children"),
+    Input("graph-generate-btn", "n_clicks"),
+    State("graph-category", "value"),
+    State("graph-type", "value"),
+    prevent_initial_call=True
+)
+def generate_graph(n, category, gtype):
+    if not gtype:
+        return [], "⚠️ Please select a graph type."
+
+    try:
+        uri = "bolt://localhost:7687"
+        driver = GraphDatabase.driver(uri, auth=("neo4j", "Adomaa12@"))
+
+        with driver.session() as session:
+            # --- Example universal graph query ---
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+            OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, s.name AS service, s.port AS port,
+                   v.id AS vuln, v.cvss AS cvss
+            """
+
+            data = list(session.run(q))
+
+        nodes = []
+        edges = []
+
+        for rec in data:
+            asset = rec["asset"]
+            service = rec["service"]
+            port = rec["port"]
+            vuln = rec["vuln"]
+
+            if asset:
+                nodes.append({"data": {"id": asset, "label": "Asset"}})
+
+            if service:
+                sid = f"{service}:{port}"
+                nodes.append({"data": {"id": sid, "label": "Service"}})
+                edges.append({"data": {"source": asset, "target": sid}})
+
+            if vuln:
+                nodes.append({"data": {"id": vuln, "label": "Vulnerability"}})
+                edges.append({"data": {"source": sid, "target": vuln}})
+
+        # Deduplicate nodes
+        unique = {n["data"]["id"]: n for n in nodes}
+        elements = list(unique.values()) + edges
+
+        return elements, f"✅ Loaded graph: {gtype}"
+
+    except Exception as e:
+        return [], f"❌ Neo4j Error: {str(e)}"
+
+
+# ----------------------------------------------------------
+# Callback: LLM (OpenAI)
+# ----------------------------------------------------------
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True
+)
+def run_llm(n, prompt):
+    if not prompt:
+        raise PreventUpdate
+
+    return call_llm(prompt)
+
+
+# ----------------------------------------------------------
+# Callback: Tab Switching
+# ----------------------------------------------------------
+@app.callback(
+    Output("tabs-content", "children"),
+    Input("tabs", "value")
+)
+def render_tab(tab):
+    try:
+        if tab == "tab1":
+            return system_health_layout()
+        if tab == "tab2":
+            return vulnerability_tab()
+        if tab == "tab3":
+            return neo4j_graphs_tab()
+        if tab == "tab4":
+            return llm_tab
+        if tab == "tab5":
+            return chatbot_tab
+        if tab == "tab6":
+            return reporting_tab
+        if tab == "tab7":
+            return voice_tab
+
+        return html.Div("⚠️ Unknown tab selection.", style={"color": "red"})
+
+    except Exception as e:
+        return html.Pre(f"❌ Tab Error:\n{str(e)}", style={"color": "red"})
+
+
+# ==========================================================
+#  BATCH 4 — FINAL LAYOUT + APPLICATION LAUNCH
+# ==========================================================
+
+# --------------------------
+# MAIN APP LAYOUT
+# --------------------------
+app.layout = html.Div(
+    [
+        html.H2(
+            "Towson Vulnerability Intelligence Dashboard",
+            style={
+                "color": "#EAAA00",
+                "textAlign": "center",
+                "marginBottom": "25px",
+                "marginTop": "25px",
+            },
+        ),
+
+        dcc.Tabs(
+            id="tabs",
+            value="tab1",
+            className="custom-tabs",
+            children=[
+                dcc.Tab(label="System Health", value="tab1"),
+                dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+                dcc.Tab(label="Neo4j Graphs", value="tab3"),     # << moved to tab 3
+                dcc.Tab(label="LLM Request", value="tab4"),
+                dcc.Tab(label="Chatbot", value="tab5"),
+                dcc.Tab(label="Assessment", value="tab6"),
+                dcc.Tab(label="Reporting", value="tab7"),
+                dcc.Tab(label="Voice Assistant", value="tab8"),
+            ],
+        ),
+
+        html.Div(id="tabs-content", style={"padding": "20px"}),
+    ],
+    style={"backgroundColor": "#121212", "minHeight": "100vh"},
+)
+
+
+# ==========================================================
+#  APP STARTUP LOGGING
+# ==========================================================
+def print_startup_banner():
+    print("\n" + "=" * 70)
+    print("🚀 TOWSON VULNERABILITY INTELLIGENCE DASHBOARD — STARTING UP")
+    print("=" * 70)
+    print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+    print(f"[CONFIG] DB_PATH = {DB_PATH}")
+    print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+    print("[CONFIG] Theme: DARKLY")
+    print("[CONFIG] Scan Mode: HYBRID (User Selectable)")
+    print("[CONFIG] Neo4j Graph Engine: ENABLED")
+    print("=" * 70 + "\n")
+
+
+# ==========================================================
+#  SERVER LAUNCHER
+# ==========================================================
+if __name__ == "__main__":
+    print_startup_banner()
+    print("📡 Dash is running at: http://0.0.0.0:8050")
+    print("📡 Localhost:           http://127.0.0.1:8050\n")
+
+    app.run_server(
+        host="0.0.0.0",
+        port=8050,
+        debug=True,
+        dev_tools_silence_routes_logging=True
+    )
+
+
+# ==========================================================
+#  BATCH 4 — FINAL LAYOUT + APPLICATION LAUNCH
+# ==========================================================
+
+# --------------------------
+# MAIN APP LAYOUT
+# --------------------------
+app.layout = html.Div(
+    [
+        html.H2(
+            "Towson Vulnerability Intelligence Dashboard",
+            style={
+                "color": "#EAAA00",
+                "textAlign": "center",
+                "marginBottom": "25px",
+                "marginTop": "25px",
+            },
+        ),
+
+        dcc.Tabs(
+            id="tabs",
+            value="tab1",
+            className="custom-tabs",
+            children=[
+                dcc.Tab(label="System Health", value="tab1"),
+                dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+                dcc.Tab(label="Neo4j Graphs", value="tab3"),     # << moved to tab 3
+                dcc.Tab(label="LLM Request", value="tab4"),
+                dcc.Tab(label="Chatbot", value="tab5"),
+                dcc.Tab(label="Assessment", value="tab6"),
+                dcc.Tab(label="Reporting", value="tab7"),
+                dcc.Tab(label="Voice Assistant", value="tab8"),
+            ],
+        ),
+
+        html.Div(id="tabs-content", style={"padding": "20px"}),
+    ],
+    style={"backgroundColor": "#121212", "minHeight": "100vh"},
+)
+
+
+# ==========================================================
+#  APP STARTUP LOGGING
+# ==========================================================
+def print_startup_banner():
+    print("\n" + "=" * 70)
+    print("🚀 TOWSON VULNERABILITY INTELLIGENCE DASHBOARD — STARTING UP")
+    print("=" * 70)
+    print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+    print(f"[CONFIG] DB_PATH = {DB_PATH}")
+    print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+    print("[CONFIG] Theme: DARKLY")
+    print("[CONFIG] Scan Mode: HYBRID (User Selectable)")
+    print("[CONFIG] Neo4j Graph Engine: ENABLED")
+    print("=" * 70 + "\n")
+
+
+# ==========================================================
+#  SERVER LAUNCHER
+# ==========================================================
+if __name__ == "__main__":
+    print_startup_banner()
+    print("📡 Dash is running at: http://0.0.0.0:8050")
+    print("📡 Localhost:           http://127.0.0.1:8050\n")
+
+    app.run_server(
+        host="0.0.0.0",
+        port=8050,
+        debug=True,
+        dev_tools_silence_routes_logging=True
+    )
+# ==========================================================
+#  BATCH 4 — FINAL LAYOUT + APPLICATION LAUNCH
+# ==========================================================
+
+# --------------------------
+# MAIN APP LAYOUT
+# --------------------------
+app.layout = html.Div(
+    [
+        html.H2(
+            "Towson Vulnerability Intelligence Dashboard",
+            style={
+                "color": "#EAAA00",
+                "textAlign": "center",
+                "marginBottom": "25px",
+                "marginTop": "25px",
+            },
+        ),
+
+        dcc.Tabs(
+            id="tabs",
+            value="tab1",
+            className="custom-tabs",
+            children=[
+                dcc.Tab(label="System Health", value="tab1"),
+                dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+                dcc.Tab(label="Neo4j Graphs", value="tab3"),     # << moved to tab 3
+                dcc.Tab(label="LLM Request", value="tab4"),
+                dcc.Tab(label="Chatbot", value="tab5"),
+                dcc.Tab(label="Assessment", value="tab6"),
+                dcc.Tab(label="Reporting", value="tab7"),
+                dcc.Tab(label="Voice Assistant", value="tab8"),
+            ],
+        ),
+
+        html.Div(id="tabs-content", style={"padding": "20px"}),
+    ],
+    style={"backgroundColor": "#121212", "minHeight": "100vh"},
+)
+
+
+# ==========================================================
+#  APP STARTUP LOGGING
+# ==========================================================
+def print_startup_banner():
+    print("\n" + "=" * 70)
+    print("🚀 TOWSON VULNERABILITY INTELLIGENCE DASHBOARD — STARTING UP")
+    print("=" * 70)
+    print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+    print(f"[CONFIG] DB_PATH = {DB_PATH}")
+    print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+    print("[CONFIG] Theme: DARKLY")
+    print("[CONFIG] Scan Mode: HYBRID (User Selectable)")
+    print("[CONFIG] Neo4j Graph Engine: ENABLED")
+    print("=" * 70 + "\n")
+
+
+# ==========================================================
+#  SERVER LAUNCHER
+# ==========================================================
+if __name__ == "__main__":
+    print_startup_banner()
+    print("📡 Dash is running at: http://0.0.0.0:8050")
+    print("📡 Localhost:           http://127.0.0.1:8050\n")
+
+    app.run_server(
+        host="0.0.0.0",
+        port=8050,
+        debug=True,
+        dev_tools_silence_routes_logging=True
+    )
+
+
+
+# ==========================================================
+#  BATCH 4 — FINAL LAYOUT + APPLICATION LAUNCH
+# ==========================================================
+
+# --------------------------
+# MAIN APP LAYOUT
+# --------------------------
+app.layout = html.Div(
+    [
+        html.H2(
+            "Towson Vulnerability Intelligence Dashboard",
+            style={
+                "color": "#EAAA00",
+                "textAlign": "center",
+                "marginBottom": "25px",
+                "marginTop": "25px",
+            },
+        ),
+
+        dcc.Tabs(
+            id="tabs",
+            value="tab1",
+            className="custom-tabs",
+            children=[
+                dcc.Tab(label="System Health", value="tab1"),
+                dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+                dcc.Tab(label="Neo4j Graphs", value="tab3"),     # << moved to tab 3
+                dcc.Tab(label="LLM Request", value="tab4"),
+                dcc.Tab(label="Chatbot", value="tab5"),
+                dcc.Tab(label="Assessment", value="tab6"),
+                dcc.Tab(label="Reporting", value="tab7"),
+                dcc.Tab(label="Voice Assistant", value="tab8"),
+            ],
+        ),
+
+        html.Div(id="tabs-content", style={"padding": "20px"}),
+    ],
+    style={"backgroundColor": "#121212", "minHeight": "100vh"},
+)
+
+
+# ==========================================================
+#  APP STARTUP LOGGING
+# ==========================================================
+def print_startup_banner():
+    print("\n" + "=" * 70)
+    print("🚀 TOWSON VULNERABILITY INTELLIGENCE DASHBOARD — STARTING UP")
+    print("=" * 70)
+    print(f"[CONFIG] PROJECT_ROOT = {PROJECT_ROOT}")
+    print(f"[CONFIG] DB_PATH = {DB_PATH}")
+    print(f"[CONFIG] STATUS_LOG = {STATUS_LOG}")
+    print("[CONFIG] Theme: DARKLY")
+    print("[CONFIG] Scan Mode: HYBRID (User Selectable)")
+    print("[CONFIG] Neo4j Graph Engine: ENABLED")
+    print("=" * 70 + "\n")
+
+
+# ==========================================================
+#  SERVER LAUNCHER
+# ==========================================================
+if __name__ == "__main__":
+    print_startup_banner()
+    print("📡 Dash is running at: http://0.0.0.0:8050")
+    print("📡 Localhost:           http://127.0.0.1:8050\n")
+
+    app.run_server(
+        host="0.0.0.0",
+        port=8050,
+        debug=True,
+        dev_tools_silence_routes_logging=True
+    )
+
+
+# ==========================================================
+#  BATCH 5 — NEO4J GRAPH QUERY ENGINE (ADVANCED)
+# ==========================================================
+
+# ----------------------------------------------------------
+# GRAPH QUERY DEFINITIONS (Cypher logic for each graph type)
+# ----------------------------------------------------------
+
+GRAPH_QUERIES = {
+    # ======================================================
+    # CORE RELATIONSHIP GRAPHS
+    # ======================================================
+    "Asset-Service-Vulnerability Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        RETURN a, s, v
+    """,
+
+    "Service-Port Graph": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    "Asset-Vulnerability Impact Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v)
+        RETURN a, v
+    """,
+
+    "Host-Service Dependency Graph": """
+        MATCH (a:Asset)-[r:RUNS_SERVICE]->(s:Service)
+        RETURN a, r, s
+    """,
+
+    "Vulnerability Propagation Graph": """
+        MATCH path = (v:Vulnerability)<-[:HAS_VULNERABILITY]-(:Service)<-[:RUNS_SERVICE]-(a)
+        RETURN path
+    """,
+
+    # ======================================================
+    # NETWORK TOPOLOGY GRAPHS
+    # ======================================================
+    "Network Topology Map": """
+        MATCH (a:Asset)
+        RETURN a
+    """,
+
+    "Subnet Communication Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        RETURN a, s
+    """,
+
+    "Host Connectivity Graph": """
+        MATCH (a:Asset)-[:CONNECTED_TO]->(b:Asset)
+        RETURN a, b
+    """,
+
+    "Inbound/Outbound Traffic Graph": """
+        MATCH (a:Asset)-[t:TRAFFIC]->(b:Asset)
+        RETURN a, t, b
+    """,
+
+    "Port Exposure Graph": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    # ======================================================
+    # VULNERABILITY EXPOSURE GRAPHS
+    # ======================================================
+    "CVSS Severity Heat Graph": """
+        MATCH (v:Vulnerability)
+        RETURN v
+    """,
+
+    "Critical Asset Exposure Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v)
+        WHERE v.cvss >= 9.0
+        RETURN a, v
+    """,
+
+    "Exploitability Graph": """
+        MATCH (v:Vulnerability {exploitable:true})
+        RETURN v
+    """,
+
+    "Patch Availability Graph": """
+        MATCH (v:Vulnerability)
+        WHERE v.patch_available = true
+        RETURN v
+    """,
+
+    "Vulnerability Cluster Graph": """
+        MATCH p = (v:Vulnerability)<-[:HAS_VULNERABILITY]-(:Service)<-[:RUNS_SERVICE]-(a)
+        RETURN p
+    """,
+
+    # ======================================================
+    # ATTACK PATH GRAPHS
+    # ======================================================
+    "Potential Attack Paths": """
+        MATCH p = (a1:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v)
+                  <-[:HAS_VULNERABILITY]-(:Service)<-[:RUNS_SERVICE]-(a2:Asset)
+        RETURN p
+    """,
+
+    "Privilege Escalation Graph": """
+        MATCH p = (a:Asset)-[:HAS_PRIV_ESC]->(b:Asset)
+        RETURN p
+    """,
+
+    "Lateral Movement Graph": """
+        MATCH p = (a:Asset)-[:LATERAL_MOVE_TO]->(b:Asset)
+        RETURN p
+    """,
+
+    "Service Exploit Chain Graph": """
+        MATCH p = (s1:Service)-[:HAS_VULNERABILITY]->(v)-[:EXPLOITS]->(s2:Service)
+        RETURN p
+    """,
+
+    "Critical Path to Domain Admin": """
+        MATCH p = shortestPath(
+            (start:Asset {critical:true})-[:LATERAL_MOVE_TO*..6]->(admin:Asset {role:'domain-admin'})
+        )
+        RETURN p
+    """,
+
+    # ======================================================
+    # CVE INTELLIGENCE GRAPHS
+    # ======================================================
+    "CVE-CVSS Graph": """
+        MATCH (v:Vulnerability)
+        RETURN v
+    """,
+
+    "CVE-CWE Graph": """
+        MATCH (v:Vulnerability)-[:HAS_CWE]->(c:CWE)
+        RETURN v, c
+    """,
+
+    "CVE-Exploit Graph": """
+        MATCH (v:Vulnerability)-[:HAS_EXPLOIT]->(e:Exploit)
+        RETURN v, e
+    """,
+
+    "CPE-CVE Resolution Graph": """
+        MATCH (cpe:CPE)-[:MATCHES]->(v:Vulnerability)
+        RETURN cpe, v
+    """,
+
+    "Vendor/Product Vulnerability Graph": """
+        MATCH (p:Product)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        RETURN p, v
+    """,
+
+    # ======================================================
+    # SERVICE & PORT MAPPING GRAPHS
+    # ======================================================
+    "Service Version Distribution": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    "Open Port Map": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    "High-Risk Service Graph": """
+        MATCH (s:Service)
+        WHERE s.product =~ '.*(apache|tomcat|nginx|mysql).*'
+        RETURN s
+    """,
+
+    "End-of-Life Software Graph": """
+        MATCH (s:Service)
+        WHERE s.eol = true
+        RETURN s
+    """,
+
+    "Service Misconfiguration Graph": """
+        MATCH (s:Service)
+        WHERE s.misconfigured = true
+        RETURN s
+    """,
+
+    # ======================================================
+    # ATT&CK / MITRE
+    # ======================================================
+    "Tactics & Techniques Graph": """
+        MATCH (t:Tactic)-[:HAS_TECHNIQUE]->(tech:Technique)
+        RETURN t, tech
+    """,
+
+    "Technique-to-Vulnerability Graph": """
+        MATCH (tech:Technique)-[:EXPLOITS]->(v:Vulnerability)
+        RETURN tech, v
+    """,
+
+    "Technique-to-Service Graph": """
+        MATCH (tech:Technique)-[:TARGETS]->(s:Service)
+        RETURN tech, s
+    """,
+
+    "ATT&CK Heatmap Graph": """
+        MATCH (tech:Technique)
+        RETURN tech
+    """,
+
+    # ======================================================
+    # ASSET INVENTORY GRAPHS
+    # ======================================================
+    "Complete Asset Map": """
+        MATCH (a:Asset)
+        RETURN a
+    """,
+
+    "Installed Software Graph": """
+        MATCH (a:Asset)-[:HAS_SOFTWARE]->(s:Software)
+        RETURN a, s
+    """,
+
+    "Operating System Map": """
+        MATCH (a:Asset)
+        WHERE exists(a.os)
+        RETURN a
+    """,
+
+    "Asset Criticality Graph": """
+        MATCH (a:Asset)
+        WHERE exists(a.criticality)
+        RETURN a
+    """,
+}
+
+
+# ----------------------------------------------------------
+# UNIVERSAL GRAPH GENERATOR
+# ----------------------------------------------------------
+@app.callback(
+    Output("graph-view", "elements"),
+    Output("graph-status", "children"),
+    Input("graph-generate-btn", "n_clicks"),
+    State("graph-category", "value"),
+    State("graph-type", "value"),
+    prevent_initial_call=True
+)
+def run_graph_engine(n, category, gtype):
+    if not gtype:
+        return [], "⚠️ Select a graph type."
+
+    try:
+        query = GRAPH_QUERIES.get(gtype)
+        if not query:
+            return [], f"❗ No query defined for: {gtype}"
+
+        uri = "bolt://localhost:7687"
+        driver = GraphDatabase.driver(uri, auth=("neo4j", "Adomaa12@"))
+
+        nodes = []
+        edges = []
+
+        with driver.session() as session:
+            results = session.run(query)
+
+            for record in results:
+                for key, val in record.items():
+
+                    # Node objects
+                    if hasattr(val, "labels"):
+                        nid = val.element_id
+                        label = list(val.labels)[0]
+                        nodes.append({
+                            "data": {"id": nid, "label": label, "name": val.get("name", val.get("host", nid))}
+                        })
+
+                    # Relationship objects
+                    elif hasattr(val, "type"):
+                        src = val.start_node.element_id
+                        dst = val.end_node.element_id
+                        edges.append({"data": {"source": src, "target": dst}})
+
+        # Deduplicate nodes
+        unique_nodes = {n["data"]["id"]: n for n in nodes}
+        elements = list(unique_nodes.values()) + edges
+
+        if not elements:
+            return [], "⚠️ No data returned."
+
+        return elements, f"✅ Graph Loaded: {gtype}"
+
+    except Exception as e:
+        return [], f"❌ Neo4j Error: {str(e)}"
+
+
+# ==========================================================
+#  BATCH 6 — NEO4J GRAPH VISUAL THEME ENGINE
+# ==========================================================
+
+GRAPH_THEMES = {
+    "themeA": {  # CyberOps Blue + Gold
+        "Asset":  {"color": "#1f77b4", "shape": "rectangle", "size": 55},
+        "Service": {"color": "#17becf", "shape": "ellipse", "size": 45},
+        "Port": {"color": "#2ca02c", "shape": "diamond", "size": 40},
+        "Vulnerability": {"color": "#d62728", "shape": "hexagon", "size": 60},
+        "CVE": {"color": "#ff7f0e", "shape": "octagon", "size": 55},
+        "CWE": {"color": "#9467bd", "shape": "hexagon", "size": 50},
+        "Exploit": {"color": "#e377c2", "shape": "triangle", "size": 50},
+        "Path": {"color": "#bcbd22", "shape": "star", "size": 60},
+
+        "edges": {
+            "RUNS_SERVICE": "#17becf",
+            "HAS_VULNERABILITY": "#d62728",
+            "CONNECTS_TO": "#7f7f7f",
+            "DEPENDS_ON": "#bcbd22",
+            "ATTACK_PATH": "#ff0000",
+            "EXPLOIT_CHAIN": "#ff7f0e",
+            "COMMUNICATES_WITH": "#2ca02c",
+        }
+    },
+
+    "themeB": {  # Threat Intel Dark Red
+        "Asset":  {"color": "#8B0000", "shape": "rectangle", "size": 60},
+        "Service": {"color": "#B22222", "shape": "ellipse", "size": 45},
+        "Port": {"color": "#DC143C", "shape": "diamond", "size": 40},
+        "Vulnerability": {"color": "#FF0000", "shape": "hexagon", "size": 65},
+        "CVE": {"color": "#FF4500", "shape": "octagon", "size": 55},
+        "CWE": {"color": "#8B008B", "shape": "hexagon", "size": 50},
+        "Exploit": {"color": "#E60073", "shape": "triangle", "size": 55},
+        "Path": {"color": "#FFD700", "shape": "star", "size": 70},
+
+        "edges": {
+            "RUNS_SERVICE": "#FF6347",
+            "HAS_VULNERABILITY": "#FF0000",
+            "CONNECTS_TO": "#800000",
+            "ATTACK_PATH": "#FFD700",
+            "EXPLOIT_CHAIN": "#FF4500",
+            "COMMUNICATES_WITH": "#B22222",
+        }
+    },
+
+    "themeC": {  # Matrix Green
+        "Asset":  {"color": "#00FF41", "shape": "rectangle", "size": 55},
+        "Service": {"color": "#00CC33", "shape": "ellipse", "size": 45},
+        "Port": {"color": "#33FF99", "shape": "diamond", "size": 40},
+        "Vulnerability": {"color": "#009900", "shape": "hexagon", "size": 60},
+        "CVE": {"color": "#66FF66", "shape": "octagon", "size": 55},
+        "CWE": {"color": "#00AA66", "shape": "hexagon", "size": 50},
+        "Exploit": {"color": "#00FF99", "shape": "triangle", "size": 50},
+        "Path": {"color": "#00FFCC", "shape": "star", "size": 60},
+
+        "edges": {
+            "RUNS_SERVICE": "#00FF41",
+            "HAS_VULNERABILITY": "#009900",
+            "COMMUNICATES_WITH": "#33FF99",
+            "ATTACK_PATH": "#00FFFF",
+            "CONNECTS_TO": "#00AA66"
+        }
+    },
+
+    "themeD": {  # Corporate Light (Auditors / Compliance)
+        "Asset":  {"color": "#005f99", "shape": "rectangle", "size": 60},
+        "Service": {"color": "#007ACC", "shape": "ellipse", "size": 45},
+        "Port": {"color": "#3399FF", "shape": "diamond", "size": 35},
+        "Vulnerability": {"color": "#CC0000", "shape": "hexagon", "size": 60},
+        "CVE": {"color": "#FF3300", "shape": "octagon", "size": 55},
+        "CWE": {"color": "#7F00FF", "shape": "hexagon", "size": 50},
+        "Exploit": {"color": "#FF6600", "shape": "triangle", "size": 55},
+        "Path": {"color": "#00C8FF", "shape": "star", "size": 70},
+
+        "edges": {
+            "RUNS_SERVICE": "#007ACC",
+            "HAS_VULNERABILITY": "#CC0000",
+            "ATTACK_PATH": "#00C8FF",
+            "COMMUNICATES_WITH": "#3399FF",
+        }
+    },
+
+    "themeE": {  # Purple Team Fusion
+        "Asset":  {"color": "#8A2BE2", "shape": "rectangle", "size": 60},
+        "Service": {"color": "#9370DB", "shape": "ellipse", "size": 45},
+        "Port": {"color": "#BA55D3", "shape": "diamond", "size": 45},
+        "Vulnerability": {"color": "#FF1493", "shape": "hexagon", "size": 65},
+        "CVE": {"color": "#FF69B4", "shape": "octagon", "size": 55},
+        "CWE": {"color": "#DA70D6", "shape": "hexagon", "size": 50},
+        "Exploit": {"color": "#FF00FF", "shape": "triangle", "size": 60},
+        "Path": {"color": "#FFB6C1", "shape": "star", "size": 75},
+
+        "edges": {
+            "RUNS_SERVICE": "#9370DB",
+            "HAS_VULNERABILITY": "#FF1493",
+            "ATTACK_PATH": "#FF00FF",
+            "COMMUNICATES_WITH": "#BA55D3",
+        }
+    },
+}
+
+
+# ==========================================================
+#  BUILD CYTOSCAPE STYLESHEET FROM THEME
+# ==========================================================
+def build_stylesheet(theme_name):
+    theme = GRAPH_THEMES.get(theme_name, GRAPH_THEMES["themeA"])
+    stylesheet = []
+
+    for node_type, props in theme.items():
+        if node_type == "edges":
+            continue
+
+        stylesheet.append({
+            "selector": f'node[label = "{node_type}"]',
+            "style": {
+                "background-color": props["color"],
+                "shape": props["shape"],
+                "width": props["size"],
+                "height": props["size"],
+                "label": "data(id)",
+                "color": "#ffffff",
+                "font-size": "10px",
+                "text-wrap": "wrap",
+            },
+        })
+
+    for edge_type, color in theme["edges"].items():
+        stylesheet.append({
+            "selector": f'edge[type = "{edge_type}"]',
+            "style": {
+                "line-color": color,
+                "target-arrow-color": color,
+                "target-arrow-shape": "triangle",
+                "width": 2,
+            }
+        })
+
+    return stylesheet
+
+
+# ==========================================================
+#  BATCH 7 — AUTO NODE & EDGE TYPE MAPPER
+# ==========================================================
+
+import re
+
+def classify_node(node_id, properties=None):
+    """
+    Detect node type based on ID patterns or attributes.
+    """
+    if properties is None:
+        properties = {}
+
+    nid = str(node_id).lower()
+
+    # --- Asset / Host detection ---
+    if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", node_id):
+        return "Asset"
+    if "host" in nid or "asset" in nid:
+        return "Asset"
+
+    # --- Service detection ---
+    if ":" in node_id and re.match(r".+:\d+$", node_id):
+        return "Service"
+
+    # --- Port detection ---
+    if nid.isdigit():
+        return "Port"
+
+    # --- CVE detection ---
+    if re.match(r"cve-\d{4}-\d+", nid):
+        return "CVE"
+
+    # --- CWE detection ---
+    if re.match(r"cwe-\d+", nid):
+        return "CWE"
+
+    # --- Exploit or attack tool ---
+    if "exploit" in nid or "poc" in nid or "edb" in nid:
+        return "Exploit"
+
+    # --- Vulnerability fallback ---
+    if "vuln" in nid or "ms" in nid or "kb" in nid:
+        return "Vulnerability"
+
+    # --- Attack path node ---
+    if "path" in nid or properties.get("is_path"):
+        return "Path"
+
+    # Default fallback
+    return "Unknown"
+
+
+def classify_edge(rel_type, src_type=None, dst_type=None):
+    """
+    Normalize edge types so themes can color them correctly.
+    """
+    rel = rel_type.upper()
+
+    # Common mappings
+    if "RUNS" in rel:
+        return "RUNS_SERVICE"
+
+    if "HAS_VULN" in rel or "HAS_VULNERABILITY" in rel:
+        return "HAS_VULNERABILITY"
+
+    if "CONNECT" in rel or "LINK" in rel:
+        return "CONNECTS_TO"
+
+    if "DEPENDS" in rel:
+        return "DEPENDS_ON"
+
+    if "PATH" in rel or "ATTACK" in rel:
+        return "ATTACK_PATH"
+
+    if "CHAIN" in rel or "EXPLOIT" in rel:
+        return "EXPLOIT_CHAIN"
+
+    if "COMM" in rel:
+        return "COMMUNICATES_WITH"
+
+    # If source is Service and dest is CVE, auto-map
+    if src_type == "Service" and dst_type == "Vulnerability":
+        return "HAS_VULNERABILITY"
+
+    # Default fallback
+    return "RELATIONSHIP"
+
+
+def map_graph_elements(records):
+    """
+    Convert Neo4j query results to Cytoscape elements with:
+    - auto node type
+    - auto edge type
+    - theme-ready metadata
+    """
+    nodes = {}
+    edges = []
+
+    for rec in records:
+        src_id = rec.get("src")
+        dst_id = rec.get("dst")
+        rel_type = rec.get("rel")
+
+        # Build node entries
+        if src_id not in nodes:
+            src_type = classify_node(src_id)
+            nodes[src_id] = {"data": {"id": src_id, "label": src_type}}
+
+        if dst_id and dst_id not in nodes:
+            dst_type = classify_node(dst_id)
+            nodes[dst_id] = {"data": {"id": dst_id, "label": dst_type}}
+
+        # Build edges
+        if dst_id:
+            src_type = nodes[src_id]["data"]["label"]
+            dst_type = nodes[dst_id]["data"]["label"]
+
+            edge_type = classify_edge(rel_type, src_type, dst_type)
+
+            edges.append({
+                "data": {
+                    "source": src_id,
+                    "target": dst_id,
+                    "type": edge_type
+                }
+            })
+
+    # Final combined structure
+    return list(nodes.values()) + edges
+
+
+# ==========================================================
+#  BATCH 8 — NEO4J GRAPH RENDERING CALLBACK
+# ==========================================================
+
+@app.callback(
+    Output("graph-view", "elements"),
+    Output("graph-status", "children"),
+    Input("graph-generate-btn", "n_clicks"),
+    State("graph-category", "value"),
+    State("graph-type", "value"),
+    prevent_initial_call=True
+)
+def render_neo4j_graph(n, category, gtype):
+
+    if not n:
+        raise PreventUpdate
+
+    if not category or not gtype:
+        return [], "⚠️ Please select BOTH a category and graph type."
+
+    try:
+        # ----------------------------------------------
+        # 1. BUILD CYPHER QUERY FROM GRAPH TYPE (Batch 5)
+        # ----------------------------------------------
+        query = build_cypher_query(category, gtype)
+
+        if not query:
+            return [], f"⚠️ No query defined for graph type: {gtype}"
+
+        # ----------------------------------------------
+        # 2. CONNECT TO NEO4J AND EXECUTE QUERY
+        # ----------------------------------------------
+        uri = "bolt://localhost:7687"
+        user = "neo4j"
+        password = "Adomaa12@"  # replace later with env var
+
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+
+        with driver.session() as session:
+            records = []
+            result = session.run(query)
+
+            for r in result:
+                records.append({
+                    "src": r.get("src"),
+                    "dst": r.get("dst"),
+                    "rel": r.get("rel")
+                })
+
+        driver.close()
+
+        if not records:
+            return [], "⚠️ No graph data returned for this selection."
+
+        # ----------------------------------------------
+        # 3. AUTO-MAP NODE + EDGE TYPES (Batch 7)
+        # ----------------------------------------------
+        elements = map_graph_elements(records)
+
+        # ----------------------------------------------
+        # 4. APPLY THEME ENGINE (Batch 6)
+        # ----------------------------------------------
+        themed_elements = apply_theme_to_elements(elements)
+
+        # ----------------------------------------------
+        # 5. RETURN ELEMENTS TO CYTOSCAPE
+        # ----------------------------------------------
+        return themed_elements, f"✅ Graph Loaded: {gtype}"
+
+    except Exception as e:
+        return [], f"❌ Error: {str(e)}"
+
+
+# ==========================================================
+#  TAB SWITCHING LOGIC (FULLY UPDATED)
+# ==========================================================
+@app.callback(
+    Output("tabs-content", "children"),
+    Input("tabs", "value")
+)
+def render_tab(tab):
+    try:
+        # ----------------------------
+        # TAB 1 — System Health
+        # ----------------------------
+        if tab == "tab1":
+            return system_health_layout() if "system_health_layout" in globals() \
+                   else html.Div("⚠️ system_health_layout() missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 2 — Vulnerability Dashboard
+        # ----------------------------
+        elif tab == "tab2":
+            return vulnerability_tab() if "vulnerability_tab" in globals() \
+                   else html.Div("⚠️ vulnerability_tab() missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 3 — Neo4j Graph Suite (Enterprise)
+        # ----------------------------
+        elif tab == "tab3":
+            return neo4j_graph_tab if "neo4j_graph_tab" in globals() \
+                   else html.Div("⚠️ neo4j_graph_tab missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 4 — LLM Request
+        # ----------------------------
+        elif tab == "tab4":
+            return llm_tab if "llm_tab" in globals() \
+                   else html.Div("⚠️ llm_tab missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 5 — Assessment Suite
+        # ----------------------------
+        elif tab == "tab5":
+            return assessment_tab if "assessment_tab" in globals() \
+                   else html.Div("⚠️ assessment_tab missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 6 — Reporting
+        # ----------------------------
+        elif tab == "tab6":
+            return reporting_tab if "reporting_tab" in globals() \
+                   else html.Div("⚠️ reporting_tab missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 7 — Voice Assistant
+        # ----------------------------
+        elif tab == "tab7":
+            return voice_tab if "voice_tab" in globals() \
+                   else html.Div("⚠️ voice_tab missing", style={"color": "red"})
+
+        # ----------------------------
+        # TAB 8 — Attack Path / Advanced
+        # ----------------------------
+        elif tab == "tab8":
+            return attack_tab if "attack_tab" in globals() \
+                   else html.Div("⚠️ attack_tab missing", style={"color": "red"})
+
+        else:
+            return html.Div("⚠️ Unknown tab", style={"color": "red"})
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[!] Tab rendering error: {e}\n{tb}")
+        return html.Div([
+            html.H4("⚠️ Error Rendering Tab", style={"color": "red"}),
+            html.Pre(tb, style={
+                "whiteSpace": "pre-wrap",
+                "color": "orange",
+                "backgroundColor": "#222",
+                "padding": "15px",
+            }),
+        ])
+
+

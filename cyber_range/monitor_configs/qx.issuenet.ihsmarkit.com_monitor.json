@@ -1,0 +1,17 @@
+{
+  "domain": "qx.issuenet.ihsmarkit.com",
+  "target": "https://qx.issuenet.ihsmarkit.com/admin-website",
+  "baseline_findings": 231,
+  "baseline_critical": 13,
+  "created": "2026-08-29 14:55:18.944150",
+  "schedule": "weekly",
+  "alerts": {
+    "new_critical": true,
+    "new_high": true,
+    "resolved": true
+  },
+  "notify": [
+    "security-team"
+  ],
+  "next_scan": "2026-09-05 14:55:18.944150"
+}

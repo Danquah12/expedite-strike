@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Vuln Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:20px;background:#0f1720;color:#e6eef6}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{padding:8px;border:1px solid #22303a}
+    th{background:#0b1620}
+    .chart-wrap{max-width:700px;margin:0 auto}
+  </style>
+</head>
+<body>
+  <h1>Vulnerability Dashboard</h1>
+  <div class="chart-wrap">
+    <canvas id="sevChart"></canvas>
+  </div>
+
+  <table>
+    <thead><tr><th>Host</th><th>Port</th><th>Title</th><th>Severity</th><th>Source</th><th>Imported</th></tr></thead>
+    <tbody>
+      {% for f in findings %}
+      <tr>
+        <td>{{ f.host or "" }}</td>
+        <td>{{ f.port or "" }}</td>
+        <td>{{ f.title or "" }}</td>
+        <td>{{ f.severity or "" }}</td>
+        <td>{{ f.source or "" }}</td>
+        <td>{{ f.import_date or "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    fetch('/api/stats').then(r=>r.json()).then(data=>{
+      const labels = data.map(x=>x.severity);
+      const counts = data.map(x=>x.count);
+      new Chart(document.getElementById('sevChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Findings', data: counts }] },
+        options: { responsive:true, plugins:{legend:{display:false}} }
+      });
+    }).catch(e=>console.error('stats fetch failed', e));
+  </script>
+</body>
+</html>

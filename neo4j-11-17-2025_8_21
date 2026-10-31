@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Neo4j Integration — Vuln-Intel Dashboard
+----------------------------------------
+Handles:
+ - Connecting to Neo4j
+ - Creating unique constraints
+ - Importing findings from SQLite
+ - Enriching vulnerabilities with NVD & Vulners APIs
+"""
+
+import os
+import logging
+import sqlite3
+from datetime import datetime
+from neo4j import GraphDatabase
+import requests
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("neo4j_integration")
+
+# === Configuration ===
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASS = os.getenv("NEO4J_PASS", "Adomaa12@")
+DB_PATH = os.getenv("DB_PATH", "/root/vuln_intel/vuln_intel.db")
+
+# === Connection ===
+def get_driver():
+    return GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASS))
+
+# === Create Constraints ===
+def init_constraints():
+    with get_driver().session() as session:
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.host IS UNIQUE")
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (v:Vulnerability) REQUIRE v.cve_id IS UNIQUE")
+    logger.info("✅ Neo4j constraints ensured.")
+
+# === Import findings from SQLite ===
+def import_findings_to_neo4j():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT host, port, service, severity, cvss, cve_id, description, source FROM findings")
+    rows = cursor.fetchall()
+    conn.close()
+
+    driver = get_driver()
+    with driver.session() as session:
+        for r in rows:
+            host, port, service, severity, cvss, cve_id, desc, source = r
+            session.run("""
+                MERGE (a:Asset {host:$host})
+                MERGE (v:Vulnerability {cve_id:$cve_id})
+                ON CREATE SET v.description=$desc, v.cvss=$cvss, v.source=$source, v.severity=$severity
+                MERGE (a)-[:HAS_VULNERABILITY]->(v)
+            """, host=host, port=port, service=service, severity=severity, cvss=cvss,
+               cve_id=cve_id, desc=desc, source=source)
+    logger.info(f"✅ Imported {len(rows)} findings into Neo4j.")
+
+# === Enrich CVEs via NVD ===
+def enrich_cves_from_nvd(limit=20):
+    driver = get_driver()
+    with driver.session() as session:
+        cves = session.run("""
+            MATCH (v:Vulnerability)
+            WHERE v.cve_id STARTS WITH 'CVE-' AND (v.description IS NULL OR v.cvss IS NULL)
+            RETURN v.cve_id AS cve LIMIT $limit
+        """, limit=limit)
+
+        for record in cves:
+            cve_id = record["cve"]
+            try:
+                nvd_url = f"https://services.nvd.nist.gov/rest/json/cve/2.0/{cve_id}"
+                r = requests.get(nvd_url, timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    desc = data["vulnerabilities"][0]["cve"]["descriptions"][0]["value"]
+                    metrics = data["vulnerabilities"][0].get("cve", {}).get("metrics", {})
+                    cvss = None
+                    if "cvssMetricV31" in metrics:
+                        cvss = metrics["cvssMetricV31"][0]["cvssData"]["baseScore"]
+                    session.run("""
+                        MATCH (v:Vulnerability {cve_id:$cve_id})
+                        SET v.description=$desc, v.cvss=$cvss, v.last_updated=date()
+                    """, cve_id=cve_id, desc=desc, cvss=cvss)
+                    logger.info(f"🧠 Enriched {cve_id} with NVD data.")
+            except Exception as e:
+                logger.warning(f"Failed to enrich {cve_id}: {e}")
+    logger.info("✅ NVD enrichment complete.")
+
+if __name__ == "__main__":
+    init_constraints()
+    import_findings_to_neo4j()
+    enrich_cves_from_nvd()
+
+# --------------------------------------------------------
+# Nmap import integration
+# --------------------------------------------------------
+from neo4j import GraphDatabase
+import xml.etree.ElementTree as ET
+
+def parse_nmap_xml(xml_path):
+    """Parse Nmap XML results into a list of {host, services} dicts"""
+    hosts = []
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        for host in root.findall("host"):
+            addr = host.find("address")
+            if addr is None:
+                continue
+            ip = addr.get("addr")
+            services = []
+            for port in host.findall(".//port"):
+                proto = port.get("protocol")
+                portid = port.get("portid")
+                svc_elem = port.find("service")
+                name = svc_elem.get("name") if svc_elem is not None else "unknown"
+                services.append({"name": name, "port": portid, "protocol": proto})
+            hosts.append({"host": ip, "services": services})
+    except Exception as e:
+        print(f"[parse_nmap_xml] Error parsing {xml_path}: {e}")
+    return hosts
+
+
+def import_nmap_hosts_to_neo4j(hosts, neo4j_uri, user, password, gds_project_name=None):
+    """Insert parsed Nmap hosts and services into Neo4j"""
+    driver = GraphDatabase.driver(neo4j_uri, auth=(user, password))
+    with driver.session() as session:
+        # Ensure schema constraints exist
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.host IS UNIQUE")
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (s:Service) REQUIRE (s.name, s.port) IS UNIQUE")
+
+        for h in hosts:
+            host = h.get("host")
+            session.run("MERGE (a:Asset {host:$host})", host=host)
+            for svc in h.get("services", []):
+                session.run("""
+                    MERGE (a:Asset {host:$host})
+                    MERGE (s:Service {name:$name, port:$port, protocol:$protocol})
+                    MERGE (a)-[:RUNS_SERVICE]->(s)
+                """, host=host, name=svc["name"], port=svc["port"], protocol=svc["protocol"])
+    driver.close()
+    print(f"✅ Imported {len(hosts)} host(s) into Neo4j.")

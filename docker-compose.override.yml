@@ -1,0 +1,17 @@
+services:
+  aegis-bastion:
+    volumes:
+      - aegis-data:/app/data
+      - ./reports:/app/reports
+    ports:
+      - "9021:9011"
+  aegis-rampart:
+    volumes:
+      - aegis-data:/app/data
+  aegis-nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  aegis-data:

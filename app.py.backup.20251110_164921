@@ -1,0 +1,368 @@
+#!/usr/bin/env python3
+# ==========================================================
+#  TOWSON UNIVERSITY — AI-Augmented Vulnerability Intelligence Dashboard
+#  Research Edition (GUI-Heavy with 7 Tabs + OpenAI Integration)
+# ==========================================================
+
+import os, sys, subprocess, datetime, sqlite3, io, json
+import pandas as pd
+import plotly.express as px
+from fpdf import FPDF
+from dash import Dash, dcc, html, Input, Output, State, dash_table
+import dash_bootstrap_components as dbc
+
+# ================= Auto Install Missing Packages =================
+required = [
+    "dash", "dash-bootstrap-components", "plotly", "pandas",
+    "openai", "SpeechRecognition", "pyaudio"
+]
+for pkg in required:
+    try:
+        __import__(pkg.split('-')[0])
+    except ImportError:
+        subprocess.run([sys.executable, "-m", "pip", "install", pkg])
+
+try:
+    from dash_webrtc import WebRtcComponent, WebRtcMode, RTCConfiguration
+except ImportError:
+    WebRtcComponent = None
+    WebRtcMode = None
+    RTCConfiguration = None
+    print("[!] dash-webrtc not installed, voice tab will fallback to text mode")
+
+from openai import OpenAI
+import speech_recognition as sr
+
+# ================= Configuration =================
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/app/data/findings.db"
+REPORT_DIR = f"{PROJECT_ROOT}/app/data/reports"
+OPENAI_MODEL = "gpt-4o"
+os.makedirs(REPORT_DIR, exist_ok=True)
+
+# --- Secure OpenAI initialization (reads key from env or optional .env) ---
+OPENAI_MODEL = "gpt-4o"   # confirmed model
+# Load key from environment (or .env if present)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# optionally load .env (requires python-dotenv if you use a .env file)
+try:
+    from dotenv import load_dotenv
+    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+        OPENAI_API_KEY = OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY")
+except Exception:
+    # dotenv optional - ignore if not installed
+    pass
+
+if OPENAI_API_KEY:
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        OPENAI_AVAILABLE = True
+        print("[+] OpenAI client initialized.")
+    except Exception as e:
+        client = None
+        OPENAI_AVAILABLE = False
+        print(f"[!] OpenAI initialization failed: {e}")
+else:
+    client = None
+    OPENAI_AVAILABLE = False
+    print("[!] OPENAI_API_KEY not set — OpenAI features disabled (set OPENAI_API_KEY env var).")
+
+# wrapper for AI calls with audit logging
+def ai_response(prompt: str, *, model=OPENAI_MODEL, max_tokens=800):
+    # audit log (timestamp, prompt length, model)
+    try:
+        audit_dir = os.path.join(PROJECT_ROOT, "app", "data")
+        os.makedirs(audit_dir, exist_ok=True)
+        audit_path = os.path.join(audit_dir, "llm_audit.log")
+        with open(audit_path, "a") as f:
+            f.write(f"{datetime.datetime.utcnow().isoformat()} | model={model} | prompt_len={len(str(prompt))}\n")
+    except Exception:
+        pass
+
+    if not OPENAI_AVAILABLE or client is None:
+        return (
+            "OpenAI not configured. Set the OPENAI_API_KEY environment variable to enable LLM features.\n"
+            "Example (temporary):\n  OPENAI_API_KEY=\"sk-...\" python3 app.py\n"
+        )
+
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens
+        )
+        return resp.choices[0].message.content
+    except Exception as e:
+        return f"[AI Error] {e}"
+
+
+# ================= Helper Functions =================
+def load_findings():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        print(f"[!] DB load error: {e}")
+        return pd.DataFrame()
+
+def mitre_mapping(port):
+    mapping = {
+        21: ("T1021.002", "FTP Remote File Copy"),
+        22: ("T1021.004", "SSH Remote Services"),
+        23: ("T1048.003", "Exfiltration Over Telnet"),
+        25: ("T1071.003", "Exfiltration via SMTP"),
+        80: ("T1190", "Exploit Public-Facing Application"),
+        443: ("T1071.001", "Exfiltration Over HTTPS"),
+        3306: ("T1505.003", "SQL Database Exploitation"),
+        3389: ("T1021.001", "RDP Remote Services"),
+    }
+    return mapping.get(port, ("T1046", "Network Service Scanning"))
+
+def generate_pdf_report(df, filename="assessment_report.pdf"):
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Towson University Cybersecurity Research Project", ln=True)
+    pdf.set_font("Arial", "", 12)
+    pdf.multi_cell(0, 10, f"Generated On: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    pdf.multi_cell(0, 10, "AI-Augmented Vulnerability Assessment (MITRE Mappings Included)")
+    pdf.ln(5)
+    for _, row in df.iterrows():
+        pdf.cell(0, 10, f"Host: {row.get('host','N/A')} | Port: {row.get('port','N/A')} | CVSS: {row.get('cvss','N/A')}", ln=True)
+        pdf.multi_cell(0, 8, f"Description: {row.get('description','N/A')}")
+        pdf.multi_cell(0, 8, f"Remediation: {row.get('remediation','N/A')}")
+        pdf.ln(5)
+    out_path = os.path.join(REPORT_DIR, filename)
+    pdf.output(out_path)
+    return out_path
+
+def ai_response(prompt):
+    try:
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"[AI Error] {e}"
+
+# ================= Dash App Layout =================
+app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
+app.title = "Towson University Vulnerability Intelligence Dashboard"
+
+df = load_findings()
+sources = sorted(df["source"].dropna().unique()) if not df.empty else []
+severities = sorted(df["severity"].dropna().unique()) if not df.empty else []
+ips = sorted(df["host"].dropna().unique()) if not df.empty else []
+
+# -------- Vulnerability Dashboard Tab --------
+vuln_tab = dbc.Container([
+    html.H4("Vulnerability Dashboard", className="text-info"),
+    dbc.Row([
+        dbc.Col(dcc.Dropdown(options=[{"label": s, "value": s} for s in sources],
+                             id="source-filter", placeholder="Filter by Source"), width=4),
+        dbc.Col(dcc.Dropdown(options=[{"label": s, "value": s} for s in severities],
+                             id="severity-filter", placeholder="Filter by Severity"), width=4),
+        dbc.Col(dcc.Dropdown(options=[{"label": s, "value": s} for s in ips],
+                             id="ip-filter", placeholder="Filter by IP"), width=4)
+    ]),
+    html.Br(),
+    dcc.Graph(id="cvss-dist"),
+    html.Br(),
+    dash_table.DataTable(id="findings-table",
+                         columns=[{"name": i, "id": i} for i in df.columns],
+                         style_table={"overflowX": "auto"},
+                         page_size=10)
+])
+
+# -------- LLM Request Tab --------
+llm_tab = dbc.Container([
+    html.H4("LLM Request", className="text-warning"),
+    dcc.Textarea(id="llm-prompt", placeholder="Enter your research or vulnerability-related question...", style={"width": "100%", "height": "150px"}),
+    html.Br(),
+    dbc.Button("Submit to OpenAI", id="llm-submit", color="primary"),
+    html.Br(), html.Br(),
+    html.Div(id="llm-output", style={"whiteSpace": "pre-wrap"})
+])
+
+# -------- Natural Language Tab --------
+nl_tab = dbc.Container([
+    html.H4("Natural Language Query", className="text-success"),
+    dcc.Input(id="nl-query", type="text", placeholder="e.g., show all critical vulnerabilities on port 443", style={"width": "100%"}),
+    html.Br(), html.Br(),
+    dbc.Button("Process Query", id="nl-btn", color="info"),
+    html.Br(), html.Br(),
+    html.Div(id="nl-output", style={"whiteSpace": "pre-wrap"})
+])
+
+# -------- Chatbot Tab --------
+chat_tab = dbc.Container([
+    html.H4("Interactive Chatbot Assistant", className="text-warning"),
+    dcc.Textarea(id="chat-input", placeholder="Ask a question related to your dataset...", style={"width": "100%", "height": "120px"}),
+    html.Br(),
+    dbc.Button("Ask", id="chat-submit", color="primary"),
+    html.Br(), html.Br(),
+    html.Div(id="chat-response", style={"whiteSpace": "pre-wrap"})
+])
+
+# -------- Assessment Tab --------
+assess_tab = dbc.Container([
+    html.H4("Automated Assessment & MITRE Mapping", className="text-danger"),
+    dbc.Checkbox(id="include-mitre", label="Include MITRE Mapping in Assessment", value=True),
+    html.Br(),
+    dbc.Button("Run Assessment", id="assess-run", color="danger"),
+    html.Br(), html.Br(),
+    html.Div(id="assess-output", style={"whiteSpace": "pre-wrap"}),
+    dbc.Button("Export PDF Report", id="export-report", color="success", className="mt-3"),
+    html.Div(id="export-path", className="mt-2 text-success")
+])
+
+# -------- Reporting Tab --------
+report_tab = dbc.Container([
+    html.H4("Research Reporting & Export", className="text-info"),
+    html.P("Generate and manage structured research outputs."),
+    dbc.Button("Generate Report Summary", id="report-btn", color="primary"),
+    html.Br(), html.Br(),
+    html.Div(id="report-output", style={"whiteSpace": "pre-wrap"})
+])
+
+# -------- Voice Assistant Tab --------
+voice_tab = dbc.Container([
+    html.H4("Voice Assistant (Experimental)", className="text-primary"),
+    html.P("Speak your request; the system will transcribe and process it using GPT-4."),
+    dbc.Button("Start Listening", id="voice-btn", color="primary"),
+    html.Br(), html.Br(),
+    html.Div(id="voice-output", style={"whiteSpace": "pre-wrap"})
+])
+
+# -------- App Layout with Tabs --------
+app.layout = dbc.Container([
+    html.H3("Towson University AI-Augmented Vulnerability Intelligence Dashboard", className="text-center text-light"),
+    dcc.Tabs(id="tabs", value="tab1", children=[
+        dcc.Tab(label="Vulnerability Dashboard", value="tab1", style={"color": "cyan"}),
+        dcc.Tab(label="LLM Request", value="tab2", style={"color": "orange"}),
+        dcc.Tab(label="Natural Language", value="tab3", style={"color": "green"}),
+        dcc.Tab(label="Chatbot", value="tab4", style={"color": "yellow"}),
+        dcc.Tab(label="Assessment", value="tab5", style={"color": "red"}),
+        dcc.Tab(label="Reporting", value="tab6", style={"color": "skyblue"}),
+        dcc.Tab(label="Voice Assistant", value="tab7", style={"color": "violet"})
+    ]),
+    html.Div(id="tabs-content", className="mt-4")
+], fluid=True)
+
+# ================= Callbacks =================
+@app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
+def render_tab(tab):
+    if tab == "tab1": return vuln_tab
+    elif tab == "tab2": return llm_tab
+    elif tab == "tab3": return nl_tab
+    elif tab == "tab4": return chat_tab
+    elif tab == "tab5": return assess_tab
+    elif tab == "tab6": return report_tab
+    elif tab == "tab7": return voice_tab
+    return html.Div("Unknown tab selected.")
+
+@app.callback(
+    [Output("cvss-dist", "figure"), Output("findings-table", "data")],
+    [Input("source-filter", "value"), Input("severity-filter", "value"), Input("ip-filter", "value")]
+)
+def update_dashboard(source, severity, ip):
+    df = load_findings()
+    if df.empty:
+        return px.bar(title="No Data"), []
+    if source: df = df[df["source"] == source]
+    if severity: df = df[df["severity"] == severity]
+    if ip: df = df[df["host"] == ip]
+    fig = px.histogram(df, x="cvss", color="severity", nbins=10, title="CVSS Score Distribution")
+    return fig, df.to_dict("records")
+
+@app.callback(Output("llm-output", "children"), Input("llm-submit", "n_clicks"), State("llm-prompt", "value"))
+def process_llm_request(n, prompt):
+    if not n or not prompt:
+        return "Enter a prompt to begin."
+    return ai_response(prompt)
+
+@app.callback(Output("nl-output", "children"), Input("nl-btn", "n_clicks"), State("nl-query", "value"))
+def natural_language(n, query):
+    if not n or not query:
+        return "Type your query and click Process."
+    df = load_findings()
+    if "critical" in query.lower():
+        result = df[df["severity"].str.lower() == "critical"]
+    elif "high" in query.lower():
+        result = df[df["severity"].str.lower() == "high"]
+    else:
+        result = df.head(10)
+    return result.to_string(index=False)
+
+@app.callback(Output("chat-response", "children"), Input("chat-submit", "n_clicks"), State("chat-input", "value"))
+def chatbot_response(n, question):
+    if not n or not question:
+        return "Ask something to begin."
+    df = load_findings()
+    summary = f"The dataset contains {len(df)} findings. Use filters for deeper insights."
+    return ai_response(f"Answer this question using vulnerability data context: {question}\nDataset summary: {summary}")
+
+@app.callback(
+    [Output("assess-output", "children"), Output("export-path", "children")],
+    [Input("assess-run", "n_clicks"), Input("export-report", "n_clicks")],
+    State("include-mitre", "value")
+)
+def run_assessment(run_n, export_n, include_mitre):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return "", ""
+    action = ctx.triggered[0]["prop_id"].split(".")[0]
+    df = load_findings()
+    if df.empty:
+        return "No findings available.", ""
+    if action == "assess-run":
+        report_lines = []
+        for _, row in df.iterrows():
+            port = int(row.get("port", 0) or 0)
+            tech_id, technique = mitre_mapping(port)
+            if include_mitre:
+                line = f"Host {row.get('host')} (Port {port}): {technique} [{tech_id}]"
+            else:
+                line = f"Host {row.get('host')} (Port {port})"
+            report_lines.append(line)
+        text = "\n".join(report_lines)
+        return text, ""
+    elif action == "export-report":
+        path = generate_pdf_report(df)
+        return "", f"PDF exported to: {path}"
+
+@app.callback(Output("report-output", "children"), Input("report-btn", "n_clicks"))
+def reporting(n):
+    if not n:
+        return "Click to generate summary."
+    df = load_findings()
+    content = f"Research Report Summary\nRecords: {len(df)}\nGenerated: {datetime.datetime.now()}"
+    path = os.path.join(REPORT_DIR, "summary.md")
+    with open(path, "w") as f:
+        f.write(content)
+    return f"Summary saved to {path}"
+
+@app.callback(Output("voice-output", "children"), Input("voice-btn", "n_clicks"))
+def voice_command(n):
+    if not n:
+        return "Click 'Start Listening' to begin."
+    recognizer = sr.Recognizer()
+    try:
+        with sr.Microphone() as source:
+            audio = recognizer.listen(source, timeout=5)
+            text = recognizer.recognize_google(audio)
+            return f"You said: {text}\n\nResponse: {ai_response(text)}"
+    except Exception as e:
+        return f"[Voice Error] {e}"
+
+# ================= Run Server =================
+if __name__ == "__main__":
+    print(f"[+] Using database: {DB_PATH}")
+    app.run(host="0.0.0.0", port=8050, debug=True)

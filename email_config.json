@@ -1,0 +1,15 @@
+{
+  "host": "smtp.gmail.com",
+  "port": 587,
+  "tls": true,
+  "username": "asiedudanquah@gmail.com",
+  "password": "sceb iron gmve mton",
+  "from_name": "Expedite Strike Pentest Engine",
+  "from_addr": "asiedudanquah@gmail.com",
+  "recipients": [
+    "asiedudanquah@gmail.com"
+  ],
+  "cc": [
+    "kasiedu@expedite-consults.com"
+  ]
+}

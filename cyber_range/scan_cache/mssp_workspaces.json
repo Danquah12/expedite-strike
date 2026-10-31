@@ -1,0 +1,66 @@
+{
+  "active_id": "org_default",
+  "workspaces": [
+    {
+      "id": "org_default",
+      "name": "Acme Financial Services",
+      "industry": "Financial Services & Banking",
+      "lead_tester": "Expedite Strike Autonomous Engine",
+      "agency_name": "Expedite Consults Ltd",
+      "classification": "CONFIDENTIAL",
+      "targets": [
+        "192.168.195.139",
+        "192.168.195.140",
+        "api.acmefinance.local"
+      ],
+      "compliance_frameworks": [
+        "PCI-DSS",
+        "NIST 800-53",
+        "ISO 27001",
+        "SOC2"
+      ],
+      "notes": "Primary external perimeter & core banking API endpoints.",
+      "created_at": "2026-08-01 09:00:00"
+    },
+    {
+      "id": "org_apex_health",
+      "name": "Apex Healthcare Systems",
+      "industry": "Healthcare & Life Sciences",
+      "lead_tester": "Cyber Assurance Team",
+      "agency_name": "Expedite Consults Ltd",
+      "classification": "RESTRICTED / HIPAA",
+      "targets": [
+        "portal.apexhealth.org",
+        "192.168.195.155",
+        "ehr-api.apexhealth.internal"
+      ],
+      "compliance_frameworks": [
+        "HIPAA",
+        "NIST CSF",
+        "HITRUST"
+      ],
+      "notes": "Electronic Health Record (EHR) perimeter & patient portal.",
+      "created_at": "2026-08-10 14:30:00"
+    },
+    {
+      "id": "org_global_logistics",
+      "name": "Global Freight & Logistics",
+      "industry": "Supply Chain & Logistics",
+      "lead_tester": "Senior Security Consultant",
+      "agency_name": "Expedite Consults Ltd",
+      "classification": "CONFIDENTIAL",
+      "targets": [
+        "tracking.globallog.com",
+        "fleet-gw.globallog.com"
+      ],
+      "compliance_frameworks": [
+        "ISO 27001",
+        "CIS Controls",
+        "GDPR"
+      ],
+      "notes": "Supply chain telematics gateway and web fleet portal.",
+      "created_at": "2026-08-15 11:00:00"
+    }
+  ],
+  "saved_at": 1787934459.7915597
+}

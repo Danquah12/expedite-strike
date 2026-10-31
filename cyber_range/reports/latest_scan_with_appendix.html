@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EXPEDITE STRIKE — Autonomous Pentest Report</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background:#080c14; color:#E2E8F0; padding:0; }
+  .topbar { background:#0f172a; border-bottom:2px solid #00d6b4; padding:15px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:1000; box-shadow:0 4px 20px rgba(0,0,0,0.6); }
+  .topbar .brand { font-size:20px; font-weight:800; color:#00d6b4; letter-spacing:2px; }
+  .nav-links { display:flex; gap:20px; }
+  .nav-links a { color:#94a3b8; text-decoration:none; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; transition:color 0.2s; }
+  .nav-links a:hover { color:#00d6b4; }
+  .content-wrapper { padding:40px; max-width:1400px; margin:0 auto; }
+  .header { text-align:center; margin-bottom:35px; border-bottom:1px solid #1e293b; padding-bottom:25px; }
+  .header h1 { color:#f8fafc; font-size:28px; letter-spacing:2px; font-weight:800; }
+  .header p { color:#94a3b8; margin-top:6px; font-size:13px; }
+  .section { background:#0f1520; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:25px; margin-bottom:30px; box-shadow:0 6px 20px rgba(0,0,0,0.4); }
+  .section h2 { color:#00d6b4; font-size:18px; margin-bottom:16px; border-left:4px solid #00d6b4; padding-left:12px; text-transform:uppercase; letter-spacing:1px; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  th { background:#162032; color:#00d6b4; text-align:left; padding:12px 14px; border-bottom:2px solid #2d3e58; font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+  td { padding:10px 14px; border-bottom:1px solid #1a2234; vertical-align:top; }
+  tr:hover td { background:#141d2e; }
+  .stats-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:15px; margin-bottom:25px; }
+  .stat-card { background:#131c2b; border:1px solid #24324a; border-radius:10px; padding:18px; text-align:center; }
+  .stat-card .value { font-size:32px; font-weight:800; color:#00d6b4; }
+  .stat-card .label { font-size:10px; color:#94a3b8; text-transform:uppercase; margin-top:5px; letter-spacing:1px; font-weight:600; }
+  .sev-badge { display:inline-block; padding:4px 10px; border-radius:6px; font-weight:bold; font-size:11px; letter-spacing:1px; text-transform:uppercase; }
+  .terminal { background:#050811; border:1px solid #1e293b; border-radius:8px; padding:15px; font-family:'Courier New', monospace; font-size:11px; color:#38bdf8; white-space:pre-wrap; max-height:450px; overflow-y:auto; line-height:1.5; }
+  .appendix-box { background:#10192a; border:2px solid #00d6b4; border-radius:12px; padding:30px; margin-top:35px; }
+  .cat-card { background:#090d16; border:1px solid #24324a; border-radius:8px; padding:18px; margin-bottom:20px; }
+  .cat-card h3 { color:#e2e8f0; font-size:15px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+  .proof-box { background:#040711; border:1px solid #1e293b; color:#22c55e; padding:8px 12px; border-radius:6px; font-family:'Courier New', monospace; font-size:11px; line-height:1.4; max-height:150px; overflow-y:auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">EXPEDITE STRIKE</div>
+  <div class="nav-links">
+    <a href="#executive-summary">Executive Summary</a>
+    <a href="#discovered-hosts">Hosts</a>
+    <a href="#attack-paths">Attack Paths</a>
+    <a href="#technical-appendix">Technical Appendix</a>
+    <a href="#execution-logs">Telemetry Log</a>
+  </div>
+</div>
+
+<div class="content-wrapper">
+
+  <div class="header">
+    <h1>AUTONOMOUS PENETRATION TESTING REPORT</h1>
+    <p>Target Subnet: <strong>192.168.195.0/24</strong> &nbsp;|&nbsp; Completed: <strong>2026-08-28T00:33:53.376691+00:00</strong> &nbsp;|&nbsp; Classification: <span style="color:#ef4444;font-weight:bold;">CONFIDENTIAL</span></p>
+  </div>
+
+  <div class="section" id="executive-summary">
+    <h2>1. Executive Summary &amp; Assessment Metrics</h2>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="value">7</div><div class="label">Hosts Assessed</div></div>
+      <div class="stat-card"><div class="value">55</div><div class="label">Open Services</div></div>
+      <div class="stat-card"><div class="value">2820</div><div class="label">Total Findings</div></div>
+      <div class="stat-card"><div class="value">28</div><div class="label">Confirmed Exploits</div></div>
+      <div class="stat-card"><div class="value">997</div><div class="label">Credentials Stolen</div></div>
+      <div class="stat-card"><div class="value">89</div><div class="label">Attack Paths</div></div>
+    </div>
+    <div style="display:flex; gap:12px; margin-bottom:15px;">
+      <span class="sev-badge" style="background:#ef444422; color:#ef4444; border:1px solid #ef4444;">Critical: 42</span>
+      <span class="sev-badge" style="background:#f9731622; color:#f97316; border:1px solid #f97316;">High: 112</span>
+      <span class="sev-badge" style="background:#eab30822; color:#eab308; border:1px solid #eab308;">Medium: 639</span>
+      <span class="sev-badge" style="background:#06b6d422; color:#06b6d4; border:1px solid #06b6d4;">Low: 2026</span>
+    </div>
+  </div>
+
+  <div class="section" id="discovered-hosts">
+    <h2>2. Discovered Network Assets &amp; Services</h2>
+    <table>
+      <thead><tr><th>Target IP</th><th>Operating System</th><th>Open Ports / Services</th></tr></thead>
+      <tbody>
+        <tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.128</td><td>VMware</td><td>Standard Ports</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.137</td><td>VMware</td><td>5040, 5357</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td>VMware</td><td>21, 22, 23, 25, 53, 80, 111, 139, 445, 512, 513, 514, 1099, 1524, 2049, 2121, 3306, 3632, 5432, 5900, 6000, 6667, 6697, 8009, 8180, 8787</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.140</td><td>VMware</td><td>22, 80, 139, 143, 443, 445, 5001, 8080, 8081</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.155</td><td>VMware</td><td>135, 139, 445, 5985</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.254</td><td>VMware</td><td>Standard Ports</td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.1</td><td>Unknown</td><td>135, 139, 445, 902, 912, 5040, 5357, 5432, 5433, 7680, 8000, 8080, 8089, 9011</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="attack-paths">
+    <h2>3. Lateral Movement &amp; Attack Topologies</h2>
+    <table>
+      <thead><tr><th>Source Pivot</th><th>Target Host</th><th>Attack Vector / Exploitation Method</th></tr></thead>
+      <tbody>
+        <tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>vsftpd 2.3.4 Backdoor RCE → Root Shell</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>FTP Anonymous Login + Data Exfiltration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>FTP Credential Access: msfadmin:msfadmin</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SSH User Shell: msfadmin:msfadmin</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Exposed Admin/Config (6 items)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SQL Injection → Data Extraction</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>phpMyAdmin No-Auth Access</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NFS World-Readable Exports</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Java RMI Registry Exploit</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>rsh Remote Command Execution</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Ingreslock Root Shell (port 1524)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NFS World-Readable Exports</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>DistCC Command Execution</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>PostgreSQL Access: postgres:postgres</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>X11 Unauthenticated Display Access</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>PrivEsc: suid_privesc</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>PrivEsc: suid_privesc</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>PrivEsc: kernel_exploit</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>Exposed Admin/Config (3 items)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>phpMyAdmin No-Auth Access</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>Exposed Admin/Config (1 items)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB Null Session Enumeration</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>XStrike</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>Exposed Admin/Config (2 items)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139 (ROOT)</td><td>kernel_exploit</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Telnet (Telnet credential reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>VNC (VNC password reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WinRM (WinRM remote PowerShell)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.137</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WinRM (WinRM remote PowerShell)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.139</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Telnet (Telnet credential reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>VNC (VNC password reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WinRM (WinRM remote PowerShell)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.140</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Telnet (Telnet credential reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>VNC (VNC password reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.155</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.1</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>Telnet (Telnet credential reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.139</td><td>VNC (VNC password reuse)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SSH (SSH key reuse / credential stuffing)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.140</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WMI/DCOM (WMI remote execution via DCOM)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>NetBIOS (NetBIOS session hijacking)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>SMB/PsExec (Pass-the-Hash / PsExec lateral movement)</td></tr>
+<tr><td style='color:#ef4444;font-weight:bold;'>192.168.195.1</td><td style='color:#38bdf8;font-weight:bold;'>192.168.195.155</td><td>WinRM (WinRM remote PowerShell)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TECHNICAL APPENDIX: ORGANIZED BY CATEGORY                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="appendix-box" id="technical-appendix">
+    <h2 style="color:#00d6b4; font-size:22px; margin-bottom:12px; text-transform:uppercase; letter-spacing:1.5px;">
+      📑 4. Technical Appendix — Categorized Activities &amp; Raw Data Evidence
+    </h2>
+    <p style="color:#94a3b8; font-size:13px; margin-bottom:25px;">
+      This organized technical appendix categorizes all verified claims, authenticated tokens, exploited services, and command outputs captured during autonomous execution.
+    </p>
+
+    <!-- Category A: RCE & Root Exploits -->
+    <div class="cat-card">
+      <h3>
+        <span>💀 Category A: Remote Code Execution (RCE) &amp; Root Shell Access</span>
+        <span style="color:#ef4444; font-size:12px; font-weight:bold;">54 Items</span>
+      </h3>
+      <table>
+        <thead><tr><th style="width:18%;">Host</th><th style="width:25%;">Vulnerability / Exploit</th><th>Captured Proof / Shell Output</th></tr></thead>
+        <tbody>
+          <tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>vsftpd Backdoor: 192.168.195.139</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>[2026-08-27 00:33:30] FTP service on 192.168.195.139:21.
+Service: ftp, Product: vsftpd, Version: 2.3.4
+MATCH: vsftpd 2.3.4 — known backdoor (CVE-2011-2523).
+Backdoor triggers bind shell on port 6200 when username contains ':)'</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Telnet Cleartext: 192.168.195.139</b><br/><small style='color:#64748b;'>MITRE: T1021</small></td><td><div class='proof-box'>[2026-08-27 00:33:32] Telnet service on 192.168.195.139:23.
+Service: telnet, Product: Linux telnetd, Version: unknown
+Telnet transmits all traffic including credentials in cleartext.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:1524 (bindshell)</b><br/><small style='color:#64748b;'>MITRE: T1046</small></td><td><div class='proof-box'>Open tcp port 1524 running Metasploitable root shell</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>MySQL Exposed: 192.168.195.139:3306</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>[2026-08-27 00:33:46] MySQL database service on 192.168.195.139:3306.
+Service: mysql, Product: MySQL, Version: 5.0.51a-3ubuntu5
+Database exposed on network. Default credential testing pending.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>PostgreSQL Exposed: 192.168.195.139:5432</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>[2026-08-27 00:33:50] PostgreSQL database service on 192.168.195.139:5432.
+Service: postgresql, Product: PostgreSQL DB, Version: 8.3.0 - 8.3.7
+Database exposed on network. Default credential testing pending.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.1</td><td><b>PostgreSQL Exposed: 192.168.195.1:5432</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>[2026-08-27 00:45:21] PostgreSQL database service on 192.168.195.1:5432.
+Service: postgresql, Product: PostgreSQL DB, Version: 9.6.0 or later
+Database exposed on network. Default credential testing pending.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.1</td><td><b>ZAP: Directory Browsing</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>It is possible to view the directory listing. Directory listing may reveal hidden scripts, include files, backup source files, etc. which can be accessed to read sensitive information.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>vsFTPd 2.3.4 Backdoor</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>vsFTPd 2.3.4 contains backdoor allowing remote root shell on port 6200
+
+Evidence: Banner match on 192.168.195.139:21: 220 (vsFTPd 2.3.4)</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>PHP-CGI Remote Code Execution</b><br/><small style='color:#64748b;'>MITRE: T1190</small></td><td><div class='proof-box'>PHP before 5.4.2 allows RCE when configured as CGI via query string
+
+Evidence: Banner match on 192.168.195.139:80: HTTP/1.1 200 OK
+Date: Thu, 27 Aug 2026 05:15:36 GMT
+Server: Apache/2.2.8 (Ubuntu) DAV/2
+X-Powered-By: PHP/5.2.4-2ubuntu5.10
+Content-Length: 891
+Connection: close
+Content-Type: text/html
+
+<html</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>SMB Signing Not Required</b><br/><small style='color:#64748b;'>MITRE: T1557.001</small></td><td><div class='proof-box'>SMB signing not enforced — relay attacks possible
+
+Evidence: SMB security mode: 0x00 (signing not required)</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Category B: Credential Access -->
+    <div class="cat-card">
+      <h3>
+        <span>🔑 Category B: Harvested Credentials &amp; Authenticated Tokens</span>
+        <span style="color:#f97316; font-size:12px; font-weight:bold;">997 Items</span>
+      </h3>
+      <table>
+        <thead><tr><th style="width:18%;">Host / Service</th><th style="width:25%;">Account / Surface</th><th>Raw Token / Credential Evidence</th></tr></thead>
+        <tbody>
+          <tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:513 (login)</b></td><td><div class='proof-box'>Open tcp port 513 running login</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.1</td><td><b>Open Port: 192.168.195.1:902 (vmware-auth)</b></td><td><div class='proof-box'>Open tcp port 902 running VMware Authentication Daemon 1.10</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.1</td><td><b>Open Port: 192.168.195.1:912 (vmware-auth)</b></td><td><div class='proof-box'>Open tcp port 912 running VMware Authentication Daemon 1.0</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: Weak Authentication Method</b></td><td><div class='proof-box'>HTTP basic or digest authentication has been used over an unsecured connection. The credentials can be read and then reused by someone with access to the network.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: Weak Authentication Method</b></td><td><div class='proof-box'>HTTP basic or digest authentication has been used over an unsecured connection. The credentials can be read and then reused by someone with access to the network.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: User Agent Fuzzer</b></td><td><div class='proof-box'>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the orig</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: User Agent Fuzzer</b></td><td><div class='proof-box'>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the orig</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: User Agent Fuzzer</b></td><td><div class='proof-box'>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the orig</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: User Agent Fuzzer</b></td><td><div class='proof-box'>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the orig</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>ZAP: User Agent Fuzzer</b></td><td><div class='proof-box'>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the orig</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Category C: Web Application Injections -->
+    <div class="cat-card">
+      <h3>
+        <span>🌐 Category C: Web Application &amp; Database Vulnerabilities</span>
+        <span style="color:#eab308; font-size:12px; font-weight:bold;">1013 Items</span>
+      </h3>
+      <table>
+        <thead><tr><th style="width:18%;">Host / Port</th><th style="width:25%;">Injection / Vulnerability</th><th>Response / Extracted Payload Proof</th></tr></thead>
+        <tbody>
+          <tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.137</td><td><b>Open Port: 192.168.195.137:5357 (http)</b></td><td><div class='proof-box'>Open tcp port 5357 running Microsoft HTTPAPI httpd 2.0</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:80 (http)</b></td><td><div class='proof-box'>Open tcp port 80 running Apache httpd 2.2.8</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Web App Surface: 192.168.195.139:80</b></td><td><div class='proof-box'>[2026-08-27 00:33:34] HTTP service on 192.168.195.139:80.
+Service: http, Product: Apache httpd, Version: 2.2.8
+Web application attack surface identified for OWASP testing.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:3306 (mysql)</b></td><td><div class='proof-box'>Open tcp port 3306 running MySQL 5.0.51a-3ubuntu5</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:5432 (postgresql)</b></td><td><div class='proof-box'>Open tcp port 5432 running PostgreSQL DB 8.3.0 - 8.3.7</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.139</td><td><b>Open Port: 192.168.195.139:8180 (http)</b></td><td><div class='proof-box'>Open tcp port 8180 running Apache Tomcat/Coyote JSP engine 1.1</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.140</td><td><b>Open Port: 192.168.195.140:80 (http)</b></td><td><div class='proof-box'>Open tcp port 80 running Apache httpd 2.2.14</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.140</td><td><b>Web App Surface: 192.168.195.140:80</b></td><td><div class='proof-box'>[2026-08-27 00:39:06] HTTP service on 192.168.195.140:80.
+Service: http, Product: Apache httpd, Version: 2.2.14
+Web application attack surface identified for OWASP testing.</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.140</td><td><b>Open Port: 192.168.195.140:443 (https)</b></td><td><div class='proof-box'>Open tcp port 443 running https</div></td></tr>
+<tr><td style='color:#00d6b4;font-weight:bold;'>192.168.195.140</td><td><b>Web App Surface: 192.168.195.140:443</b></td><td><div class='proof-box'>[2026-08-27 00:39:06] HTTPS service on 192.168.195.140:443.
+Service: https, Product: unknown, Version: unknown
+Web application attack surface identified for OWASP testing.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Category D: EDR / Defense Posture -->
+    <div class="cat-card">
+      <h3>
+        <span>🛡️ Category D: Defensive Posture &amp; EDR/AV Evasion Verification</span>
+        <span style="color:#06b6d4; font-size:12px; font-weight:bold;">0 Items</span>
+      </h3>
+      <table>
+        <thead><tr><th style="width:18%;">Host Context</th><th style="width:25%;">Security Control Assessed</th><th>Status &amp; Verification Output</th></tr></thead>
+        <tbody>
+          <tr><td colspan='3' style='color:#64748b;'>No defensive control bypass recorded</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="section" id="execution-logs" style="margin-top:30px;">
+    <h2>5. Chronological Autonomous Execution Stream</h2>
+    <div class="terminal">[20:33:51]   🔀 192.168.195.155 → 192.168.195.139:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.139:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.139:5900 via VNC
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.140:22 via SSH
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.140:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.140:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.1:135 via WMI/DCOM
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.1:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.155 → 192.168.195.1:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.139:22 via SSH
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.139:23 via Telnet
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.139:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.139:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.139:5900 via VNC
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.140:22 via SSH
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.140:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.140:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.155:135 via WMI/DCOM
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.155:139 via NetBIOS
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.155:445 via SMB/PsExec
+[20:33:51]   🔀 192.168.195.1 → 192.168.195.155:5985 via WinRM
+[20:33:51] 
+  📊 Lateral movement: 60 attack paths discovered
+[20:33:51] 
+  ☁️ Phase 8: CLOUD SECURITY ASSESSMENT
+[20:33:51] 
+════════════════════════════════════════════════════════════
+[20:33:51]   ☁️  CLOUD SECURITY ASSESSMENT: CLOUD-20260827-203351
+[20:33:51]   Providers: aws, azure, gcp
+[20:33:51] ════════════════════════════════════════════════════════════
+[20:33:51]   ☁️  [AWS] Starting cloud security assessment...
+[20:33:51]   ☁️  [AWS] boto3 not available, trying AWS CLI...
+[20:33:51]   ☁️  [AWS] No AWS credentials. Returning check registry.
+[20:33:51]   ☁️  [AWS] Complete: 10 checks, 10 findings
+[20:33:51]   ☁️  [Azure] Starting cloud security assessment...
+[20:33:51]   ☁️  [Azure] No Azure credentials. Returning check registry.
+[20:33:51]   ☁️  [Azure] Complete: 5 checks, 5 findings
+[20:33:51]   ☁️  [GCP] Starting cloud security assessment...
+[20:33:51]   ☁️  [GCP] No GCP credentials. Returning check registry.
+[20:33:51]   ☁️  [GCP] Complete: 4 checks, 4 findings
+[20:33:51] 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[20:33:51]   ☁️  CLOUD ASSESSMENT COMPLETE
+[20:33:51]   ID:        CLOUD-20260827-203351
+[20:33:51]   Duration:  0.0s
+[20:33:51]   Findings:  19
+[20:33:51]     Critical: 10
+[20:33:51]     High:     6
+[20:33:51]     Medium:   3
+[20:33:51]     Low:      0
+[20:33:51] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[20:33:51]   ☁️ Cloud assessment: 19 findings
+[20:33:51] 
+  🛡️ Phase 9: EDR/AV EVASION ASSESSMENT
+[20:33:51] Starting local EDR/AV evasion posture assessment...
+[20:33:51] Checked AMSI Bypass Detection -> UNABLE_TO_VERIFY
+[20:33:51] Checked PowerShell Constrained Language Mode -> VULNERABLE
+[20:33:51] Checked Script Block Logging -> UNABLE_TO_VERIFY
+[20:33:52] Checked Windows Defender Real-Time Protection -> SECURE
+[20:33:53] Checked Windows Event Log Service -> SECURE
+[20:33:53] Checked Sysmon Installation -> VULNERABLE
+[20:33:53] Checked LOLBins Availability -> UNABLE_TO_VERIFY
+[20:33:53] Checked AppLocker / WDAC Policy -> UNABLE_TO_VERIFY
+[20:33:53] Checked Credential Guard -> UNABLE_TO_VERIFY
+[20:33:53] Checked LSA Protection (RunAsPPL) -> UNABLE_TO_VERIFY
+[20:33:53] Checked Process Hollowing Detection -> UNABLE_TO_VERIFY
+[20:33:53] Checked ETW Patching Detection -> UNABLE_TO_VERIFY
+[20:33:53]   ⚠ EDR assessment error: _save_finding() got an unexpected keyword argument 'mitre'. Did you mean 'title'?
+[20:33:53] 
+============================================================
+[20:33:53] 📋  PHASE 10/10: REPORT GENERATION
+[20:33:53] ============================================================
+[20:33:53] 
+  ──────────────────────────────────────────────────
+[20:33:53]   ⚔  AUTONOMOUS PENTEST REPORT SUMMARY
+[20:33:53]   ──────────────────────────────────────────────────
+[20:33:53]   🖥  Hosts Discovered:    7
+[20:33:53]   🔓  Open Ports:          54
+[20:33:53]   ⚠  Vulnerabilities:     1248
+[20:33:53]   💀  Verified Exploitable: 27
+[20:33:53]   🔑  Credential Surfaces: 9
+[20:33:53]   🔀  Attack Paths:        90
+[20:33:53]   ──────────────────────────────────────────────────
+[20:33:53] 
+  🔴 Critical: 43
+[20:33:53]   🟠 High:     119
+[20:33:53]   🟡 Medium:   162
+[20:33:53]   🟢 Low:      1178
+[20:33:53] 
+  📋 MITRE ATT&CK Techniques: T1021, T1021.002, T1046, T1068, T1078, T1078.001, T1078.003, T1082, T1083, T1110, T1110.001, T1113, T1190, T1202, T1210, T1498.002, T1548.001, T1548.002, T1552.001, T1557, T1557.001, T1574.011, T1592
+[20:33:53] 
+  🗺  Attack Paths:
+[20:33:53]     XStrike → 192.168.195.139 [vsftpd 2.3.4 Backdoor RCE → Root Shell]
+[20:33:53]     XStrike → 192.168.195.139 [FTP Anonymous Login + Data Exfiltration]
+[20:33:53]     XStrike → 192.168.195.139 [FTP Credential Access: msfadmin:msfadmin]
+[20:33:53]     XStrike → 192.168.195.139 [SSH User Shell: msfadmin:msfadmin]
+[20:33:53]     XStrike → 192.168.195.139 [Exposed Admin/Config (6 items)]
+[20:33:53]     XStrike → 192.168.195.139 [SQL Injection → Data Extraction]
+[20:33:53]     XStrike → 192.168.195.139 [phpMyAdmin No-Auth Access]
+[20:33:53]     XStrike → 192.168.195.139 [NFS World-Readable Exports]
+[20:33:53]     XStrike → 192.168.195.139 [SMB Null Session Enumeration]
+[20:33:53]     XStrike → 192.168.195.139 [SMB Null Session Enumeration]
+[20:33:53] 
+  ✅ Report saved to SQLite findings database
+[20:33:53]   📄 Report generated: D:\Software Engineering\Software-Engineering-Project-main\Software-Engineering-Project-main\tuhousing\AEGIS ON WINDOWS\app\cyber_range\services\ad_security_tools\reporting\..\..\..\reports\AEGIS_Report_2026-08-27_20260827_203353.pdf
+[20:33:53] 
+  📄 PDF REPORT GENERATED: D:\Software Engineering\Software-Engineering-Project-main\Software-Engineering-Project-main\tuhousing\AEGIS ON WINDOWS\app\cyber_range\services\ad_security_tools\reporting\..\..\..\reports\AEGIS_Report_2026-08-27_20260827_203353.pdf
+[20:33:53] [MITRE] Navigator layer saved: D:\Software Engineering\Software-Engineering-Project-main\Software-Engineering-Project-main\tuhousing\AEGIS ON WINDOWS\app\cyber_range\services\ad_security_tools\reporting\..\..\..\reports\aegis_navigator_layer.json
+[20:33:53]   🗺  MITRE Navigator layer: D:\Software Engineering\Software-Engineering-Project-main\Software-Engineering-Project-main\tuhousing\AEGIS ON WINDOWS\app\cyber_range\services\ad_security_tools\reporting\..\..\..\reports\aegis_navigator_layer.json
+[20:33:53] 
+  📄 Full pentest report available at: D:\Software Engineering\Software-Engineering-Project-main\Software-Engineering-Project-main\tuhousing\AEGIS ON WINDOWS\app\cyber_range\services\ad_security_tools\reporting\..\..\..\reports\AEGIS_Report_2026-08-27_20260827_203353.pdf
+[20:33:53]   📄 Findings also available in Reports tab
+[20:33:53] 
+🏁 AUTONOMOUS PENTEST COMPLETE</div>
+  </div>
+
+  <div style="text-align:center; padding:30px; color:#64748b; font-size:12px; border-top:1px solid #1e293b; margin-top:40px;">
+    <p>Expedite Strike Cybersecurity Platform &bull; Expedite Consults Ltd</p>
+    <p>CONFIDENTIAL &bull; Authorized Penetration Testing Deliverable</p>
+  </div>
+
+</div>
+</body>
+</html>

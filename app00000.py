@@ -1,0 +1,317 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson AI-Augmented Vulnerability Intelligence Dashboard
+Includes:
+ - Voice assistant
+ - Dynamic scanner templates (Nessus, OpenVAS, Burp)
+ - Verbose Nmap scanning
+ - CIDR whitelist hardening
+ - CSV import/export
+ - Auto-ingest Nmap XML
+"""
+
+import os, sys, json, base64, sqlite3, subprocess, ipaddress, xml.etree.ElementTree as ET
+from datetime import datetime
+from pathlib import Path
+import pandas as pd, plotly.express as px, requests
+from fpdf import FPDF
+from flask import request, jsonify
+from dash import Dash, dcc, html, Input, Output, State, ctx, dash_table, no_update
+import dash_bootstrap_components as dbc
+
+# === Configuration ===
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+DB_PATH = os.getenv("DB_PATH", "/root/vuln_intel/app/data/findings.db")
+REPORT_DIR = Path(os.getenv("REPORT_DIR", "/root/vuln_intel/app/data/reports"))
+REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Scanner envs
+NESSUS_URL = os.getenv("NESSUS_URL")
+NESSUS_ACCESS_KEY = os.getenv("NESSUS_ACCESS_KEY")
+NESSUS_SECRET_KEY = os.getenv("NESSUS_SECRET_KEY")
+NESSUS_TEMPLATE_UUID = os.getenv("NESSUS_TEMPLATE_UUID")
+OPENVAS_URL = os.getenv("OPENVAS_URL")
+OPENVAS_TOKEN = os.getenv("OPENVAS_TOKEN")
+BURP_URL = os.getenv("BURP_URL")
+BURP_API_KEY = os.getenv("BURP_API_KEY")
+
+# === CIDR Whitelist ===
+WHITELIST_CIDRS = [ipaddress.ip_network("192.168.0.0/16"),
+                   ipaddress.ip_network("10.0.0.0/8"),
+                   ipaddress.ip_network("172.16.0.0/12"),
+                   ipaddress.ip_network("127.0.0.0/8")]
+
+def validate_targets_in_whitelist(targets: str):
+    """Ensure all IPs in targets fall within authorized lab ranges."""
+    try:
+        ips = [t.strip() for t in targets.replace("\n", ",").split(",") if t.strip()]
+        for ip in ips:
+            if "/" in ip:  # CIDR block
+                net = ipaddress.ip_network(ip, strict=False)
+                if not any(net.subnet_of(w) for w in WHITELIST_CIDRS):
+                    return False, f"{ip} not in authorized lab CIDR ranges"
+            else:
+                addr = ipaddress.ip_address(ip)
+                if not any(addr in w for w in WHITELIST_CIDRS):
+                    return False, f"{ip} outside authorized ranges"
+        return True, "ok"
+    except Exception as e:
+        return False, f"Target validation error: {e}"
+
+# === Utility ===
+def load_findings_df():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        return df
+    except Exception:
+        return pd.DataFrame(columns=["id","host","port","service","title","severity","cvss","cve_id","source"])
+
+def openai_chat(prompt):
+    if not OPENAI_API_KEY:
+        return "❗ OPENAI_API_KEY not configured."
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type":"application/json"}
+    payload = {"model": OPENAI_MODEL, "messages":[{"role":"user","content":prompt}]}
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=30)
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM error: {e}"
+
+# === CSV Import/Export ===
+def export_to_csv():
+    df = load_findings_df()
+    path = REPORT_DIR / f"findings_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.csv"
+    df.to_csv(path, index=False)
+    return str(path)
+
+def import_from_csv(file_path):
+    try:
+        df = pd.read_csv(file_path)
+        conn = sqlite3.connect(DB_PATH)
+        df.to_sql("findings", conn, if_exists="append", index=False)
+        conn.close()
+        return f"✅ Imported {len(df)} rows"
+    except Exception as e:
+        return f"Import failed: {e}"
+
+# === Auto-ingest Nmap XML ===
+def parse_nmap_xml(file_path):
+    """Parse Nmap XML results and insert into DB."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+        for host in root.findall("host"):
+            addr = host.find("address").get("addr")
+            for port in host.findall(".//port"):
+                portid = port.get("portid")
+                state = port.find("state").get("state")
+                service = port.find("service").get("name") if port.find("service") is not None else ""
+                cur.execute("""INSERT INTO findings (host,port,service,title,severity,cvss,source,import_date)
+                               VALUES (?,?,?,?,?,?,?,?)""",
+                            (addr, portid, service, f"{state} service detected", "Info", 0.0, "nmap", datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
+        return f"✅ Parsed Nmap XML {file_path}"
+    except Exception as e:
+        return f"XML parse error: {e}"
+
+# === Scanner APIs ===
+def nessus_headers():
+    if not (NESSUS_ACCESS_KEY and NESSUS_SECRET_KEY):
+        return None
+    return {"X-ApiKeys": f"accessKey={NESSUS_ACCESS_KEY}; secretKey={NESSUS_SECRET_KEY}", "Content-Type":"application/json"}
+
+def list_nessus_templates():
+    if not NESSUS_URL or not nessus_headers(): return []
+    try:
+        r = requests.get(f"{NESSUS_URL}/editor/scan/templates", headers=nessus_headers(), timeout=10, verify=False)
+        data = r.json().get("templates", [])
+        return [{"label": t["name"], "value": t["uuid"]} for t in data]
+    except Exception: return []
+
+def list_openvas_configs():
+    if not OPENVAS_URL or not OPENVAS_TOKEN: return []
+    try:
+        r = requests.get(f"{OPENVAS_URL}/api/configs", headers={"Authorization": f"Bearer {OPENVAS_TOKEN}"}, timeout=10, verify=False)
+        data = r.json().get("configs", [])
+        return [{"label": c["name"], "value": c["id"]} for c in data]
+    except Exception: return []
+
+def list_burp_configs():
+    if not BURP_URL or not BURP_API_KEY: return []
+    try:
+        r = requests.get(f"{BURP_URL}/api/v1/scan_configurations",
+                         headers={"Authorization": BURP_API_KEY"}, timeout=10, verify=False)
+        data = r.json().get("items", [])
+        return [{"label": c["name"], "value": c["uuid"]} for c in data]
+    except Exception: return []
+
+def trigger_nmap_scan_verbose(name, targets):
+    """Verbose Nmap -vvv output printed live."""
+    out_dir = REPORT_DIR / "nmap"; out_dir.mkdir(exist_ok=True)
+    xml_file = out_dir / f"{name}.xml"
+    cmd = ["nmap","-vvv","-sV","-O","--script","vuln","-oX",str(xml_file)] + targets.split(",")
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in iter(proc.stdout.readline, b""):
+            sys.stdout.buffer.write(line); sys.stdout.flush()
+        proc.wait()
+        parse_nmap_xml(xml_file)
+        return f"✅ Nmap finished. Output: {xml_file}"
+    except Exception as e:
+        return f"Nmap error: {e}"
+
+# === Scan progress polling ===
+def get_nessus_progress(scan_id):
+    try:
+        r = requests.get(f"{NESSUS_URL.rstrip('/')}/scans/{scan_id}",
+                         headers=nessus_headers(), timeout=15, verify=False)
+        data = r.json()
+        return int(data.get("info", {}).get("progress_total", 0))
+    except Exception:
+        return 0
+
+def get_openvas_progress(task_id):
+    try:
+        r = requests.get(f"{OPENVAS_URL.rstrip('/')}/api/tasks/{task_id}",
+                         headers={"Authorization": f"Bearer {OPENVAS_TOKEN}"},
+                         timeout=15, verify=False)
+        return int(r.json().get("progress", 0))
+    except Exception:
+        return 0
+
+def get_burp_progress(scan_id):
+    try:
+        r = requests.get(f"{BURP_URL.rstrip('/')}/api/v1/scans/{scan_id}",
+                         headers={"Authorization": BURP_API_KEY"},
+                         timeout=15, verify=False)
+        return int(r.json().get("scan_percentage_complete", 0))
+    except Exception:
+        return 0
+
+# === Dash Setup ===
+app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY], suppress_callback_exceptions=True)
+server = app.server
+
+header = dbc.Row([
+    dbc.Col(html.H3("Towson University — Vulnerability Intelligence Dashboard",
+                    style={"color":"#EAAA00","textAlign":"center"}))
+])
+
+tabs = dcc.Tabs(id="tabs", value="dashboard", children=[
+    dcc.Tab(label="Vulnerability Dashboard", value="dashboard"),
+    dcc.Tab(label="Assessment", value="assessment"),
+    dcc.Tab(label="Reporting", value="reporting"),
+    dcc.Tab(label="Voice Assistant", value="voice")
+])
+
+# === Layouts ===
+def vuln_tab():
+    df = load_findings_df()
+    return html.Div([
+        dash_table.DataTable(
+            id="findings-table",
+            columns=[{"name": c, "id": c} for c in df.columns],
+            data=df.to_dict("records"),
+            page_size=12,
+            style_data={"color":"#FFFFFF","backgroundColor":"#222"},
+            style_header={"backgroundColor":"#111","color":"#EAAA00","fontWeight":"bold"},
+            style_table={"overflowX":"auto"},
+            row_selectable="multi"
+        ),
+        dcc.Graph(figure=px.histogram(df, x="cvss", nbins=10, title="CVSS Distribution",
+                                      color_discrete_sequence=["#EAAA00"]))
+    ])
+
+assessment_tab = html.Div([
+    html.H4("Automated Scan Launcher", style={"color":"#EAAA00"}),
+    dcc.Dropdown(id="scanner-select",
+                 options=[{"label":"Nessus","value":"nessus"},
+                          {"label":"OpenVAS","value":"openvas"},
+                          {"label":"Burp","value":"burp"},
+                          {"label":"Nmap","value":"nmap"}],
+                 placeholder="Choose scanner"),
+    dcc.Dropdown(id="template-select", placeholder="Select scan template"),
+    dcc.Textarea(id="targets", placeholder="Enter targets (comma/newline)", style={"width":"100%","height":"80px"}),
+    dcc.Checklist(id="confirm", options=[{"label":"I confirm authorization & targets are internal","value":"ok"}], value=[]),
+    dbc.Button("Launch Scan", id="launch", color="danger", className="mt-2"),
+    html.Pre(id="scan-status", style={"whiteSpace":"pre-wrap","color":"#bfe","marginTop":"10px"})
+])
+
+reporting_tab = html.Div([
+    html.H4("Data Management", style={"color":"#EAAA00"}),
+    dbc.Button("Export to CSV", id="export-csv", color="secondary"),
+    dcc.Upload(id="import-csv", children=html.Div(["Drag or select CSV to import"]), multiple=False),
+    html.Pre(id="import-status", style={"color":"#bfe"})
+])
+
+voice_tab = html.Div([
+    html.H4("Voice Assistant (Browser Speech API)", style={"color":"#EAAA00"}),
+    html.Button("Start Voice", id="start-voice"),
+    html.Button("Stop Voice", id="stop-voice", style={"marginLeft":"8px"}),
+    dcc.Checklist(id="tts-check", options=[{"label":"Speak replies","value":"tts"}], value=[]),
+    html.Div(id="recognized-text", style={"color":"#bfe","marginTop":"10px"}),
+    html.Div(id="llm-voice-response", style={"color":"#ffd","marginTop":"10px"})
+])
+
+app.layout = dbc.Container([header, tabs, html.Div(id="tab-content")], fluid=True)
+
+# === Callbacks ===
+@app.callback(Output("tab-content","children"), Input("tabs","value"))
+def switch_tab(tab):
+    if tab=="dashboard": return vuln_tab()
+    elif tab=="assessment": return assessment_tab
+    elif tab=="reporting": return reporting_tab
+    elif tab=="voice": return voice_tab
+    return "Select a tab."
+
+@app.callback(Output("template-select","options"), Input("scanner-select","value"))
+def load_templates(scanner):
+    if scanner=="nessus": return list_nessus_templates()
+    if scanner=="openvas": return list_openvas_configs()
+    if scanner=="burp": return list_burp_configs()
+    return []
+
+@app.callback(Output("scan-status","children"),
+              Input("launch","n_clicks"),
+              State("scanner-select","value"),
+              State("template-select","value"),
+              State("targets","value"),
+              State("confirm","value"), prevent_initial_call=True)
+def launch_scan(n, scanner, template, targets, confirm):
+    if not confirm: return "⚠️ Must confirm authorization."
+    ok, msg = validate_targets_in_whitelist(targets or "")
+    if not ok: return f"❌ {msg}"
+    name = f"Scan-{datetime.utcnow().strftime('%H%M%S')}"
+    if scanner=="nmap": return trigger_nmap_scan_verbose(name, targets)
+    return f"Started {scanner} scan with template {template} on {targets}"
+
+@app.callback(Output("import-status","children"),
+              Input("import-csv","contents"), prevent_initial_call=True)
+def import_csv(contents):
+    if not contents: return no_update
+    header, b64 = contents.split(",",1)
+    raw = base64.b64decode(b64)
+    temp = REPORT_DIR / "import.csv"; temp.write_bytes(raw)
+    return import_from_csv(temp)
+
+@app.callback(Output("import-status","children", allow_duplicate=True),
+              Input("export-csv","n_clicks"), prevent_initial_call=True)
+def export_csv_btn(n):
+    return f"Exported to {export_to_csv()}",
+
+@server.route("/llm_voice", methods=["POST"])
+def llm_voice():
+    text = request.get_json().get("text","")
+    reply = openai_chat(text)
+    return jsonify({"reply": reply})
+
+if __name__ == "__main__":
+    print(f"[+] Dashboard started. DB={DB_PATH}")
+    app.run(host="0.0.0.0", port=8050, debug=True)

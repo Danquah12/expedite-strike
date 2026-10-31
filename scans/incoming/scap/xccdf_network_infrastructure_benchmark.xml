@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           id="xccdf_aegis_benchmark_network-infrastructure"
+           resolved="1"
+           style="SCAP_1.2">
+
+  <status>accepted</status>
+  <title>AEGIS Network Infrastructure Security Benchmark</title>
+  <description>
+    Network infrastructure security assessment based on NIST SP 800-41, CIS Controls,
+    and PTES standards. Evaluates firewall rules, exposed services, port security,
+    and network segmentation.
+  </description>
+  <version>1.0.0</version>
+
+  <!-- ── RULES ─────────────────────────────────────────────────── -->
+
+  <Rule id="xccdf_aegis_rule_unnecessary-ports" severity="high">
+    <title>Unnecessary Services Must Not Be Exposed</title>
+    <description>Only ports required for the application's function should be externally accessible. All other ports must be filtered by firewall rules. Unnecessary exposed services expand the attack surface and provide additional entry points for attackers.</description>
+    <fixtext>Review all open ports and close unnecessary services. Configure host firewall (iptables/nftables) and network firewall to only allow required traffic.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_ssh-hardening" severity="high">
+    <title>SSH Must Be Hardened per CIS Benchmark</title>
+    <description>SSH service must disable root login, password authentication (use key-based), and protocol version 1. MaxAuthTries should be 4 or fewer. AllowUsers/AllowGroups should restrict access. Port should be non-default if possible.</description>
+    <fixtext>Set: PermitRootLogin no, PasswordAuthentication no, Protocol 2, MaxAuthTries 4, AllowUsers authorized_user</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_database-exposure" severity="high">
+    <title>Database Ports Must Not Be Externally Accessible</title>
+    <description>Database services (MySQL 3306, PostgreSQL 5432, MongoDB 27017, MSSQL 1433, Redis 6379) must not be accessible from untrusted networks. Direct database exposure enables brute force, SQL injection, and unauthorized data access.</description>
+    <fixtext>Bind database to 127.0.0.1 or internal network only. Block database ports at the firewall. Use SSH tunnels or VPN for remote database administration.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_vnc-rdp-exposure" severity="high">
+    <title>Remote Desktop Services Must Require VPN Access</title>
+    <description>VNC (5900) and RDP (3389) must not be directly exposed to the internet. These protocols have a history of critical vulnerabilities (BlueKeep CVE-2019-0708) and are prime targets for brute force attacks.</description>
+    <fixtext>Block VNC/RDP at the perimeter firewall. Require VPN connection before remote desktop access. Enable Network Level Authentication for RDP.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_smb-exposure" severity="high">
+    <title>SMB/NetBIOS Must Not Be Internet-Facing</title>
+    <description>SMB (445) and NetBIOS (135, 139) ports must never be exposed externally. EternalBlue (MS17-010), WannaCry, and NotPetya all exploited exposed SMB services. These protocols are designed for internal LAN use only.</description>
+    <fixtext>Block ports 135, 139, 445 at the perimeter firewall. Disable SMBv1. Ensure Windows Firewall blocks these ports for public profiles.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_dns-recursion" severity="medium">
+    <title>DNS Recursion Must Be Disabled for Public-Facing DNS</title>
+    <description>Public-facing DNS servers must not allow recursive queries from external sources. Open recursive DNS servers can be abused for DNS amplification DDoS attacks and cache poisoning.</description>
+    <fixtext>Set 'allow-recursion { localhost; internal-network; };' in BIND config. For other DNS servers, restrict recursion to trusted clients only.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_ftp-security" severity="high">
+    <title>FTP Must Be Replaced with SFTP/SCP</title>
+    <description>Plain FTP transmits credentials and data in cleartext. FTP servers are frequently vulnerable to bounce attacks and directory traversal. SFTP or SCP should be used for all file transfer needs.</description>
+    <fixtext>Disable FTP service. Replace with SFTP (SSH subsystem) or SCP. If FTP is required, enforce FTPS (FTP over TLS) with certificate validation.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_telnet-disabled" severity="high">
+    <title>Telnet Must Be Disabled</title>
+    <description>Telnet transmits all data including passwords in cleartext and has no encryption. It must be replaced by SSH for all remote administration. Telnet is considered deprecated and insecure by all modern security standards.</description>
+    <fixtext>Disable telnet service: systemctl disable telnet.socket. Remove telnet server package. Use SSH exclusively for remote administration.</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_icmp-rate-limiting" severity="low">
+    <title>ICMP Rate Limiting Should Be Configured</title>
+    <description>ICMP responses should be rate-limited to prevent information disclosure and ICMP-based attacks. However, ICMP should not be completely blocked as it's essential for path MTU discovery and network diagnostics.</description>
+    <fixtext>Configure iptables rate limiting: iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT</fixtext>
+  </Rule>
+
+  <Rule id="xccdf_aegis_rule_network-segmentation" severity="medium">
+    <title>Network Segmentation Must Be Implemented</title>
+    <description>Production, development, management, and DMZ networks must be logically or physically segmented. Flat networks allow lateral movement after initial compromise, enabling attackers to pivot to critical assets.</description>
+    <fixtext>Implement VLANs for network segmentation. Configure inter-VLAN routing with ACLs. Place web servers in DMZ. Restrict management network access.</fixtext>
+  </Rule>
+
+  <!-- ── TEST RESULTS ──────────────────────────────────────────── -->
+  <TestResult id="xccdf_aegis_testresult_network-scan"
+              end-time="2026-04-24T23:00:00">
+    <target>www.dvwa.co.uk</target>
+    <target-address>44.228.249.3</target-address>
+
+    <rule-result idref="xccdf_aegis_rule_unnecessary-ports" severity="high">
+      <result>fail</result>
+      <message>8 open ports detected (22, 80, 443, 3306, 5900, 8080, 8443, 9090). Ports 3306, 5900, and 9090 appear unnecessary for a web application.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_ssh-hardening" severity="high">
+      <result>fail</result>
+      <message>SSH on port 22: OpenSSH 8.9 — PasswordAuthentication appears enabled. Root login status unknown (external scan).</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_database-exposure" severity="high">
+      <result>fail</result>
+      <message>MySQL (3306) is externally accessible. MySQL 8.0 banner detected. Database should not be internet-facing.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_vnc-rdp-exposure" severity="high">
+      <result>fail</result>
+      <message>VNC service detected on port 5900 (RealVNC 5.3). Remote desktop is directly exposed without VPN requirement.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_smb-exposure" severity="high">
+      <result>pass</result>
+      <message>No SMB/NetBIOS ports (135, 139, 445) detected externally. PASS.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_dns-recursion" severity="medium">
+      <result>pass</result>
+      <message>No DNS service (port 53) detected externally. PASS.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_ftp-security" severity="high">
+      <result>pass</result>
+      <message>No FTP service (port 21) detected externally. PASS.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_telnet-disabled" severity="high">
+      <result>pass</result>
+      <message>No Telnet service (port 23) detected. PASS.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_icmp-rate-limiting" severity="low">
+      <result>fail</result>
+      <message>ICMP echo replies received without rate limiting detected. Host responds to all ICMP echo requests.</message>
+    </rule-result>
+
+    <rule-result idref="xccdf_aegis_rule_network-segmentation" severity="medium">
+      <result>fail</result>
+      <message>Web application and database services appear to run on the same host (44.228.249.3). No network segmentation detected between application tier and data tier.</message>
+    </rule-result>
+
+  </TestResult>
+</Benchmark>

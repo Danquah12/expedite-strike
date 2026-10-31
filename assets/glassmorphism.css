@@ -1,0 +1,684 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AEGIS GLASSMORPHISM DESIGN SYSTEM
+   Enterprise-grade frosted glass UI layer
+   ═══════════════════════════════════════════════════════════════════
+   
+   Architecture:
+   - Layered on TOP of existing dark theme (custom.css / phd_theme.css)
+   - Does NOT override base colors — adds glass depth and premium polish
+   - All glass effects use backdrop-filter for true frosted glass
+   - Micro-animations for professional interactivity
+   
+   Browser support: Chrome 76+, Edge 79+, Firefox 103+, Safari 9+
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── CSS VARIABLES ─────────────────────────────────────────────────── */
+:root {
+    /* Glass surfaces */
+    --glass-bg: rgba(22, 27, 45, 0.65);
+    --glass-bg-hover: rgba(28, 34, 56, 0.75);
+    --glass-bg-active: rgba(30, 38, 62, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-border-hover: rgba(255, 255, 255, 0.12);
+    --glass-blur: 16px;
+    --glass-blur-heavy: 24px;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.45);
+    --glass-shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.55);
+    
+    /* Accent palette */
+    --accent-gold: #c9a84c;
+    --accent-gold-dim: rgba(201, 168, 76, 0.15);
+    --accent-cyan: #00e6e6;
+    --accent-cyan-dim: rgba(0, 230, 230, 0.08);
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --accent-orange: #f59e0b;
+    --accent-purple: #a78bfa;
+    
+    /* Typography */
+    --font-display: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+    --text-primary: rgba(255, 255, 255, 0.92);
+    --text-secondary: rgba(255, 255, 255, 0.60);
+    --text-tertiary: rgba(255, 255, 255, 0.38);
+    
+    /* Spacing scale */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+    
+    /* Radius scale */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 100px;
+    
+    /* Transitions */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+}
+
+/* ── GOOGLE FONTS (loaded via link in app.py or here) ──────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── GLOBAL REFINEMENTS ────────────────────────────────────────────── */
+body {
+    font-family: var(--font-display) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.01em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLASS CARDS — Primary container surface
+   ═══════════════════════════════════════════════════════════════════ */
+
+.phd-panel,
+#ai-panel-wrapper,
+#ai-output-wrapper,
+#node-info-panel,
+#attack-path-panel,
+.card,
+.dash-table-container,
+.autopentest-card,
+.exec-card,
+.glass-card {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--glass-shadow) !important;
+    transition: all var(--duration-normal) var(--ease-out) !important;
+}
+
+.phd-panel:hover,
+.card:hover,
+.exec-card:hover,
+.glass-card:hover {
+    background: var(--glass-bg-hover) !important;
+    border-color: var(--glass-border-hover) !important;
+    box-shadow: var(--glass-shadow-hover) !important;
+    transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLASS STAT CARDS — KPI / Metric displays
+   ═══════════════════════════════════════════════════════════════════ */
+
+.stat-card,
+.kpi-card,
+.metric-card {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--glass-shadow) !important;
+    padding: var(--space-lg) !important;
+    transition: all var(--duration-normal) var(--ease-out) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before,
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-gold) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.stat-card:hover::before,
+.kpi-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card:hover,
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-elevated) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTONS — Frosted glass buttons
+   ═══════════════════════════════════════════════════════════════════ */
+
+button,
+.btn,
+.btn-primary,
+.btn-danger,
+.btn-success,
+.btn-warning {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+    font-family: var(--font-display) !important;
+    letter-spacing: 0.02em;
+    padding: 10px 20px !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover,
+.btn:hover {
+    background: var(--glass-bg-hover) !important;
+    border-color: var(--glass-border-hover) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+    filter: none !important;
+}
+
+button:active,
+.btn:active {
+    transform: translateY(0) scale(0.98) !important;
+    transition-duration: 50ms !important;
+}
+
+/* Primary action buttons */
+.btn-primary,
+button[id*="start"],
+button[id*="launch"],
+button[id*="run"],
+button[id*="scan"] {
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.25), rgba(201, 168, 76, 0.10)) !important;
+    border-color: rgba(201, 168, 76, 0.3) !important;
+    color: var(--accent-gold) !important;
+}
+
+.btn-primary:hover,
+button[id*="start"]:hover,
+button[id*="launch"]:hover {
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.35), rgba(201, 168, 76, 0.15)) !important;
+    border-color: rgba(201, 168, 76, 0.5) !important;
+    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.15) !important;
+}
+
+/* Danger buttons */
+.btn-danger,
+button[id*="stop"],
+button[id*="cancel"] {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.08)) !important;
+    border-color: rgba(239, 68, 68, 0.25) !important;
+    color: var(--accent-red) !important;
+}
+
+/* Success buttons */
+.btn-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.08)) !important;
+    border-color: rgba(34, 197, 94, 0.25) !important;
+    color: var(--accent-green) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABS — Glass tab navigation
+   ═══════════════════════════════════════════════════════════════════ */
+
+.nav-tabs,
+.custom-tabs,
+.tab-container {
+    border-bottom: 1px solid var(--glass-border) !important;
+    gap: var(--space-xs);
+}
+
+.nav-link,
+.tab-link,
+.custom-tab {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+    padding: 10px 20px !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+    position: relative;
+}
+
+.nav-link:hover,
+.tab-link:hover,
+.custom-tab:hover {
+    color: var(--text-primary) !important;
+    background: var(--glass-bg) !important;
+}
+
+.nav-link.active,
+.tab-link.active,
+.custom-tab.active,
+.nav-link[aria-selected="true"] {
+    background: var(--glass-bg-active) !important;
+    border-color: var(--glass-border-hover) !important;
+    border-bottom-color: transparent !important;
+    color: var(--accent-gold) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+}
+
+.nav-link.active::after,
+.custom-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    background: var(--accent-gold);
+    border-radius: 2px 2px 0 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLES — Frosted glass data tables
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dash-spreadsheet th {
+    background: rgba(201, 168, 76, 0.12) !important;
+    color: var(--accent-gold) !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.2) !important;
+    padding: 12px 16px !important;
+}
+
+.dash-spreadsheet td {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+}
+
+.dash-spreadsheet tr:hover td {
+    background: var(--accent-cyan-dim) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INPUTS — Frosted input fields
+   ═══════════════════════════════════════════════════════════════════ */
+
+input,
+textarea,
+select,
+.Select-control,
+.dash-dropdown {
+    background: rgba(20, 24, 32, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-display) !important;
+    transition: all var(--duration-fast) var(--ease-out) !important;
+    padding: 10px 14px !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: rgba(201, 168, 76, 0.4) !important;
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08),
+                0 0 20px rgba(201, 168, 76, 0.06) !important;
+    outline: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GRAPH CONTAINER — Enhanced depth
+   ═══════════════════════════════════════════════════════════════════ */
+
+#neo4j-graph,
+.cytoscape-container {
+    background: rgba(12, 15, 25, 0.8) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PLOTLY CHARTS — Glass chart containers
+   ═══════════════════════════════════════════════════════════════════ */
+
+.js-plotly-plot .plotly .main-svg {
+    border-radius: var(--radius-md);
+}
+
+.dash-graph {
+    border-radius: var(--radius-md) !important;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCROLLBARS — Premium thin scrollbars
+   ═══════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 3px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEVERITY BADGES — Glass pill badges
+   ═══════════════════════════════════════════════════════════════════ */
+
+.badge-critical,
+[class*="severity-critical"] {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-pill);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.badge-high,
+[class*="severity-high"] {
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fcd34d !important;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--radius-pill);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-medium,
+[class*="severity-medium"] {
+    background: rgba(234, 179, 8, 0.12) !important;
+    color: #fde68a !important;
+    border: 1px solid rgba(234, 179, 8, 0.2);
+    border-radius: var(--radius-pill);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-low,
+[class*="severity-low"] {
+    background: rgba(34, 197, 94, 0.12) !important;
+    color: #86efac !important;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: var(--radius-pill);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL / OVERLAY — Glass modal backgrounds
+   ═══════════════════════════════════════════════════════════════════ */
+
+.modal-content,
+.dash-modal {
+    background: var(--glass-bg-active) !important;
+    backdrop-filter: blur(var(--glass-blur-heavy)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) !important;
+    border: 1px solid var(--glass-border-hover) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: var(--glass-shadow-elevated) !important;
+}
+
+.modal-backdrop {
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING STATES — Skeleton pulse animation
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes glass-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes glass-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+._dash-loading {
+    animation: glass-pulse 1.5s ease-in-out infinite !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOOLTIP — Glass tooltips
+   ═══════════════════════════════════════════════════════════════════ */
+
+.tooltip-inner,
+[data-tooltip] {
+    background: var(--glass-bg-active) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    box-shadow: var(--glass-shadow) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTOPENTEST — Phase timeline glass
+   ═══════════════════════════════════════════════════════════════════ */
+
+.phase-indicator,
+.phase-step {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    transition: all var(--duration-normal) var(--ease-out) !important;
+}
+
+.phase-indicator.active,
+.phase-step.active {
+    background: var(--accent-gold-dim) !important;
+    border-color: rgba(201, 168, 76, 0.3) !important;
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.08) !important;
+}
+
+.phase-indicator.complete,
+.phase-step.complete {
+    border-color: rgba(34, 197, 94, 0.25) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROGRESS BARS — Glass progress
+   ═══════════════════════════════════════════════════════════════════ */
+
+.progress,
+.progress-bar-container {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-radius: var(--radius-pill) !important;
+    overflow: hidden;
+    height: 6px !important;
+}
+
+.progress-bar,
+.progress-fill {
+    background: linear-gradient(90deg, var(--accent-gold), #e6c65a) !important;
+    border-radius: var(--radius-pill) !important;
+    transition: width var(--duration-slow) var(--ease-out) !important;
+    box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HEADINGS — Typography refinement
+   ═══════════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5 {
+    font-family: var(--font-display) !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text-primary) !important;
+}
+
+h1 { font-weight: 700 !important; }
+h2 { font-weight: 600 !important; }
+h3, h4 { font-weight: 500 !important; }
+
+/* Section headers with subtle gold accent */
+.section-title,
+h2[id] {
+    position: relative;
+    padding-left: 16px;
+}
+
+.section-title::before,
+h2[id]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--accent-gold);
+    border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOG / TERMINAL OUTPUT — Monospace glass
+   ═══════════════════════════════════════════════════════════════════ */
+
+pre,
+code,
+.log-output,
+.terminal-output,
+#autopentest-log {
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+    background: rgba(8, 10, 18, 0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-md) !important;
+    color: rgba(180, 220, 180, 0.9) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DROPDOWN MENUS — Glass dropdowns
+   ═══════════════════════════════════════════════════════════════════ */
+
+.Select-menu-outer,
+.dash-dropdown-menu {
+    background: rgba(22, 27, 45, 0.92) !important;
+    backdrop-filter: blur(var(--glass-blur-heavy)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) !important;
+    border: 1px solid var(--glass-border-hover) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--glass-shadow-elevated) !important;
+    overflow: hidden;
+}
+
+.VirtualizedSelectOption {
+    background: transparent !important;
+    transition: background var(--duration-fast) var(--ease-out) !important;
+    padding: 10px 14px !important;
+}
+
+.VirtualizedSelectOption:hover,
+.VirtualizedSelectFocusedOption {
+    background: var(--accent-cyan-dim) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — Fluid glass on mobile
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    :root {
+        --glass-blur: 10px;
+        --radius-lg: 12px;
+    }
+    
+    .phd-panel,
+    .card,
+    .glass-card {
+        border-radius: var(--radius-md) !important;
+    }
+    
+    button, .btn {
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MICRO-ANIMATIONS — Subtle entrance effects
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes glass-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tab-content > .tab-pane.active,
+.tab-content > div[style*="display: block"] {
+    animation: glass-fade-in var(--duration-slow) var(--ease-out);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NOTIFICATION TOASTS — Glass notifications
+   ═══════════════════════════════════════════════════════════════════ */
+
+.toast,
+.notification,
+.alert {
+    background: var(--glass-bg-active) !important;
+    backdrop-filter: blur(var(--glass-blur)) !important;
+    border: 1px solid var(--glass-border-hover) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--glass-shadow-elevated) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SELECTION — Branded text selection
+   ═══════════════════════════════════════════════════════════════════ */
+
+::selection {
+    background: rgba(201, 168, 76, 0.25);
+    color: var(--text-primary);
+}
+
+::-moz-selection {
+    background: rgba(201, 168, 76, 0.25);
+    color: var(--text-primary);
+}

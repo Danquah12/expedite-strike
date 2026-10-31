@@ -1,0 +1,1009 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University — AI-Augmented Vulnerability Intelligence Dashboard
+Batch 1/3: Core foundation, theming, tab placeholders.
+Author: merged build
+"""
+
+# ==========================================================
+# 1️⃣ Imports
+# ==========================================================
+import os, time, sqlite3, threading
+from pathlib import Path
+from datetime import datetime
+import dash
+from dash import Dash, dcc, html, Input, Output, State, dash_table
+import dash_bootstrap_components as dbc
+from fpdf import FPDF
+
+
+# ==========================================================
+# 2️⃣ Project constants & status log setup
+# ==========================================================
+PROJECT_ROOT = "/root/vuln_intel"
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+Path(STATUS_LOG).write_text("")  # ensure fresh log each run
+
+def append_status(line: str):
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    with open(STATUS_LOG, "a") as f:
+        f.write(f"[{ts}] {line}\n")
+
+# ==========================================================
+# 3️⃣ Define tab layouts (placeholders for now)
+# ==========================================================
+system_health_layout = html.Div([
+    html.H3("🩺 System Health Monitor", style={"color": "#EAAA00"}),
+    html.P("Displays CPU, memory, and disk usage in real time.")
+])
+
+vuln_tab = html.Div([
+    html.H3("🛡 Vulnerability Dashboard", style={"color": "#EAAA00"}),
+    html.P("Displays vulnerabilities imported from Nmap, Burp, ZAP, OpenVAS.")
+])
+
+llm_tab = html.Div([
+    html.H3("🤖 LLM Request Interface", style={"color": "#EAAA00"}),
+    html.P("Summarize or analyze findings using the integrated AI model.")
+])
+
+natural_lang_tab = html.Div([
+    html.H3("💬 Natural Language Analysis", style={"color": "#EAAA00"}),
+    html.P("Query the vulnerability database in plain English.")
+])
+
+chatbot_tab = html.Div([
+    html.H3("🧠 Chatbot Interface", style={"color": "#EAAA00"}),
+    html.P("Ask interactive security and vulnerability questions.")
+])
+
+assessment_tab = html.Div([
+    html.H3("⚙️ Assessment Center", style={"color": "#EAAA00"}),
+    html.P("Trigger Nmap, OpenVAS, Nessus, or Burp Suite scans on target IPs.")
+])
+
+report_tab = html.Div([
+    html.H3("📊 Reporting", style={"color": "#EAAA00"}),
+    html.P("Generate reports, export CSV, or create PDFs of scan results.")
+])
+
+voice_tab = html.Div([
+    html.H3("🎙 Voice Assistant", style={"color": "#EAAA00"}),
+    html.P("Use browser voice commands to control dashboard functions.")
+])
+
+# ==========================================================
+# 4️⃣ Initialize Dash app
+# ==========================================================
+app = Dash(__name__, suppress_callback_exceptions=True, assets_folder="assets")
+server = app.server
+
+
+# ==========================================================
+#  REPORTING TAB — PDF Report Generation
+# ==========================================================
+
+REPORT_DIR = Path("/root/vuln_intel/app/data/reports")
+REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class VulnPDF(FPDF):
+    def header(self):
+        self.set_fill_color(234, 170, 0)  # Towson gold
+        self.rect(0, 0, 210, 20, 'F')
+        self.set_font("Helvetica", "B", 14)
+        self.set_text_color(0, 0, 0)
+        self.cell(0, 10, "Towson University — Vulnerability Intelligence Report", ln=True, align="C")
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Helvetica", "I", 9)
+        self.set_text_color(128)
+        self.cell(0, 10, f"Page {self.page_no()}", align="C")
+
+    def section_title(self, title):
+        self.set_font("Helvetica", "B", 12)
+        self.set_text_color(234, 170, 0)
+        self.cell(0, 10, title, ln=True)
+        self.ln(2)
+
+    def section_body(self, text):
+        self.set_font("Helvetica", "", 10)
+        self.set_text_color(255)
+        self.multi_cell(0, 6, text)
+        self.ln()
+
+
+def generate_pdf_report():
+    """Generate host-by-host vulnerability report."""
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT * FROM findings", conn)
+    conn.close()
+    if df.empty:
+        return None
+
+    pdf = VulnPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_text_color(255, 255, 255)
+
+    pdf.section_title("Scan Overview")
+    pdf.section_body(f"Generated: {datetime.now().isoformat()}\nTotal Findings: {len(df)}")
+
+    for host, group in df.groupby("host"):
+        pdf.add_page()
+        pdf.section_title(f"Host: {host}")
+        summary = group.groupby("severity").size().to_string()
+        pdf.section_body(f"Severity Summary:\n{summary}\n")
+
+        for _, row in group.iterrows():
+            pdf.section_body(
+                f"Port: {row.get('port','N/A')} | Service: {row.get('service','N/A')}\n"
+                f"CVE: {row.get('cve_id','N/A')} | Severity: {row.get('severity','N/A')}\n"
+                f"Source: {row.get('source','N/A')}\n"
+                f"Description: {row.get('description','N/A')}\n"
+                f"Remediation: {row.get('remediation','N/A')}\n"
+                "-----------------------------------------------"
+            )
+
+    report_path = REPORT_DIR / f"vuln_report_{int(time.time())}.pdf"
+    pdf.output(str(report_path))
+    append_status(f"PDF report created: {report_path}")
+    return str(report_path)
+
+
+# ----------------------------
+# Reporting Tab Layout
+# ----------------------------
+reporting_tab = html.Div([
+    html.H3("📊 Reporting & PDF Export", className="text-warning"),
+    html.P("Generate detailed host-by-host vulnerability PDF reports.", style={"color": "#AAA"}),
+
+    dbc.Button("📝 Generate PDF Report", id="report-btn", color="warning", className="mb-3"),
+    html.Div(id="report-output", style={"color": "#EAAA00", "marginBottom": "15px"}),
+
+    html.H5("Recent Reports", style={"color": "#EAAA00"}),
+    html.Ul(id="report-list", style={"color": "#FFF", "listStyleType": 'square'})
+])
+
+
+# ----------------------------
+# Reporting Tab Callbacks
+# ----------------------------
+@app.callback(
+    Output("report-output", "children"),
+    Output("report-list", "children"),
+    Input("report-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def generate_and_list_reports(n):
+    path = generate_pdf_report()
+    if not path:
+        return "⚠️ No data available to report.", []
+    reports = sorted(REPORT_DIR.glob("*.pdf"), key=os.path.getmtime, reverse=True)
+    links = [
+        html.Li(html.A(r.name, href=f"/download_report?file={r.name}", target="_blank"))
+        for r in reports
+    ]
+    return f"✅ Report generated: {os.path.basename(path)}", links
+
+
+# ----------------------------
+# Flask Download Route
+# ----------------------------
+@app.server.route("/download_report")
+def download_report():
+    from flask import send_from_directory, request
+    fname = request.args.get("file")
+    if not fname:
+        return "Missing file param", 400
+    return send_from_directory(REPORT_DIR, fname, as_attachment=True)
+
+
+
+
+# ==========================================================
+# 5️⃣ Main layout (Towson gold-on-black theme)
+# ==========================================================
+app.layout = html.Div([
+    html.H2(
+        "Towson University — Vulnerability Intelligence Dashboard",
+        style={
+            "textAlign": "center",
+            "color": "#EAAA00",
+            "fontWeight": "600",
+            "marginTop": "12px",
+            "marginBottom": "12px"
+        }
+    ),
+
+    dcc.Tabs(
+        id='tabs', value='tab8', className='custom-tabs',
+        children=[
+            dcc.Tab(label='System Health', value='tab8'),
+            dcc.Tab(label='Vulnerability Dashboard', value='tab1'),
+            dcc.Tab(label='LLM Request', value='tab2'),
+            dcc.Tab(label='Natural Language', value='tab3'),
+            dcc.Tab(label='Chatbot', value='tab4'),
+            dcc.Tab(label='Assessment', value='tab5'),
+            dcc.Tab(label='Reporting', value='tab6'),
+            dcc.Tab(label='Voice Assistant', value='tab7', className='tab', selected_className='tab--selected'),
+
+        ]
+    ),
+
+    html.Div(id='tabs-content', style={"padding": "20px"})
+])
+
+# ==========================================================
+# 6️⃣ Tab switch callback
+# ==========================================================
+@app.callback(Output('tabs-content', 'children'), Input('tabs', 'value'))
+def render_tab(tab):
+    if tab == 'tab1': return vuln_tab
+    elif tab == 'tab2': return llm_tab
+    elif tab == 'tab3': return natural_lang_tab
+    elif tab == 'tab4': return chatbot_tab
+    elif tab == 'tab5': return assessment_tab
+    elif tab == 'tab6': return report_tab
+    elif tab == 'tab7': return voice_tab
+    elif tab == 'tab8': return system_health_layout
+    return html.Div("⚠ Unknown tab selected", style={"color": "red"})
+
+# ==========================================================
+# 7️⃣ Run app
+# ==========================================================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8050, debug=True)
+
+
+# ==========================================================
+# 8️⃣ Data Utilities: Load findings.db and filters
+# ==========================================================
+import pandas as pd
+import io
+import base64
+import requests
+
+DB_PATH = f"{PROJECT_ROOT}/app/data/findings.db"
+
+def load_findings():
+    """Read vulnerability data from SQLite."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        append_status(f"[ERROR] Could not read findings.db: {e}")
+        return pd.DataFrame()
+
+# ==========================================================
+# 9️⃣ CSV Import/Export Utilities
+# ==========================================================
+def export_findings_to_csv():
+    df = load_findings()
+    if df.empty:
+        return "No data available to export."
+    path = f"{PROJECT_ROOT}/app/exported_findings.csv"
+    df.to_csv(path, index=False)
+    append_status(f"Exported {len(df)} rows to {path}")
+    return f"✅ Exported {len(df)} rows to exported_findings.csv"
+
+def import_csv_to_findings(file_contents):
+    """Decode and append uploaded CSV content into findings.db."""
+    content_type, content_string = file_contents.split(',')
+    decoded = base64.b64decode(content_string)
+    df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+
+    conn = sqlite3.connect(DB_PATH)
+    df_existing = pd.read_sql_query("SELECT * FROM findings", conn)
+    combined = pd.concat([df_existing, df_new]).drop_duplicates(subset=['id'], keep='last')
+    combined.to_sql('findings', conn, if_exists='replace', index=False)
+    conn.close()
+    append_status(f"Imported {len(df_new)} rows into findings.db")
+    return f"✅ Imported {len(df_new)} new findings."
+
+# ==========================================================
+# 🔟 Vulnerability Dashboard Content (Dynamic Table + Filters)
+# ==========================================================
+def build_vuln_dashboard():
+    df = load_findings()
+    if df.empty:
+        return html.Div("⚠ No findings found in database.", style={"color": "orange"})
+
+    return html.Div([
+        html.H3("🧩 Vulnerability Findings"),
+        dbc.Row([
+            dbc.Col([
+                html.Label("Source Filter"),
+                dcc.Dropdown(
+                    id="src-filter",
+                    options=[{"label": s, "value": s} for s in sorted(df["source"].dropna().unique())],
+                    multi=True, placeholder="Select source(s)..."
+                )
+            ], width=3),
+            dbc.Col([
+                html.Label("Severity Filter"),
+                dcc.Dropdown(
+                    id="sev-filter",
+                    options=[{"label": s.title(), "value": s} for s in sorted(df["severity"].dropna().unique())],
+                    multi=True, placeholder="Select severity..."
+                )
+            ], width=3),
+            dbc.Col([
+                html.Label("Host/IP Filter"),
+                dcc.Dropdown(
+                    id="ip-filter",
+                    options=[{"label": h, "value": h} for h in sorted(df["host"].dropna().unique())],
+                    multi=True, placeholder="Select host(s)..."
+                )
+            ], width=4),
+        ], style={"marginBottom": "15px"}),
+
+        dash_table.DataTable(
+            id="vuln-table",
+            columns=[{"name": c, "id": c} for c in df.columns],
+            data=df.to_dict('records'),
+            page_size=10,
+            style_table={'overflowX': 'auto'},
+            style_header={'backgroundColor': '#EAAA00', 'color': 'black', 'fontWeight': 'bold'},
+            style_cell={'backgroundColor': '#1C1C1C', 'color': '#FFFFFF', 'whiteSpace': 'normal', 'height': 'auto'}
+        ),
+
+        html.Br(),
+        dbc.Button("Export CSV", id="export-btn", color="warning", className="me-2"),
+        dcc.Upload(
+            id="upload-csv",
+            children=html.Div(["📁 Drag and drop or click to upload CSV"]),
+            style={
+                'width': '50%', 'height': '60px', 'lineHeight': '60px',
+                'borderWidth': '1px', 'borderStyle': 'dashed',
+                'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
+            },
+            multiple=False
+        ),
+        html.Div(id="csv-status", style={"marginTop": "10px", "color": "lightgreen"})
+    ])
+
+# Replace placeholder vuln_tab with dynamic one
+vuln_tab = build_vuln_dashboard()
+
+# ==========================================================
+# 11️⃣ Callbacks: Filtering + CSV Import/Export
+# ==========================================================
+@app.callback(
+    Output("vuln-table", "data"),
+    Input("src-filter", "value"),
+    Input("sev-filter", "value"),
+    Input("ip-filter", "value")
+)
+def filter_table(srcs, sevs, ips):
+    df = load_findings()
+    if df.empty:
+        raise dash.exceptions.PreventUpdate
+    if srcs: df = df[df["source"].isin(srcs)]
+    if sevs: df = df[df["severity"].isin(sevs)]
+    if ips: df = df[df["host"].isin(ips)]
+    return df.to_dict("records")
+
+@app.callback(
+    Output("csv-status", "children"),
+    Input("export-btn", "n_clicks"),
+    Input("upload-csv", "contents"),
+    prevent_initial_call=True
+)
+def handle_csv(n_export, upload_content):
+    trig = ctx.triggered_id
+    if trig == "export-btn":
+        return export_findings_to_csv()
+    elif trig == "upload-csv" and upload_content:
+        return import_csv_to_findings(upload_content)
+    return dash.no_update
+
+# ==========================================================
+# 12️⃣ LLM Request Tab — Integrated OpenAI API
+# ==========================================================
+def call_llm(prompt: str) -> str:
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        return "❌ Missing OPENAI_API_KEY"
+    try:
+        resp = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}]},
+            timeout=20
+        )
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM error: {e}"
+
+llm_tab = html.Div([
+    html.H3("🤖 LLM Vulnerability Analysis"),
+    dcc.Textarea(
+        id="llm-prompt",
+        placeholder="Enter your question about vulnerabilities...",
+        style={"width": "100%", "height": "150px"}
+    ),
+    html.Br(),
+    dbc.Button("Submit to LLM", id="llm-btn", color="warning"),
+    html.Div(id="llm-output", style={"whiteSpace": "pre-wrap", "marginTop": "10px", "color": "#EAAA00"})
+])
+
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True
+)
+def process_llm(n, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    return call_llm(text)
+
+
+# ==========================================================
+#  LLM REQUEST TAB — Vulnerability Q&A Powered by OpenAI
+# ==========================================================
+
+def call_llm(prompt: str) -> str:
+    """Send prompt to OpenAI model and return response."""
+    if not OPENAI_API_KEY:
+        return "⚠️ No OpenAI API key set. Please configure your environment."
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": OPENAI_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3
+        }
+        resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM error: {e}"
+
+
+# ----------------------------
+# LLM Tab Layout
+# ----------------------------
+llm_tab = html.Div([
+    html.H3("🤖 LLM Vulnerability Analysis", className="text-warning"),
+    html.P("Ask the AI to summarize vulnerabilities, analyze CVEs, or cross-reference MITRE ATT&CK techniques.",
+           style={"color": "#AAA"}),
+
+    dcc.Textarea(
+        id="llm-prompt",
+        placeholder="e.g., Summarize all high-severity CVEs discovered by Nmap and OpenVAS...",
+        style={
+            "width": "100%",
+            "height": "180px",
+            "backgroundColor": "#222",
+            "color": "#EAAA00",
+            "borderRadius": "6px",
+            "padding": "10px",
+            "border": "1px solid #444",
+        },
+    ),
+    html.Br(),
+    dbc.Button("Submit to LLM", id="llm-btn", color="warning", className="mt-2"),
+    html.Div(
+        id="llm-output",
+        style={
+            "whiteSpace": "pre-wrap",
+            "marginTop": "12px",
+            "color": "#EAAA00",
+            "backgroundColor": "#111",
+            "padding": "10px",
+            "borderRadius": "6px",
+            "border": "1px solid #333"
+        }
+    )
+])
+
+
+# ----------------------------
+# LLM Tab Callback
+# ----------------------------
+@app.callback(
+    Output("llm-output", "children"),
+    Input("llm-btn", "n_clicks"),
+    State("llm-prompt", "value"),
+    prevent_initial_call=True
+)
+def process_llm(n_clicks, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    result = call_llm(text)
+    return result
+
+
+# ==========================================================
+#  CHATBOT TAB — Interactive Vulnerability Assistant
+# ==========================================================
+
+def query_findings_for_context(query_text: str) -> str:
+    """Lightweight retrieval: pull relevant rows from findings.db."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query(
+            "SELECT host, port, service, severity, cve_id, description "
+            "FROM findings WHERE severity IS NOT NULL AND cve_id IS NOT NULL", conn)
+        conn.close()
+        if df.empty:
+            return "No vulnerability data available in database."
+
+        # basic filter by keywords (host/IP or severity)
+        q = query_text.lower()
+        mask = df.apply(lambda r: any(qword in str(r).lower() for qword in q.split()), axis=1)
+        subset = df[mask].head(10)
+        if subset.empty:
+            subset = df.sample(min(5, len(df)))  # fallback sample
+        return subset.to_string(index=False)
+    except Exception as e:
+        return f"DB query failed: {e}"
+
+
+def chatbot_llm(prompt: str) -> str:
+    """Send prompt + contextual findings to OpenAI for reasoning."""
+    if not OPENAI_API_KEY:
+        return "⚠️ OpenAI key missing."
+
+    try:
+        context = query_findings_for_context(prompt)
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": OPENAI_MODEL,
+            "messages": [
+                {"role": "system", "content": (
+                    "You are a cybersecurity analyst.  "
+                    "Use the vulnerability data below to answer user questions clearly and concisely."
+                )},
+                {"role": "user", "content": f"User question: {prompt}\n\nVulnerability data:\n{context}"}
+            ],
+            "temperature": 0.4
+        }
+        r = requests.post("https://api.openai.com/v1/chat/completions",
+                          headers=headers, json=data, timeout=25)
+        r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"Chatbot error: {e}"
+
+
+# ----------------------------
+# Chatbot Tab Layout
+# ----------------------------
+chatbot_tab = html.Div([
+    html.H3("💬 Chatbot — Vulnerability Advisor", className="text-warning"),
+    html.P("Ask natural-language questions about discovered vulnerabilities or CVE patterns.",
+           style={"color": "#AAA"}),
+
+    dcc.Textarea(
+        id="chatbot-input",
+        placeholder="e.g., What hosts have critical CVEs? Summarize OpenVAS results.",
+        style={
+            "width": "100%", "height": "160px", "backgroundColor": "#222",
+            "color": "#EAAA00", "borderRadius": "6px", "padding": "10px",
+            "border": "1px solid #444",
+        },
+    ),
+    html.Br(),
+    dbc.Button("Ask Chatbot", id="chatbot-btn", color="warning", className="mt-2"),
+    html.Div(
+        id="chatbot-output",
+        style={
+            "whiteSpace": "pre-wrap", "marginTop": "12px",
+            "color": "#EAAA00", "backgroundColor": "#111",
+            "padding": "10px", "borderRadius": "6px", "border": "1px solid #333"
+        }
+    ),
+])
+
+
+# ----------------------------
+# Chatbot Callback
+# ----------------------------
+@app.callback(
+    Output("chatbot-output", "children"),
+    Input("chatbot-btn", "n_clicks"),
+    State("chatbot-input", "value"),
+    prevent_initial_call=True
+)
+def handle_chatbot_query(n_clicks, text):
+    if not text:
+        raise dash.exceptions.PreventUpdate
+    return chatbot_llm(text)
+
+
+
+
+
+# ==========================================================
+#  ASSESSMENT TAB — Automated Scanning + Import/Export
+# ==========================================================
+
+LAB_WHITELIST = ["192.168.", "10.", "172.16."]  # adjust if needed
+
+UPLOAD_DIR = Path("/root/vuln_intel/app/data/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def allowed_target(ip: str) -> bool:
+    """Restrict scans to lab/private ranges."""
+    return any(ip.startswith(prefix) for prefix in LAB_WHITELIST)
+
+
+def run_nmap_scan(targets: list[str]) -> str:
+    """Run Nmap verbose scan; save XML; return path."""
+    xml_path = UPLOAD_DIR / f"nmap_scan_{int(time.time())}.xml"
+    cmd = ["nmap", "-sV", "-T4", "-v", "-oX", str(xml_path)] + targets
+    append_status(f"Starting Nmap scan on: {', '.join(targets)}")
+    subprocess.run(cmd, capture_output=True, text=True)
+    append_status(f"Nmap scan completed → {xml_path}")
+    return str(xml_path)
+
+
+def parse_and_ingest(xml_file: str):
+    """Parse Nmap XML and insert findings into SQLite."""
+    try:
+        from xml.etree import ElementTree as ET
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        for host in root.findall("host"):
+            addr = host.find("address").attrib.get("addr", "unknown")
+            for port in host.findall(".//port"):
+                portid = port.attrib.get("portid")
+                service = port.find("service")
+                name = service.attrib.get("name") if service is not None else None
+                cur.execute(
+                    "INSERT INTO findings (host, port, service, severity, source, import_date) VALUES (?, ?, ?, ?, ?, ?)",
+                    (addr, portid, name, "info", "nmap", datetime.now().isoformat())
+                )
+        conn.commit()
+        conn.close()
+        append_status(f"Parsed and ingested Nmap XML results from {xml_file}")
+    except Exception as e:
+        append_status(f"XML ingest failed: {e}")
+
+
+# ----------------------------
+# Assessment Tab Layout
+# ----------------------------
+assessment_tab = html.Div([
+    html.H3("🧩 Assessment — Trigger Scans & Manage Results", className="text-warning"),
+    html.P("Run Nmap/OpenVAS/Nessus/Burp scans against lab IPs only.", style={"color": "#AAA"}),
+
+    dbc.Row([
+        dbc.Col([
+            html.Label("Select Scanner:"),
+            dcc.Dropdown(
+                id="scanner-select",
+                options=[
+                    {"label": "Nmap", "value": "nmap"},
+                    {"label": "OpenVAS", "value": "openvas"},
+                    {"label": "Nessus", "value": "nessus"},
+                    {"label": "Burp Suite", "value": "burp"},
+                ],
+                placeholder="Choose scanner",
+                style={"color": "#000"}
+            ),
+        ], width=3),
+        dbc.Col([
+            html.Label("Target IP(s):"),
+            dcc.Input(id="target-input", type="text", placeholder="192.168.1.10, 192.168.1.11", style={"width": "100%"})
+        ], width=6),
+        dbc.Col([
+            html.Label("or Upload targets.txt:"),
+            dcc.Upload(
+                id="target-upload",
+                children=html.Div(["📄 Drag & Drop or Click to Upload"]),
+                style={
+                    "width": "100%", "height": "40px", "lineHeight": "40px",
+                    "borderWidth": "1px", "borderStyle": "dashed",
+                    "borderRadius": "5px", "textAlign": "center", "backgroundColor": "#222", "color": "#EAAA00"
+                },
+                multiple=False
+            )
+        ], width=3),
+    ], className="mb-3"),
+
+    dbc.Button("▶️ Start Scan", id="scan-btn", color="warning", className="mb-3"),
+    html.Pre(id="scan-status", style={"backgroundColor": "#111", "color": "#EAAA00", "padding": "10px"}),
+
+    html.Hr(),
+    html.H5("📥 CSV Import / Export"),
+    dbc.Row([
+        dbc.Col([
+            dcc.Upload(
+                id="csv-upload",
+                children=html.Div(["📄 Upload findings.csv"]),
+                style={
+                    "width": "100%", "height": "40px", "lineHeight": "40px",
+                    "borderWidth": "1px", "borderStyle": "dashed",
+                    "borderRadius": "5px", "textAlign": "center",
+                    "backgroundColor": "#222", "color": "#EAAA00"
+                },
+                multiple=False
+            )
+        ], width=6),
+        dbc.Col([
+            html.A("⬇️ Download current findings.csv", href="/download_csv", target="_blank",
+                   className="btn btn-warning")
+        ], width=6)
+    ])
+])
+
+
+# ----------------------------
+# Assessment Callbacks
+# ----------------------------
+@app.callback(
+    Output("scan-status", "children"),
+    Input("scan-btn", "n_clicks"),
+    State("scanner-select", "value"),
+    State("target-input", "value"),
+    State("target-upload", "contents"),
+    prevent_initial_call=True
+)
+def trigger_scan(n, scanner, targets_text, uploaded_file):
+    if not scanner:
+        return "⚠️ Please select a scanner."
+
+    targets = []
+    if uploaded_file:
+        content_type, content_string = uploaded_file.split(",")
+        decoded = base64.b64decode(content_string).decode("utf-8")
+        targets = [t.strip() for t in decoded.splitlines() if t.strip()]
+    elif targets_text:
+        targets = [t.strip() for t in targets_text.split(",") if t.strip()]
+
+    allowed = [t for t in targets if allowed_target(t)]
+    if not allowed:
+        return "⚠️ No valid targets (must match whitelisted ranges)."
+
+    if scanner == "nmap":
+        xml_path = run_nmap_scan(allowed)
+        parse_and_ingest(xml_path)
+        return f"Nmap scan complete. Results imported from {xml_path}."
+
+    return f"{scanner} scanner selected — integration placeholder."
+
+
+# ----------------------------
+# CSV Import Callback
+# ----------------------------
+@app.callback(
+    Output("scan-status", "children", allow_duplicate=True),
+    Input("csv-upload", "contents"),
+    prevent_initial_call=True
+)
+def upload_csv(content):
+    if not content:
+        raise dash.exceptions.PreventUpdate
+    try:
+        content_type, content_string = content.split(",")
+        decoded = base64.b64decode(content_string).decode("utf-8")
+        df = pd.read_csv(pd.compat.StringIO(decoded))
+        conn = sqlite3.connect(DB_PATH)
+        df.to_sql("findings", conn, if_exists="append", index=False)
+        conn.close()
+        append_status("CSV findings imported successfully.")
+        return "✅ CSV imported and added to findings.db"
+    except Exception as e:
+        return f"CSV import failed: {e}"
+
+
+
+# ==========================================================
+#  GRAPH VIEW TAB — Neo4j Integration + Visualization
+# ==========================================================
+
+from neo4j import GraphDatabase
+
+# --- Neo4j Config ---
+NEO4J_URI = "bolt://localhost:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PW = "Adomaa12@"
+
+# --- Helper: Neo4j Connection ---
+def push_findings_to_neo4j():
+    """Push current SQLite findings into Neo4j."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT host, port, service, severity, cve_id, source FROM findings", conn)
+        conn.close()
+
+        driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PW))
+        with driver.session() as session:
+            session.run("MATCH (n) DETACH DELETE n")  # reset for clean sync
+            for _, row in df.iterrows():
+                cypher = """
+                MERGE (a:Asset {host:$host})
+                MERGE (v:Vulnerability {cve_id:COALESCE($cve_id, 'Unknown'), severity:$severity, source:$source})
+                MERGE (a)-[:HAS_VULNERABILITY]->(v)
+                """
+                session.run(cypher, dict(
+                    host=row["host"],
+                    cve_id=row["cve_id"],
+                    severity=row["severity"],
+                    source=row["source"]
+                ))
+        driver.close()
+        append_status("Neo4j graph updated successfully.")
+        return "✅ Neo4j sync complete!"
+    except Exception as e:
+        append_status(f"Neo4j sync failed: {e}")
+        return f"❌ Neo4j error: {e}"
+
+
+def get_graph_summary():
+    """Get a simple vulnerability count per host from Neo4j."""
+    try:
+        driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PW))
+        with driver.session() as session:
+            result = session.run("""
+                MATCH (a:Asset)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+                RETURN a.host AS host, count(v) AS vulns
+                ORDER BY vulns DESC
+                LIMIT 20
+            """)
+            records = [{"host": r["host"], "vulns": r["vulns"]} for r in result]
+        driver.close()
+        return pd.DataFrame(records)
+    except Exception as e:
+        return pd.DataFrame([{"host": "Error", "vulns": str(e)}])
+
+
+# ----------------------------
+# Graph View Tab Layout
+# ----------------------------
+graph_tab = html.Div([
+    html.H3("🕸️ Attack Graph — Neo4j Integration", className="text-warning"),
+    html.P("Visualize relationships between assets and vulnerabilities.", style={"color": "#AAA"}),
+
+    dbc.Row([
+        dbc.Col([
+            dbc.Button("🔄 Sync Findings to Neo4j", id="neo4j-sync-btn", color="warning", className="mb-3"),
+            html.Div(id="neo4j-sync-status", style={"color": "#EAAA00", "marginBottom": "10px"}),
+        ], width=4),
+        dbc.Col([
+            html.A("🌐 Open Neo4j Browser", href="http://localhost:7474/browser", target="_blank", className="btn btn-secondary")
+        ], width=4)
+    ], justify="center"),
+
+    html.Div(id="graph-summary-container", children=[
+        html.H5("Top Vulnerable Hosts", style={"color": "#EAAA00"}),
+        dcc.Graph(id="graph-summary-plot", style={"height": "400px", "backgroundColor": "#111"})
+    ])
+])
+
+
+# ----------------------------
+# Graph View Callbacks
+# ----------------------------
+@app.callback(
+    Output("neo4j-sync-status", "children"),
+    Input("neo4j-sync-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def sync_to_neo4j(n):
+    msg = push_findings_to_neo4j()
+    return msg
+
+
+@app.callback(
+    Output("graph-summary-plot", "figure"),
+    Input("neo4j-sync-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def update_graph_summary(_):
+    df = get_graph_summary()
+    if df.empty:
+        return px.bar(title="No Neo4j Data Found")
+
+    fig = px.bar(
+        df,
+        x="host", y="vulns",
+        title="Top Vulnerable Assets (Neo4j Data)",
+        labels={"vulns": "Vulnerability Count", "host": "Host"},
+        color="vulns",
+        color_continuous_scale="Oranges"
+    )
+    fig.update_layout(
+        paper_bgcolor="#111", plot_bgcolor="#111",
+        font_color="#EAAA00", height=400
+    )
+    return fig
+
+ 
+
+# ==========================================================
+#  VOICE ASSISTANT TAB — Speech to Text + OpenAI Integration
+# ==========================================================
+
+import speech_recognition as sr
+import pyttsx3
+
+def speak_text(text: str):
+    """Convert text to spoken audio locally (TTS)."""
+    try:
+        engine = pyttsx3.init()
+        engine.setProperty("rate", 160)
+        engine.setProperty("volume", 1.0)
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as e:
+        append_status(f"TTS error: {e}")
+
+def listen_to_voice():
+    """Capture speech input from microphone and transcribe."""
+    recognizer = sr.Recognizer()
+    mic = sr.Microphone()
+    with mic as source:
+        append_status("Listening for voice input...")
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.listen(source)
+    try:
+        text = recognizer.recognize_google(audio)
+        append_status(f"Recognized: {text}")
+        return text
+    except sr.UnknownValueError:
+        return "Sorry, I could not understand the audio."
+    except sr.RequestError as e:
+        return f"Speech recognition error: {e}"
+
+voice_tab = html.Div([
+    html.H3("🎙️ Voice Assistant", className="text-warning"),
+    html.P("Speak your command to interact with the dashboard (e.g., 'Summarize high CVEs').", style={"color": "#AAA"}),
+
+    dbc.Button("🎧 Start Listening", id="voice-btn", color="warning", className="mb-3"),
+    html.Div(id="voice-status", style={"color": "#EAAA00", "marginBottom": "10px"}),
+
+    html.H5("Recognized Text", style={"color": "#EAAA00"}),
+    html.Div(id="recognized-text", style={"color": "#FFF", "whiteSpace": "pre-wrap"}),
+
+    html.H5("Assistant Reply", style={"color": "#EAAA00"}),
+    html.Div(id="voice-reply", style={"color": "#FFF", "whiteSpace": "pre-wrap"}),
+
+    dbc.Checklist(
+        id="voice-options",
+        options=[{"label": "Speak Reply", "value": "tts"}],
+        value=[],
+        inline=True,
+        style={"marginTop": "10px", "color": "#FFF"}
+    ),
+])
+
+@app.callback(
+    [Output("voice-status", "children"),
+     Output("recognized-text", "children"),
+     Output("voice-reply", "children")],
+    [Input("voice-btn", "n_clicks")],
+    [State("voice-options", "value")],
+    prevent_initial_call=True
+)
+def handle_voice_command(n, options):
+    status = "🎤 Listening..."
+    text = listen_to_voice()
+    if not text:
+        return "❌ No audio captured.", "", ""
+    reply = call_llm(text)
+    if "tts" in options:
+        speak_text(reply)
+    return f"✅ You said: {text}", text, reply
+

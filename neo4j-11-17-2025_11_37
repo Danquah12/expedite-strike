@@ -1,0 +1,262 @@
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+from neo4j import GraphDatabase
+import logging
+import requests
+
+# ==========================================================
+#  LOGGING SETUP
+# ==========================================================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("neo4j_integration")
+
+# ==========================================================
+#  NEO4J CONNECTION CONFIG
+# ==========================================================
+NEO4J_URI = "bolt://localhost:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASS = "Adomaa12@"
+
+
+def get_driver():
+    """Initialize Neo4j driver connection"""
+    return GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASS))
+
+
+# ==========================================================
+#  CONSTRAINTS
+# ==========================================================
+def init_constraints():
+    """Create unique constraints for node types"""
+    driver = get_driver()
+    with driver.session() as session:
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (a:Asset) REQUIRE a.host IS UNIQUE")
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (s:Service) REQUIRE (s.name, s.port) IS UNIQUE")
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (v:Vulnerability) REQUIRE v.id IS UNIQUE")
+        session.run("CREATE CONSTRAINT IF NOT EXISTS FOR (scan:Scan) REQUIRE scan.id IS UNIQUE")
+    driver.close()
+
+
+# ==========================================================
+#  IMPORT NMAP XML
+# ==========================================================
+def import_nmap_hosts_to_neo4j(xml_path: str):
+    """
+    Parse Nmap XML and import into Neo4j as Assets, Services, and Scan records.
+    Creates (:Scan)-[:DISCOVERED]->(:Asset)-[:RUNS_SERVICE]->(:Service)
+    """
+    logger.info(f"📡 Importing Nmap data from {xml_path}")
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        scan_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        scan_id = os.path.basename(xml_path).replace(".xml", "")
+
+        driver = get_driver()
+        with driver.session() as session:
+            session.run("""
+                MERGE (scan:Scan {id:$id})
+                SET scan.date=$date, scan.source_file=$file
+            """, {"id": scan_id, "date": scan_time, "file": xml_path})
+
+            count = 0
+            for host in root.findall("host"):
+                addr_el = host.find("address[@addrtype='ipv4']")
+                if addr_el is None:
+                    continue
+                ip_addr = addr_el.get("addr")
+
+                session.run("""
+                    MERGE (a:Asset {host:$host})
+                    SET a.last_seen=$time
+                    MERGE (scan:Scan {id:$scan_id})
+                    MERGE (scan)-[:DISCOVERED]->(a)
+                """, {"host": ip_addr, "time": scan_time, "scan_id": scan_id})
+
+                for port in host.findall("ports/port"):
+                    state = port.find("state")
+                    if state is None or state.get("state") != "open":
+                        continue
+
+                    portid = port.get("portid")
+                    service = port.find("service")
+                    if service is None:
+                        continue
+
+                    s_name = service.get("name", "unknown")
+                    s_prod = service.get("product", "unknown")
+                    s_ver = service.get("version", "")
+                    cpe_el = service.find("cpe")
+                    cpe = cpe_el.text if cpe_el is not None else None
+
+                    session.run("""
+                        MERGE (s:Service {name:$name, port:$port})
+                        SET s.product=$prod, s.version=$ver, s.cpe=$cpe
+                        WITH s
+                        MATCH (a:Asset {host:$host})
+                        MERGE (a)-[:RUNS_SERVICE]->(s)
+                    """, {
+                        "host": ip_addr, "name": s_name, "prod": s_prod,
+                        "ver": s_ver, "cpe": cpe, "port": portid
+                    })
+                    count += 1
+
+        driver.close()
+        logger.info(f"✅ Imported {count} Nmap entries for scan '{scan_id}'")
+        return count
+
+    except Exception as e:
+        logger.error(f"❌ Error importing Nmap XML: {e}")
+        return 0
+
+
+# ==========================================================
+#  ENRICH CVES FROM NVD
+# ==========================================================
+def enrich_cves_from_nvd(limit=50):
+    """
+    Fetch CVE details from NVD API and enrich vulnerabilities in Neo4j.
+    Also creates missing CVEs for CPE-mapped services.
+    """
+    logger.info("🧠 Starting NVD enrichment process...")
+    NVD_API = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+    driver = get_driver()
+
+    with driver.session() as session:
+        q = """
+        MATCH (v:Vulnerability)
+        WHERE v.id STARTS WITH 'CVE-'
+          AND (v.cvss IS NULL OR v.last_updated IS NULL OR v.last_updated < date() - duration('P30D'))
+        RETURN v.id AS cve
+        LIMIT $limit
+        """
+        vulns = [r["cve"] for r in session.run(q, {"limit": limit})]
+
+        if not vulns:
+            logger.info("✅ No CVEs pending enrichment. Attempting to generate from CPEs.")
+            driver.close()
+            return
+
+        for cve_id in vulns:
+            try:
+                resp = requests.get(f"{NVD_API}?cveId={cve_id}", timeout=15)
+                if resp.status_code != 200:
+                    continue
+
+                data = resp.json()
+                items = data.get("vulnerabilities", [])
+                if not items:
+                    continue
+
+                cve_info = items[0]["cve"]
+                desc = cve_info["descriptions"][0]["value"]
+                metrics = cve_info.get("metrics", {})
+                cvss = None
+                if "cvssMetricV31" in metrics:
+                    cvss = metrics["cvssMetricV31"][0]["cvssData"]["baseScore"]
+                elif "cvssMetricV2" in metrics:
+                    cvss = metrics["cvssMetricV2"][0]["cvssData"]["baseScore"]
+
+                session.run("""
+                    MATCH (v:Vulnerability {id:$cve})
+                    SET v.description=$desc,
+                        v.cvss=$cvss,
+                        v.last_updated=date()
+                """, {"cve": cve_id, "desc": desc, "cvss": cvss})
+
+                logger.info(f"✅ Updated {cve_id} (CVSS: {cvss})")
+
+            except Exception as e:
+                logger.warning(f"⚠️ Error updating {cve_id}: {e}")
+
+    driver.close()
+    logger.info("✅ NVD enrichment complete.")
+
+
+# ==========================================================
+#  AUTO-LINK SERVICES → VULNERABILITIES
+# ==========================================================
+def auto_link_vulnerabilities():
+    """
+    Automatically link Services to Vulnerabilities based on CPE and description match.
+    """
+    logger.info("🔗 Starting auto-linking of Services to Vulnerabilities...")
+    driver = get_driver()
+
+    with driver.session() as session:
+        q = """
+        MATCH (s:Service)
+        WHERE s.cpe IS NOT NULL
+        WITH s, split(replace(s.cpe, 'cpe:/a:', ''), ':') AS parts
+        WITH s, parts[0] AS vendor, parts[1] AS product
+        MATCH (v:Vulnerability)
+        WHERE toLower(v.id) CONTAINS toLower(product)
+           OR toLower(v.description) CONTAINS toLower(product)
+           OR toLower(v.description) CONTAINS toLower(vendor)
+        MERGE (s)-[r:HAS_VULNERABILITY {linked_at: datetime()}]->(v)
+        SET r.cvss = v.cvss
+        RETURN s.name AS service, count(v) AS vulns
+        """
+        results = session.run(q)
+        summary = [(r["service"], r["vulns"]) for r in results]
+
+    driver.close()
+
+    if summary:
+        for svc, c in summary:
+            logger.info(f"  • Linked {c} vulnerabilities to service {svc}")
+    else:
+        logger.warning("⚠️ No vulnerabilities linked.")
+
+
+# ==========================================================
+#  ATTACK PATH DATA EXTRACTION (FOR DASHBOARD TAB 8)
+# ==========================================================
+def get_attack_path_data():
+    """
+    Build attack path elements for Cytoscape visualization.
+    Returns a list of nodes and edges representing:
+      (Asset) -[:RUNS_SERVICE]-> (Service) -[:HAS_VULNERABILITY]-> (Vulnerability)
+    """
+    driver = get_driver()
+    elements = []
+    try:
+        with driver.session() as session:
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+            OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, s.name AS service, s.port AS port, v.id AS vuln
+            """
+            for rec in session.run(q):
+                a, s, p, v = rec["asset"], rec["service"], rec["port"], rec["vuln"]
+                if a:
+                    elements.append({'data': {'id': a, 'label': 'Asset'}})
+                if s:
+                    sid = f"{s}:{p}"
+                    elements.append({'data': {'id': sid, 'label': 'Service'}})
+                    elements.append({'data': {'source': a, 'target': sid}})
+                if v:
+                    elements.append({'data': {'id': v, 'label': 'Vulnerability'}})
+                    elements.append({'data': {'source': sid, 'target': v}})
+        driver.close()
+        logger.info("✅ Attack path graph data generated successfully.")
+        return elements
+    except Exception as e:
+        logger.error(f"❌ Error building attack path data: {e}")
+        driver.close()
+        return []
+
+
+# ==========================================================
+#  FULL PIPELINE
+# ==========================================================
+def run_full_pipeline(nmap_path: str):
+    """Run full ingestion & enrichment pipeline."""
+    init_constraints()
+    count = import_nmap_hosts_to_neo4j(nmap_path)
+    if count > 0:
+        enrich_cves_from_nvd(limit=50)
+        auto_link_vulnerabilities()
+    else:
+        logger.warning("⚠️ No data imported from Nmap scan.")

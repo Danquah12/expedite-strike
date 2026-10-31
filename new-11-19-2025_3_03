@@ -1,0 +1,1971 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Towson University — Vulnerability Intelligence Dashboard
+FULL ENTERPRISE VERSION (PART 1 / 20)
+"""
+
+# ==========================================================
+#  PART 1 — CORE IMPORTS (SYSTEM, DASH, DATABASE, GRAPH)
+# ==========================================================
+
+# --- System + Performance ---
+import os
+import sys
+import time
+import subprocess
+import sqlite3
+import psutil
+from pathlib import Path
+from datetime import datetime
+
+# --- Data Handling ---
+import pandas as pd
+import plotly.express as px
+import xml.etree.ElementTree as ET
+
+# --- Dash Framework ---
+from dash import (
+    Dash, html, dcc,
+    Input, Output, State,
+    dash_table, no_update
+)
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
+
+# --- Optional UI Enhancements ---
+import dash_daq as daq
+
+# --- Neo4j Driver ---
+from neo4j import GraphDatabase
+
+# ==========================================================
+#  PART 1 — GLOBAL PROJECT SETTINGS
+# ==========================================================
+
+PROJECT_ROOT = "/root/vuln_intel"
+DB_PATH = f"{PROJECT_ROOT}/vuln_intel.db"
+STATUS_LOG = f"{PROJECT_ROOT}/app/status.log"
+
+# Ensure log directory exists
+Path(STATUS_LOG).write_text("=== Dashboard Initialized ===\n")
+
+# Ensure project root exists
+os.makedirs(PROJECT_ROOT, exist_ok=True)
+
+print("--------------------------------------------------------")
+print("[CONFIG] PROJECT_ROOT =", PROJECT_ROOT)
+print("[CONFIG] DB_PATH      =", DB_PATH)
+print("[CONFIG] STATUS_LOG   =", STATUS_LOG)
+print("--------------------------------------------------------")
+
+# ==========================================================
+#  PART 1 — OPENAI MODEL (OPTIONAL)
+# ==========================================================
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-4o"
+
+def call_llm(prompt):
+    """LLM helper (optional)."""
+    if not OPENAI_API_KEY:
+        return "⚠️ OPENAI_API_KEY not set."
+
+    try:
+        import requests
+        resp = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            json={"model": OPENAI_MODEL,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=20
+        )
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"LLM Error: {e}"
+
+# ==========================================================
+#  PART 1 — DASH INITIALIZATION
+# ==========================================================
+
+external_stylesheets = [dbc.themes.DARKLY]
+app = Dash(__name__, suppress_callback_exceptions=True,
+           external_stylesheets=external_stylesheets)
+app.title = "Towson Vulnerability Intelligence Dashboard"
+server = app.server
+
+print("[+] Dash Initialized Successfully")
+
+# ==========================================================
+#  PART 2 — DATABASE ENGINE + NMAP XML PARSER
+# ==========================================================
+
+import sqlite3
+import xml.etree.ElementTree as ET
+
+
+# ----------------------------------------------------------
+# 2.1 — Initialize Database (Findings + Services)
+# ----------------------------------------------------------
+def init_database():
+    """Create required tables if they do not exist."""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # Primary Findings Table (used by main dashboard)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS findings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset TEXT,
+            port INTEGER,
+            service TEXT,
+            version TEXT,
+            cve TEXT,
+            severity TEXT,
+            cvss REAL,
+            cpe TEXT,
+            description TEXT
+        )
+    """)
+
+    # Services Table (raw Nmap results)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_ip TEXT,
+            hostname TEXT,
+            port TEXT,
+            protocol TEXT,
+            state TEXT,
+            service TEXT,
+            product TEXT,
+            version TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("✅ SQLite initialized")
+
+
+# ----------------------------------------------------------
+# 2.2 — Parse Nmap XML Output
+# ----------------------------------------------------------
+def parse_nmap_xml(xml_path):
+    """Parse Nmap XML and return structured Python results."""
+    if not os.path.exists(xml_path):
+        return []
+
+    results = []
+
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        for host in root.findall("host"):
+            address = host.find("address").get("addr")
+
+            # hostname
+            hostname_tag = host.find("hostnames/hostname")
+            hostname = hostname_tag.get("name") if hostname_tag is not None else None
+
+            # ports
+            for port in host.findall("ports/port"):
+                port_id = port.get("portid")
+                proto = port.get("protocol")
+                state = port.find("state").get("state")
+
+                svc = port.find("service")
+                service_name = svc.get("name") if svc is not None else ""
+                product = svc.get("product") if svc is not None else ""
+                version = svc.get("version") if svc is not None else ""
+
+                results.append({
+                    "ip": address,
+                    "hostname": hostname,
+                    "port": port_id,
+                    "protocol": proto,
+                    "state": state,
+                    "service": service_name,
+                    "product": product,
+                    "version": version
+                })
+    except Exception as e:
+        print(f"❌ XML Parse Error: {e}")
+        return []
+
+    return results
+
+
+# ----------------------------------------------------------
+# 2.3 — Save XML Scan Results → SQLite
+# ----------------------------------------------------------
+def save_scan_to_database(parsed_results):
+    """Save parsed XML results into SQLite services table."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+
+        for r in parsed_results:
+            cur.execute("""
+                INSERT INTO services (
+                    asset_ip, hostname, port, protocol, state, service, product, version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                r.get("ip"),
+                r.get("hostname"),
+                r.get("port"),
+                r.get("protocol"),
+                r.get("state"),
+                r.get("service"),
+                r.get("product"),
+                r.get("version"),
+            ))
+
+        conn.commit()
+        conn.close()
+
+        print(f"✅ Saved {len(parsed_results)} service records to DB")
+
+    except Exception as e:
+        print(f"❌ SQLite Insert Error: {e}")
+        return False
+
+    return True
+
+
+# ----------------------------------------------------------
+# 2.4 — Load Findings (Normalized for Dash Tables)
+# ----------------------------------------------------------
+def load_findings():
+    """Load vulnerability data from SQLite and normalize column names."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query("SELECT * FROM findings", conn)
+        conn.close()
+
+        df = df.rename(columns={
+            "asset": "Asset",
+            "port": "Port",
+            "service": "Service",
+            "version": "Version",
+            "cve": "CVE",
+            "severity": "Severity",
+            "cvss": "CVSS",
+            "cpe": "CPE",
+            "description": "Description"
+        })
+
+        print(f"📌 Loaded {len(df)} findings from DB")
+        return df
+
+    except Exception as e:
+        print(f"❌ SQLite findings load error: {e}")
+        return pd.DataFrame(columns=[
+            "Asset", "Port", "Service", "Version",
+            "CVE", "Severity", "CVSS", "CPE", "Description"
+        ])
+
+
+# ==========================================================
+#  PART 3 — SCAN ENGINE (NMAP + UPLOAD SUPPORT)
+# ==========================================================
+
+import re
+import base64
+import subprocess
+
+
+# ----------------------------------------------------------
+# 3.1 — Extract IPs/Subnets From Uploaded File
+# ----------------------------------------------------------
+def extract_ips_from_text(text):
+    """
+    Accepts file content as text.
+    Returns list of IPv4 addresses + CIDR ranges.
+    """
+    pattern = r"\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b"
+    matches = re.findall(pattern, text)
+    return list(set(matches))  # unique only
+
+
+# ----------------------------------------------------------
+# 3.2 — Process Uploaded File (Dash Callback helper)
+# ----------------------------------------------------------
+def process_uploaded_file(contents):
+    """
+    Decode uploaded file content from Dash Upload component.
+    Returns extracted targets.
+    """
+    if not contents:
+        return []
+
+    try:
+        header, encoded = contents.split(",", 1)
+        raw_bytes = base64.b64decode(encoded)
+        text = raw_bytes.decode("utf-8", errors="ignore")
+
+        ip_list = extract_ips_from_text(text)
+        print(f"📥 Uploaded file extracted {len(ip_list)} targets.")
+        return ip_list
+
+    except Exception as e:
+        print(f"❌ Upload decode error: {e}")
+        return []
+
+
+# ----------------------------------------------------------
+# 3.3 — Normalize Target Inputs (Manual or Upload)
+# ----------------------------------------------------------
+def normalize_targets(raw_text):
+    """
+    Accepts: "192.168.1.1, 10.0.0.0/24 172.16.5.10"
+    Returns: ["192.168.1.1", "10.0.0.0/24", "172.16.5.10"]
+    """
+    if not raw_text:
+        return []
+
+    raw_text = raw_text.replace(",", " ")
+    tokens = [t.strip() for t in raw_text.split() if t.strip()]
+
+    # validate using regex
+    valid = []
+    for t in tokens:
+        if re.match(r"^(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?$", t):
+            valid.append(t)
+
+    return list(set(valid))  # unique only
+
+
+# ----------------------------------------------------------
+# 3.4 — Run Nmap Scan (Live Output Streaming)
+# ----------------------------------------------------------
+def run_nmap_scan(targets):
+    """
+    Executes an Nmap scan with XML output.
+    Streams terminal output LIVE.
+    Returns:
+        - XML output file path
+        - full verbose terminal text (for dashboard)
+    """
+
+    os.makedirs(f"{PROJECT_ROOT}/scans", exist_ok=True)
+    xml_output = f"{PROJECT_ROOT}/scans/nmap_scan_{int(time.time())}.xml"
+
+    cmd = [
+        "nmap",
+        "-sV",
+        "-O",
+        "-T4",
+        "-v",
+        "-oX", xml_output
+    ] + targets
+
+    print(f"▶️ Running Nmap: {' '.join(cmd)}")
+
+    verbose_log = ""
+
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+
+        # Read output line-by-line
+        for line in process.stdout:
+            print(line, end="")
+            verbose_log += line
+
+        process.wait()
+
+        if process.returncode != 0:
+            print("❌ Nmap returned an error.")
+
+    except Exception as e:
+        print(f"❌ Nmap execution failed: {e}")
+        return None, ""
+
+    print(f"📝 XML saved: {xml_output}")
+    return xml_output, verbose_log
+
+
+# ----------------------------------------------------------
+# 3.5 — FULL SCAN PIPELINE (Nmap → XML Parse → DB Save → Neo4j)
+# ----------------------------------------------------------
+def full_scan_pipeline(targets, trigger_neo4j=True):
+    """
+    Given a target list:
+        1. Run Nmap scan
+        2. Parse XML
+        3. Save to SQLite
+        4. Optional: Import into Neo4j
+    Returns dashboard-formatted status message.
+    """
+
+    if not targets:
+        return "⚠️ No valid targets provided."
+
+    # --- Step 1: Execute Nmap ---
+    xml_path, verbose = run_nmap_scan(targets)
+    if not xml_path:
+        return "❌ Nmap scan failed."
+
+    # --- Step 2: Parse XML ---
+    parsed = parse_nmap_xml(xml_path)
+    if not parsed:
+        return "⚠️ XML parsed but no services found."
+
+    # --- Step 3: Save results to SQLite ---
+    save_scan_to_database(parsed)
+
+    # --- Step 4: Import to Neo4j (Optional) ---
+    if trigger_neo4j:
+        try:
+            import_nmap_hosts_to_neo4j(parsed)
+            print("📡 Neo4j import complete.")
+        except Exception as e:
+            print(f"Neo4j Import Error: {e}")
+
+    return (
+        f"✅ Scan Complete\n"
+        f"Targets: {', '.join(targets)}\n"
+        f"Services parsed: {len(parsed)}\n"
+        f"XML File: {xml_path}\n\n"
+        f"---------------- Nmap Verbose Output ----------------\n"
+        f"{verbose}"
+    )
+
+# ==========================================================
+#  PART 12 — NEO4J GRAPH QUERY ENGINE (REAL DATA BACKEND)
+# ==========================================================
+
+def run_graph_query(category, graph_type):
+    """
+    Executes the correct Neo4j query based on graph_type.
+    Returns a list of nodes + edges ready for Cytoscape.
+    """
+
+    uri = "bolt://localhost:7687"
+    user = "neo4j"
+    password = "Adomaa12@"
+
+    try:
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+        session = driver.session()
+
+        print(f"[GRAPH] Running: {graph_type}")
+
+        # ==============================
+        # CORE RELATIONSHIP GRAPHS
+        # ==============================
+        if graph_type == "Asset-Service-Vulnerability Graph":
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+            OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, s.name AS service, s.port AS port,
+                   v.id AS vuln;
+            """
+
+        elif graph_type == "Service-Port Graph":
+            q = """
+            MATCH (s:Service)
+            RETURN s.name AS service, s.port AS port;
+            """
+
+        elif graph_type == "Asset-Vulnerability Impact Graph":
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN a.host AS asset, v.id AS vuln, v.cvss AS cvss;
+            """
+
+        # ==============================
+        # NETWORK TOPOLOGY
+        # ==============================
+        elif graph_type == "Network Topology Map":
+            q = """
+            MATCH (a:Asset)-[:CONNECTED_TO]->(b:Asset)
+            RETURN a.host AS src, b.host AS dst;
+            """
+
+        elif graph_type == "Subnet Communication Graph":
+            q = """
+            MATCH (a:Asset)-[:CONNECTED_TO]->(b:Asset)
+            RETURN a.subnet AS subnetA, b.subnet AS subnetB;
+            """
+
+        # ==============================
+        # EXPOSURE / VULNERABILITY
+        # ==============================
+        elif graph_type == "Critical Asset Exposure Graph":
+            q = """
+            MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            WHERE v.cvss >= 9.0
+            RETURN a.host AS asset, v.id AS vuln, v.cvss AS cvss;
+            """
+
+        elif graph_type == "Vulnerability Cluster Graph":
+            q = """
+            MATCH (v:Vulnerability)<-[:HAS_VULNERABILITY]-(:Service)-[:RUNS_SERVICE]->(a:Asset)
+            RETURN v.id AS vuln, a.host AS asset;
+            """
+
+        # ==============================
+        # ATTACK PATHS
+        # ==============================
+        elif graph_type == "Potential Attack Paths":
+            q = """
+            MATCH p = (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            RETURN p LIMIT 50;
+            """
+
+        elif graph_type == "Privilege Escalation Graph":
+            q = """
+            MATCH p = (u:User)-[:HAS_PRIV]->(p1:Privilege)-[:ESCALATES_TO]->(p2:Privilege)
+            RETURN p LIMIT 50;
+            """
+
+        # ==============================
+        # DEFAULT (failsafe)
+        # ==============================
+        else:
+            return [], [], f"⚠️ No query defined for graph type: {graph_type}"
+
+        # RUN QUERY
+        results = session.run(q)
+
+        nodes = {}
+        edges = []
+
+        # PARSE OUTPUT → Cytoscape
+        for record in results:
+            for key, val in record.items():
+
+                # Nodes
+                if val and key != "port" and key != "cvss":
+                    if val not in nodes:
+                        nodes[val] = {"data": {"id": val, "label": val}}
+
+            # Edges
+            keys = list(record.keys())
+            if len(keys) >= 2:
+                src = record[keys[0]]
+                dst = record[keys[1]]
+                if src and dst:
+                    edges.append({"data": {"source": src, "target": dst}})
+
+        driver.close()
+
+        return list(nodes.values()) + edges, f"✅ Loaded {len(nodes)} nodes and {len(edges)} edges."
+
+    except Exception as e:
+        print("Graph Query Error:", e)
+        return [], f"❌ Neo4j query failed: {e}"
+
+
+# ==========================================================
+#  PART 13 — Bind Graph UI → Graph Backend (Generate Button)
+# ==========================================================
+
+@app.callback(
+    Output("neo4j-cytoscape", "elements"),
+    Output("neo4j-graph-details", "children"),
+    Input("neo4j-generate-btn", "n_clicks"),
+    State("neo4j-category", "value"),
+    State("neo4j-graph-type", "value"),
+    prevent_initial_call=True
+)
+def generate_neo4j_graph(n, selected_category, selected_type):
+    if not n:
+        raise PreventUpdate
+
+    if not selected_category or not selected_type:
+        return [], "⚠️ Select both category and graph type."
+
+    # Run the real graph query
+    elements, status = run_graph_query(selected_category, selected_type)
+
+    # Graph Details Panel
+    detail_panel = html.Div([
+        html.H4("Graph Summary:", className="text-warning"),
+        html.P(f"🔹 Category: {selected_category}"),
+        html.P(f"🔹 Graph Type: {selected_type}"),
+        html.P(f"🔹 Status: {status}", style={"color": "#EAAA00"})
+    ])
+
+    return elements, detail_panel
+
+# ==========================================================
+#  PART 14 — Dynamic Graph Type Loader
+#  Updates graph-type dropdown when category changes
+# ==========================================================
+
+@app.callback(
+    Output("neo4j-graph-type", "options"),
+    Input("neo4j-category", "value")
+)
+def load_graph_types(category):
+    if not category:
+        return []
+
+    # Get list of graph types for the selected category
+    graph_types = GRAPH_DEFINITIONS.get(category, [])
+
+    # Convert to Dash Dropdown format
+    return [{"label": g, "value": g} for g in graph_types]
+
+# ==========================================================
+#  PART 15 — Neo4j Graph Info Panel (Node/Edge Stats)
+# ==========================================================
+
+@app.callback(
+    Output("neo4j-graph-details", "children"),
+    Input("neo4j-graph-view", "elements"),
+    prevent_initial_call=True
+)
+def update_graph_details(elements):
+
+    if not elements:
+        return html.Div(
+            "⚠️ No graph data available.",
+            style={"color": "#ff6666", "fontWeight": "bold"}
+        )
+
+    # ------------------------------
+    # Separate nodes vs edges
+    # ------------------------------
+    nodes = [el for el in elements if "source" not in el["data"]]
+    edges = [el for el in elements if "source" in el["data"]]
+
+    node_count = len(nodes)
+    edge_count = len(edges)
+
+    # ------------------------------
+    # Count node types (Asset, Service, Vulnerability)
+    # ------------------------------
+    type_counts = {}
+    for n in nodes:
+        label = n["data"].get("label", "Unknown")
+        type_counts[label] = type_counts.get(label, 0) + 1
+
+    # ------------------------------
+    # Severity statistics (Critical, High, Medium, Low)
+    # ------------------------------
+    severity_count = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+
+    for n in nodes:
+        label = n["data"].get("label", "")
+        if label == "Vulnerability":
+            cve_id = n["data"].get("id", "")
+            if "Critical" in cve_id:
+                severity_count["Critical"] += 1
+            elif "High" in cve_id:
+                severity_count["High"] += 1
+            elif "Medium" in cve_id:
+                severity_count["Medium"] += 1
+            else:
+                severity_count["Low"] += 1
+
+    # ------------------------------
+    # Auto Legend for colors
+    # ------------------------------
+    legend = html.Div([
+        html.H5("Graph Legend", style={"color":"#EAAA00"}),
+
+        html.Div("🟩 Asset Nodes", style={"color": "#28a745"}),
+        html.Div("🟦 Service Nodes", style={"color": "#007bff"}),
+        html.Div("🟥 Vulnerability Nodes", style={"color": "#dc3545"}),
+        html.Br(),
+    ])
+
+    # ------------------------------
+    # Assemble Info Panel
+    # ------------------------------
+    return html.Div([
+
+        html.H4("📊 Graph Summary", style={"color": "#EAAA00"}),
+
+        html.P(f"🧩 Total Nodes: {node_count}"),
+        html.P(f"🔗 Total Edges: {edge_count}"),
+
+        html.H5("📚 Node Types:", style={"marginTop": "10px"}),
+        html.Ul([html.Li(f"{t}: {c}") for t, c in type_counts.items()]),
+
+        html.H5("🔥 Vulnerability Severity:", style={"marginTop": "15px"}),
+        html.Ul([
+            html.Li(f"Critical: {severity_count['Critical']}"),
+            html.Li(f"High: {severity_count['High']}"),
+            html.Li(f"Medium: {severity_count['Medium']}"),
+            html.Li(f"Low: {severity_count['Low']}"),
+        ]),
+
+        html.Br(),
+        legend,
+
+        html.Div(
+            f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            style={"color": "#888", "marginTop": "15px", "fontStyle": "italic"}
+        )
+    ])
+
+
+# ==========================================================
+# PART 15 — Tab 7: Voice Assistant (Prototype)
+# ==========================================================
+
+def voice_tab():
+    return html.Div(
+        [
+            html.H2("🎙️ AI Voice Assistant (Prototype)", className="text-warning mb-4"),
+
+            html.P(
+                "Use your microphone to ask security questions, request summaries, "
+                "or trigger automated analysis. This feature is under active development.",
+                style={"color": "#bbb"}
+            ),
+
+            html.Br(),
+
+            # --- Voice Record Button ---
+            dbc.Button(
+                "🎤 Start Recording",
+                id="voice-record-btn",
+                color="warning",
+                className="mb-3",
+                style={"fontSize": "20px"},
+            ),
+
+            html.Div(
+                id="voice-status",
+                style={
+                    "marginTop": "10px",
+                    "color": "#EAAA00",
+                    "fontWeight": "bold"
+                },
+            ),
+
+            html.Hr(),
+
+            # --- AI Response Area ---
+            html.H4("Assistant Response:", className="text-info"),
+
+            html.Div(
+                id="voice-response",
+                style={
+                    "whiteSpace": "pre-wrap",
+                    "backgroundColor": "#111",
+                    "padding": "15px",
+                    "minHeight": "200px",
+                    "border": "1px solid #333",
+                    "borderRadius": "8px",
+                    "color": "#fff",
+                }
+            ),
+
+            html.Div(
+                "⚠️ Voice transcription powered by placeholder engine. "
+                "Upgrade to Whisper API for production use.",
+                style={"color": "#666", "marginTop": "20px", "fontSize": "14px"},
+            ),
+        ],
+        style={"padding": "25px"},
+    )
+
+
+# ==========================================================
+# PART 15 CALLBACKS — Voice Assistant
+# ==========================================================
+
+@app.callback(
+    [
+        Output("voice-status", "children"),
+        Output("voice-response", "children"),
+    ],
+    Input("voice-record-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def voice_assistant(n_clicks):
+    """
+    Placeholder logic.
+    Real version will connect to:
+      - Web microphone capture
+      - Whisper ASR
+      - GPT-4o for analysis
+    """
+
+    if not n_clicks:
+        raise PreventUpdate
+
+    # Simulated transcription + response
+    simulated_transcription = "User speech captured (simulation)."
+    simulated_response = (
+        "AI Assistant:\n"
+        "- Understood your request.\n"
+        "- Voice processing module is being integrated.\n"
+        "- Full voice conversation will be available soon!"
+    )
+
+    return (
+        "🎤 Recording complete!",
+        f"{simulated_transcription}\n\n{simulated_response}"
+    )
+
+# ==========================================================
+# PART 16 — TAB 8: Enterprise Graph API (Neo4j Graph Suite)
+# ==========================================================
+
+def tab8_neo4j_graph_api():
+    return html.Div(
+        [
+            html.H2("🌐 Enterprise Neo4j Graph Suite", className="text-warning mb-4"),
+
+            # Category Selector
+            html.H5("Select Graph Category", className="text-info"),
+            dcc.Dropdown(
+                id="graph-category",
+                options=[{"label": cat, "value": cat} for cat in GRAPH_DEFINITIONS],
+                placeholder="Choose category…",
+                clearable=False,
+                style={"width": "60%"},
+            ),
+
+            html.Br(),
+
+            # Graph Type Selector
+            html.H5("Select Graph Type", className="text-info"),
+            dcc.Dropdown(
+                id="graph-type",
+                placeholder="Choose graph…",
+                options=[],
+                clearable=False,
+                style={"width": "60%"},
+            ),
+
+            html.Br(),
+
+            dbc.Button(
+                "Generate Graph",
+                id="generate-graph-btn",
+                color="warning",
+                className="mb-4",
+                style={"fontSize": "18px"},
+            ),
+
+            html.Div(id="graph-status", className="text-info mb-3"),
+
+            # Cytoscape Graph Renderer
+            cyto.Cytoscape(
+                id="enterprise-graph-view",
+                layout={"name": "cose"},
+                style={
+                    "width": "100%",
+                    "height": "750px",
+                    "backgroundColor": "#0d0d0d",
+                    "border": "1px solid #EAAA00",
+                    "borderRadius": "8px",
+                },
+                elements=[],
+                stylesheet=[
+                    {"selector": "node",
+                     "style": {
+                         "label": "data(label)",
+                         "color": "white",
+                         "fontSize": "12px",
+                         "backgroundColor": "#EAAA00"
+                     }},
+                    {"selector": "edge",
+                     "style": {
+                         "line-color": "#888",
+                         "width": 2
+                     }},
+                ],
+            ),
+
+            html.Div(id="neo4j-graph-details",
+                style={
+                    "marginTop": "20px",
+                    "padding": "15px",
+                    "backgroundColor": "#1b1b1b",
+                    "border": "1px solid #EAAA00",
+                    "borderRadius": "8px"
+                }
+            )
+        ],
+        style={"padding": "25px"},
+    )
+# ==========================================================
+# PART 17 — Tab Switching Logic
+# ==========================================================
+
+@app.callback(
+    Output("tabs-content", "children"),
+    Input("tabs", "value")
+)
+def render_tab(selected):
+    if selected == "tab1":
+        return system_health_tab()
+
+    elif selected == "tab2":
+        return vulnerability_dashboard_tab()
+
+    elif selected == "tab3":
+        return neo4j_graph_tab()
+
+    elif selected == "tab4":
+        return llm_tab()
+
+    elif selected == "tab5":
+        return assessment_tab()
+
+    elif selected == "tab6":
+        return reporting_tab()
+
+    elif selected == "tab7":
+        return voice_tab()
+
+    elif selected == "tab8":
+        return tab8_neo4j_graph_api()
+
+    return html.Div("⚠️ Unknown tab selection", style={"color": "red"})
+
+
+# ==========================================================
+# PART 18 — Main Dash Layout (Navigation + Wrapper)
+# ==========================================================
+
+app.layout = html.Div(
+    [
+        html.H1(
+            "Towson University — Cyber Intelligence Dashboard",
+            style={
+                "textAlign": "center",
+                "color": "#EAAA00",
+                "marginTop": "20px",
+                "marginBottom": "20px",
+            }
+        ),
+
+        dcc.Tabs(
+            id="tabs",
+            value="tab1",
+            className="custom-tabs",
+            children=[
+                dcc.Tab(label="System Health", value="tab1"),
+                dcc.Tab(label="Vulnerability Dashboard", value="tab2"),
+                dcc.Tab(label="Neo4j Graphs", value="tab3"),
+                dcc.Tab(label="AI Assistant", value="tab4"),
+                dcc.Tab(label="Assessment Center", value="tab5"),
+                dcc.Tab(label="Reporting", value="tab6"),
+                dcc.Tab(label="Voice Assistant", value="tab7"),
+                dcc.Tab(label="Enterprise Graph Suite", value="tab8"),
+            ]
+        ),
+
+        html.Div(id="tabs-content", style={"padding": "25px"}),
+    ],
+    style={"backgroundColor": "#0d0d0d", "minHeight": "100vh"}
+)
+
+
+# ==========================================================
+# PART 19 — Callback Registration Hub
+# ==========================================================
+
+# --- Graph Category → Type Dropdown ---
+@app.callback(
+    Output("graph-type", "options"),
+    Input("graph-category", "value")
+)
+def update_graph_type(category):
+    if not category:
+        return []
+    return [{"label": t, "value": t} for t in GRAPH_DEFINITIONS[category]]
+
+
+# --- Generate Neo4j Enterprise Graph ---
+@app.callback(
+    [
+        Output("enterprise-graph-view", "elements"),
+        Output("graph-status", "children"),
+        Output("neo4j-graph-details", "children"),
+    ],
+    Input("generate-graph-btn", "n_clicks"),
+    State("graph-category", "value"),
+    State("graph-type", "value")
+)
+def run_graph_generation(n, category, gtype):
+
+    if not n:
+        raise PreventUpdate
+
+    if not category or not gtype:
+        return [], "❗ Select graph category & type.", ""
+
+    try:
+        elements, details = run_graph_query(category, gtype)
+
+        return (
+            elements,
+            f"✅ Loaded {gtype}",
+            details
+        )
+
+    except Exception as e:
+        return [], f"❌ Error: {str(e)}", ""
+
+
+
+# ==========================================================
+# PART 20 — App Runner
+# ==========================================================
+
+if __name__ == "__main__":
+    app.run_server(host="0.0.0.0", port=8050, debug=True)
+
+
+# ==========================================================
+#  TAB 4 — ASSESSMENT / SCANNING ENGINE
+# ==========================================================
+assessment_tab = html.Div(
+    [
+        html.H3("🧪 Automated Scanning & Asset Discovery",
+                className="text-warning mb-4"),
+
+        # ==========================
+        # UPLOAD TARGET LIST
+        # ==========================
+        html.H5("Upload IP/Subnet List", className="text-info"),
+        dcc.Upload(
+            id="upload-ip-file",
+            children=html.Div([
+                "📤 Drag & drop or ",
+                html.A("Select File", style={"color": "#00BCF2"})
+            ]),
+            style={
+                "width": "100%",
+                "height": "140px",
+                "lineHeight": "140px",
+                "borderWidth": "2px",
+                "borderStyle": "dashed",
+                "borderRadius": "10px",
+                "textAlign": "center",
+                "backgroundColor": "#1b1b1b",
+                "cursor": "pointer",
+            },
+            multiple=False,
+        ),
+
+        html.Br(),
+
+        html.Div(
+            id="uploaded-ip-preview",
+            style={
+                "whiteSpace": "pre-wrap",
+                "backgroundColor": "#111",
+                "color": "white",
+                "padding": "12px",
+                "borderRadius": "8px",
+                "minHeight": "100px",
+                "border": "1px solid #333",
+            },
+        ),
+
+        html.Br(),
+
+        # ==========================
+        # MANUAL TARGET ENTRY
+        # ==========================
+        html.H5("Manual Target Input", className="text-info"),
+        dcc.Input(
+            id="manual-target-input",
+            type="text",
+            placeholder="Example: 192.168.1.1 10.0.0.0/24",
+            style={"width": "70%", "padding": "10px"},
+        ),
+
+        html.Br(), html.Br(),
+
+        # ==========================
+        # SCANNER SELECTION
+        # ==========================
+        html.H5("Select Scanner", className="text-info"),
+        dcc.Dropdown(
+            id="scanner-select",
+            options=[
+                {"label": "Nmap (Network Discovery)", "value": "nmap"},
+                {"label": "OpenVAS (Coming Soon)", "value": "openvas"},
+                {"label": "Nessus (Coming Soon)", "value": "nessus"},
+                {"label": "Burp Suite (Web App Scan)", "value": "burp"},
+            ],
+            value="nmap",
+            style={"width": "50%"},
+            clearable=False,
+        ),
+
+        html.Br(),
+
+        # ==========================
+        # NEO4J IMPORT TOGGLE
+        # ==========================
+        dbc.Checklist(
+            options=[
+                {"label": "📡 Auto-import results into Neo4j", "value": 1}
+            ],
+            value=[1],
+            id="neo4j-toggle",
+            switch=True,
+        ),
+
+        html.Br(),
+
+        # ==========================
+        # RUN SCAN
+        # ==========================
+        dbc.Button(
+            "🚀 Run Scan",
+            id="run-scan-btn",
+            color="warning",
+            className="mb-3",
+            style={"fontSize": "18px"},
+        ),
+
+        # ==========================
+        # LIVE SCAN OUTPUT
+        # ==========================
+        html.Div(
+            id="scan-output",
+            style={
+                "whiteSpace": "pre-wrap",
+                "backgroundColor": "#000",
+                "color": "#00FF00",
+                "padding": "15px",
+                "borderRadius": "8px",
+                "minHeight": "300px",
+                "maxHeight": "500px",
+                "overflowY": "scroll",
+                "border": "1px solid #333",
+            },
+        ),
+
+        html.Br(),
+
+        # ======================================================
+        # NEW — NEO4J GRAPH DETAILS PANEL (from Part 11)
+        # ======================================================
+        html.Div(
+            id="neo4j-graph-details",
+            style={
+                "marginTop": "20px",
+                "padding": "15px",
+                "backgroundColor": "#1b1b1b",
+                "border": "1px solid #EAAA00",
+                "borderRadius": "8px"
+            }
+        ),
+    ],
+    style={"padding": "25px"},
+)
+
+# ----------------------------------------------------------
+# 4.2 — UPLOAD HANDLER CALLBACK
+# ----------------------------------------------------------
+@app.callback(
+    Output("uploaded-ip-preview", "children"),
+    Input("upload-ip-file", "contents"),
+)
+def show_uploaded_targets(contents):
+    if not contents:
+        return "No file uploaded."
+
+    targets = process_uploaded_file(contents)
+    if not targets:
+        return "⚠️ No valid IPs or subnets detected."
+
+    return "\n".join(targets)
+
+
+
+# ----------------------------------------------------------
+# 4.3 — FULL SCAN TRIGGER CALLBACK
+# ----------------------------------------------------------
+@app.callback(
+    Output("scan-output", "children"),
+    Input("run-scan-btn", "n_clicks"),
+    State("scanner-select", "value"),
+    State("manual-target-input", "value"),
+    State("upload-ip-file", "contents"),
+    State("neo4j-toggle", "value"),
+    prevent_initial_call=True,
+)
+def trigger_full_scan(n, scanner, manual_targets, uploaded_file, neo4j_flag):
+
+    # Step 1: Extract from upload
+    uploaded_targets = process_uploaded_file(uploaded_file) if uploaded_file else []
+
+    # Step 2: Extract from manual input
+    manual_list = normalize_targets(manual_targets) if manual_targets else []
+
+    # Merge both
+    targets = list(set(uploaded_targets + manual_list))
+
+    if not targets:
+        return "⚠️ No valid targets provided."
+
+    # Only Nmap is active
+    if scanner != "nmap":
+        return f"⚠️ Scanner '{scanner}' not implemented yet."
+
+    # Run full scan pipeline
+    auto_neo4j = bool(neo4j_flag)
+    output = full_scan_pipeline(targets, trigger_neo4j=auto_neo4j)
+
+    return output
+
+
+# ==========================================================
+#  PART 5 — NEO4J ENTERPRISE GRAPH QUERY ENGINE
+# ==========================================================
+
+# NOTE: This engine powers:
+# - Core Relationships
+# - Network Topology
+# - Attack Paths
+# - Vulnerability Exposure
+# - MITRE ATT&CK
+# - Service/Port Mapping
+# - CVE Intelligence
+# ==========================================================
+
+# ----------------------------------------------------------
+# 5.1 — MASTER GRAPH DEFINITION MAPPING
+# ----------------------------------------------------------
+GRAPH_QUERY_MAP = {
+
+    # ======================================================
+    # 1 — CORE RELATIONSHIP GRAPHS
+    # ======================================================
+    "Asset-Service-Vulnerability Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        OPTIONAL MATCH (s)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        RETURN a, s, v
+    """,
+
+    "Service-Port Graph": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    "Asset-Vulnerability Impact Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        RETURN a, v
+    """,
+
+    "Host-Service Dependency Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        RETURN a, s
+    """,
+
+    "Vulnerability Propagation Graph": """
+        MATCH (v:Vulnerability)-[:AFFECTS]->(s:Service)--(a:Asset)
+        RETURN v, s, a
+    """,
+
+
+    # ======================================================
+    # 2 — NETWORK TOPOLOGY
+    # ======================================================
+    "Network Topology Map": """
+        MATCH (a:Asset)-[r:CONNECTED_TO]->(b:Asset)
+        RETURN a, r, b
+    """,
+
+    "Subnet Communication Graph": """
+        MATCH (s:Subnet)-[:CONTAINS]->(a:Asset)
+        RETURN s, a
+    """,
+
+    "Host Connectivity Graph": """
+        MATCH (a:Asset)-[r:COMMUNICATES_WITH]->(b:Asset)
+        RETURN a, r, b
+    """,
+
+    "Port Exposure Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        RETURN a, s
+    """,
+
+
+    # ======================================================
+    # 3 — VULNERABILITY EXPOSURE
+    # ======================================================
+    "CVSS Severity Heat Graph": """
+        MATCH (v:Vulnerability)
+        RETURN v
+    """,
+
+    "Critical Asset Exposure Graph": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        WHERE v.cvss >= 7.0
+        RETURN a, v
+    """,
+
+    "Exploitability Graph": """
+        MATCH (v:Vulnerability)-[:HAS_EXPLOIT]->(e:Exploit)
+        RETURN v, e
+    """,
+
+    "Patch Availability Graph": """
+        MATCH (v:Vulnerability)-[:PATCH_AVAILABLE]->(p:Patch)
+        RETURN v, p
+    """,
+
+    "Vulnerability Cluster Graph": """
+        MATCH (v:Vulnerability)
+        RETURN v
+    """,
+
+
+    # ======================================================
+    # 4 — ATTACK PATH ANALYSIS
+    # ======================================================
+    "Potential Attack Paths": """
+        MATCH p = (a:Asset)-[:RUNS_SERVICE]->(:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        RETURN p
+    """,
+
+    "Privilege Escalation Graph": """
+        MATCH p = (u:User)-[:CAN_ESCALATE_TO]->(admin:Admin)
+        RETURN p
+    """,
+
+    "Lateral Movement Graph": """
+        MATCH p = (a:Asset)-[:LATERAL_MOVE_TO]->(b:Asset)
+        RETURN p
+    """,
+
+    "Critical Path to Domain Admin": """
+        MATCH p = shortestPath(
+            (start:Asset)-[:LATERAL_MOVE_TO*..10]->(da:DomainAdmin)
+        )
+        RETURN p
+    """,
+
+
+    # ======================================================
+    # 5 — CVE INTELLIGENCE
+    # ======================================================
+    "CVE-CVSS Graph": """
+        MATCH (v:Vulnerability)
+        RETURN v
+    """,
+
+    "CVE-CWE Graph": """
+        MATCH (v:Vulnerability)-[:HAS_CWE]->(c:CWE)
+        RETURN v, c
+    """,
+
+    "CVE-Exploit Graph": """
+        MATCH (v:Vulnerability)-[:HAS_EXPLOIT]->(e:Exploit)
+        RETURN v, e
+    """,
+
+    "CPE-CVE Resolution Graph": """
+        MATCH (cpe:CPE)-[:MATCHES]->(v:Vulnerability)
+        RETURN cpe, v
+    """,
+
+    "Vendor/Product Vulnerability Graph": """
+        MATCH (prod:Product)-[:HAS_VULN]->(v:Vulnerability)
+        RETURN prod, v
+    """,
+
+
+    # ======================================================
+    # 6 — SERVICE & PORT MAPPING
+    # ======================================================
+    "Service Version Distribution": """
+        MATCH (s:Service)
+        RETURN s
+    """,
+
+    "Open Port Map": """
+        MATCH (a:Asset)-[:RUNS_SERVICE]->(s:Service)
+        RETURN a, s
+    """,
+
+    "High-Risk Service Graph": """
+        MATCH (s:Service)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+        WHERE v.cvss >= 7.0
+        RETURN s, v
+    """,
+
+    "End-of-Life Software Graph": """
+        MATCH (s:Service {eol: true})
+        RETURN s
+    """,
+
+    "Service Misconfiguration Graph": """
+        MATCH (s:Service {misconfigured: true})
+        RETURN s
+    """,
+}
+
+# ==========================================================
+#  PART 6 — GRAPH RUNNER + CYTOSCAPE TRANSFORMER
+# ==========================================================
+
+def run_neo4j_graph_query(query_text):
+    """
+    Runs a Neo4j Cypher query and returns raw records.
+    """
+    try:
+        driver = GraphDatabase.driver("bolt://localhost:7687",
+                                      auth=("neo4j", "Adomaa12@"))
+
+        with driver.session() as session:
+            result = session.run(query_text)
+            data = list(result)
+
+        driver.close()
+        return data, None
+
+    except Exception as e:
+        return None, f"Neo4j Error: {str(e)}"
+
+
+# ----------------------------------------------------------
+# 6.1 — Convert Neo4j Result → Cytoscape Nodes/Edges
+# ----------------------------------------------------------
+def neo4j_to_cytoscape(records):
+    """
+    Takes Neo4j records (list of dicts) and converts to Cytoscape format.
+    Handles nodes, edges, paths, and variable-length results.
+    """
+
+    nodes = {}
+    edges = []
+
+    if not records:
+        return [], "⚠️ No results from Neo4j."
+
+    for rec in records:
+        for value in rec.values():
+
+            # -----------------------
+            # If data is a PATH
+            # -----------------------
+            if hasattr(value, "nodes"):
+                for i, node in enumerate(value.nodes):
+
+                    node_id = str(node.element_id)
+                    nodes[node_id] = {
+                        "data": {
+                            "id": node_id,
+                            "label": list(node.labels)[0] if node.labels else "Node",
+                            **dict(node)  # properties
+                        }
+                    }
+
+                    # edges inside path
+                    if i < len(value.relationships):
+                        rel = value.relationships[i]
+                        edges.append({
+                            "data": {
+                                "source": str(rel.start_node.element_id),
+                                "target": str(rel.end_node.element_id),
+                                "label": rel.type
+                            }
+                        })
+
+            # -----------------------
+            # If data is a NODE
+            # -----------------------
+            elif hasattr(value, "labels"):
+                node_id = str(value.element_id)
+                nodes[node_id] = {
+                    "data": {
+                        "id": node_id,
+                        "label": list(value.labels)[0],
+                        **dict(value)
+                    }
+                }
+
+            # -----------------------
+            # If data is a RELATIONSHIP
+            # -----------------------
+            elif hasattr(value, "type"):
+                edges.append({
+                    "data": {
+                        "source": str(value.start_node.element_id),
+                        "target": str(value.end_node.element_id),
+                        "label": value.type
+                    }
+                })
+
+    # Deduplicate nodes
+    node_list = list(nodes.values())
+
+    return node_list + edges, None
+
+
+# ----------------------------------------------------------
+# 6.2 — MASTER GRAPH EXECUTION HELPER
+# ----------------------------------------------------------
+def generate_enterprise_graph(graph_type):
+    """
+    1. Looks up Cypher query from GRAPH_QUERY_MAP  
+    2. Executes it  
+    3. Converts to Cytoscape  
+    """
+
+    if graph_type not in GRAPH_QUERY_MAP:
+        return [], f"❗ Graph type not found: {graph_type}"
+
+    cypher = GRAPH_QUERY_MAP[graph_type]
+
+    # Run query
+    records, err = run_neo4j_graph_query(cypher)
+    if err:
+        return [], err
+
+    # Convert to Cytoscape elements
+    elements, err = neo4j_to_cytoscape(records)
+    if err:
+        return [], err
+
+    return elements, f"✅ Graph ready: {graph_type}"
+
+
+# ==========================================================
+#  PART 7 — TAB 3 GRAPH CALLBACKS (ENTERPRISE GRAPH SUITE)
+# ==========================================================
+
+# ----------------------------------------------------------
+# 7.1 — Graph Category → Graph Type List
+# ----------------------------------------------------------
+@app.callback(
+    Output("graph-type-dropdown", "options"),
+    Input("graph-category-dropdown", "value")
+)
+def update_graph_types(category):
+    if not category:
+        return []
+
+    type_list = GRAPH_DEFINITIONS.get(category, [])
+
+    return [{"label": t, "value": t} for t in type_list]
+
+
+# ----------------------------------------------------------
+# 7.2 — Generate Graph (Runs Neo4j → Graph Engine)
+# ----------------------------------------------------------
+@app.callback(
+    Output("neo4j-graph-view", "elements"),
+    Output("neo4j-graph-status", "children"),
+    Input("generate-graph-btn", "n_clicks"),
+    State("graph-category-dropdown", "value"),
+    State("graph-type-dropdown", "value")
+)
+def build_enterprise_graph(n, category, graph_type):
+    if not n:
+        raise PreventUpdate
+
+    if not category or not graph_type:
+        return [], "⚠️ Select a category AND graph type."
+
+    # Run engine
+    elements, status = generate_enterprise_graph(graph_type)
+
+    return elements, status
+
+
+
+@app.callback(
+    Output("tabs-content", "children"),
+    Input("tabs", "value")
+)
+def render_tab(tab):
+
+
+# ==========================================================
+#  PART 9 — NEO4J GRAPH PERFORMANCE BOOST SUITE
+#  (Large Graph Protection + Faster Rendering)
+# ==========================================================
+
+# Max allowed nodes to protect browser memory
+MAX_GRAPH_NODES = 1500
+
+# Timeout for heavy queries
+NEO4J_QUERY_TIMEOUT_MS = 8000  # 8 seconds
+
+
+# ----------------------------------------------------------
+# 9.1 — Safe Query Execution Wrapper (Timeout + Error)
+# ----------------------------------------------------------
+def safe_neo4j_run(driver, cypher):
+    try:
+        with driver.session() as session:
+            result = session.run(
+                cypher,
+                timeout=NEO4J_QUERY_TIMEOUT_MS
+            )
+            return list(result), None
+
+    except Exception as e:
+        return None, f"⚠️ Neo4j Query Failed: {str(e)}"
+
+
+# ----------------------------------------------------------
+# 9.2 — Graph Compression (Cluster Large Graphs)
+# ----------------------------------------------------------
+def compress_large_graph(nodes, edges):
+    """
+    If graph exceeds MAX_GRAPH_NODES — we replace clusters with
+    abstracted 'GROUP-N' nodes instead of failing.
+    """
+
+    if len(nodes) <= MAX_GRAPH_NODES:
+        return nodes, edges, None
+
+    # Compute compression
+    factor = max(2, len(nodes) // MAX_GRAPH_NODES)
+    compressed_nodes = []
+    compressed_edges = []
+
+    group_map = {}
+
+    for i, node in enumerate(nodes):
+        group_id = i // factor
+        label = f"Group-{group_id}"
+
+        if label not in group_map:
+            compressed_nodes.append({
+                "data": {"id": label, "label": label},
+                "classes": "group-node"
+            })
+            group_map[label] = True
+
+    # Edges compressed to abstract relationships
+    for i, edge in enumerate(edges):
+        group_from = f"Group-{i // factor}"
+        group_to = f"Group-{(i+1) // factor}"
+
+        if group_from != group_to:
+            compressed_edges.append({
+                "data": {"source": group_from, "target": group_to}
+            })
+
+    msg = (
+        f"⚠️ Graph too large ({len(nodes)} nodes). "
+        f"Compressed into {len(compressed_nodes)} groups."
+    )
+
+    return compressed_nodes, compressed_edges, msg
+
+
+# ----------------------------------------------------------
+# 9.3 — Smart Relayout Selection
+# ----------------------------------------------------------
+def auto_choose_layout(node_count):
+    if node_count < 100:
+        return {"name": "cose"}          # detailed layout
+    elif node_count < 400:
+        return {"name": "cose-bilkent"}  # optimized
+    else:
+        return {"name": "circle"}        # high-speed layout
+
+
+# ----------------------------------------------------------
+# 9.4 — Performance-Optimized Graph Builder
+# ----------------------------------------------------------
+def generate_fast_graph(graph_type):
+    """
+    Upgraded version of generate_enterprise_graph:
+    - Adds timeout
+    - Adds safe query runner
+    - Adds compression
+    - Adds dynamic relayout
+    """
+
+    if graph_type not in GRAPH_QUERY_MAP:
+        return [], "⚠️ Unknown graph type."
+
+    cypher = GRAPH_QUERY_MAP[graph_type]
+
+    # Connect
+    driver = GraphDatabase.driver(
+        "bolt://localhost:7687",
+        auth=("neo4j", "Adomaa12@")
+    )
+
+    # Run safely
+    records, err = safe_neo4j_run(driver, cypher)
+    if err:
+        return [], err
+
+    # Convert to Cytoscape
+    elements, conv_err = neo4j_to_cytoscape(records)
+    if conv_err:
+        return [], conv_err
+
+    # Count nodes
+    node_count = len([e for e in elements if "source" not in e["data"]])
+
+    # Compress if too large
+    if node_count > MAX_GRAPH_NODES:
+        nodes = [e for e in elements if "source" not in e["data"]]
+        edges = [e for e in elements if "source" in e["data"]]
+
+        nodes, edges, msg = compress_large_graph(nodes, edges)
+        final_elements = nodes + edges
+
+        return final_elements, msg
+
+    return elements, f"✅ Graph loaded ({node_count} nodes)"
+
+
+# ----------------------------------------------------------
+# 9.5 — Override Tab 3 Callback to Use FAST Engine
+# ----------------------------------------------------------
+@app.callback(
+    Output("neo4j-graph-view", "elements"),
+    Output("neo4j-graph-status", "children"),
+    Input("generate-graph-btn", "n_clicks"),
+    State("graph-category-dropdown", "value"),
+    State("graph-type-dropdown", "value"),
+)
+def build_graph_high_performance(n, category, graph_type):
+    if not n:
+        raise PreventUpdate
+
+    if not category or not graph_type:
+        return [], "⚠️ Select category & graph type."
+
+    elements, status = generate_fast_graph(graph_type)
+
+    return elements, status
+
+
+# ==========================================================
+#  PART 10 — TOWSON UNIVERSITY CYTOSCAPE THEME (BLACK + GOLD)
+# ==========================================================
+
+TOWSON_CYTO_STYLE = [
+
+    # ------------------------------------------------------
+    # Global node style
+    # ------------------------------------------------------
+    {
+        "selector": "node",
+        "style": {
+            "label": "data(label)",
+            "text-valign": "center",
+            "text-halign": "center",
+            "font-size": "12px",
+            "color": "#ffffff",
+            "background-color": "#444",  # fallback
+            "border-color": "#EAAA00",
+            "border-width": 1.4,
+            "width": 34,
+            "height": 34
+        }
+    },
+
+    # ------------------------------------------------------
+    # Asset Nodes (Green)
+    # ------------------------------------------------------
+    {
+        "selector": 'node[label = "Asset"]',
+        "style": {
+            "background-color": "#28a745",
+            "border-color": "#0f7d29",
+            "shape": "round-rectangle",
+            "width": 45,
+            "height": 28
+        }
+    },
+
+    # ------------------------------------------------------
+    # Service Nodes (Blue)
+    # ------------------------------------------------------
+    {
+        "selector": 'node[label = "Service"]',
+        "style": {
+            "background-color": "#007bff",
+            "border-color": "#005dbb",
+            "shape": "rectangle",
+            "width": 50,
+            "height": 30
+        }
+    },
+
+    # ------------------------------------------------------
+    # Vulnerability Nodes (Red)
+    # ------------------------------------------------------
+    {
+        "selector": 'node[label = "Vulnerability"]',
+        "style": {
+            "background-color": "#dc3545",
+            "border-color": "#9b0d19",
+            "shape": "hexagon",
+            "width": 40,
+            "height": 40
+        }
+    },
+
+    # ------------------------------------------------------
+    # Group Nodes (Large Graph Compression)
+    # ------------------------------------------------------
+    {
+        "selector": ".group-node",
+        "style": {
+            "background-color": "#EAAA00",
+            "color": "#000",
+            "border-width": 2,
+            "border-color": "#ffcc00",
+            "shape": "ellipse",
+            "font-size": "16px",
+            "width": 70,
+            "height": 70
+        }
+    },
+
+    # ------------------------------------------------------
+    # Attack Path (for Tab 8)
+    # ------------------------------------------------------
+    {
+        "selector": ".attack-node",
+        "style": {
+            "background-color": "#ff7700",
+            "border-color": "#cc5500",
+            "shape": "diamond",
+            "width": 50,
+            "height": 50
+        }
+    },
+
+    # ------------------------------------------------------
+    # Edges
+    # ------------------------------------------------------
+    {
+        "selector": "edge",
+        "style": {
+            "line-color": "#aaaaaa",
+            "width": 1.5,
+            "target-arrow-color": "#aaaaaa",
+            "target-arrow-shape": "triangle"
+        }
+    },
+
+    # Hover effect (all nodes)
+    {
+        "selector": "node:hover",
+        "style": {
+            "border-width": 3,
+            "border-color": "#FFD700",
+            "cursor": "pointer"
+        }
+    },
+
+    # Selected highlight
+    {
+        "selector": "node:selected",
+        "style": {
+            "border-width": 4,
+            "border-color": "#ffdd33",
+            "background-color": "#ffcc00",
+            "color": "#000",
+            "font-weight": "bold"
+        }
+    }
+]
+
+
+# ==========================================================
+#  PART 11 — INTERACTIVE GRAPH CLICK EVENTS
+#  (Node Details Panel + Towson Branded Output)
+# ==========================================================
+
+
+@app.callback(
+    Output("neo4j-graph-details", "children"),
+    Input("neo4j-graph-view", "tapNode")
+)
+def show_graph_node_details(node):
+
+    if not node:
+        return html.Div(
+            "👆 Click a node to view its details.",
+            style={"color": "#EAAA00", "padding": "10px"}
+        )
+
+    data = node.get("data", {})
+    label = data.get("label", "Node")
+
+    # ======================================================
+    # ASSET DETAILS
+    # ======================================================
+    if label == "Asset":
+        return html.Div([
+            html.H4("🖥️ Asset Details", style={"color": "#EAAA00"}),
+            html.P(f"IP Address: {data.get('host', 'N/A')}", style={"color": "white"}),
+            html.P(f"Hostname: {data.get('hostname', 'N/A')}", style={"color": "white"}),
+            html.P(f"Operating System: {data.get('os', 'N/A')}", style={"color": "white"}),
+            html.P(f"Services Running: {data.get('service_count', 'N/A')}", style={"color": "#bbb"}),
+        ], style={"padding": "10px"})
+
+    # ======================================================
+    # SERVICE DETAILS
+    # ======================================================
+    if label == "Service":
+        return html.Div([
+            html.H4("🔌 Service Details", style={"color": "#EAAA00"}),
+            html.P(f"Service Name: {data.get('name', 'N/A')}", style={"color": "white"}),
+            html.P(f"Port: {data.get('port', 'N/A')}", style={"color": "white"}),
+            html.P(f"Protocol: {data.get('protocol', 'N/A')}", style={"color": "white"}),
+            html.P(f"Product: {data.get('product', 'N/A')}", style={"color": "white"}),
+            html.P(f"Version: {data.get('version', 'N/A')}", style={"color": "white"}),
+        ], style={"padding": "10px"})
+
+    # ======================================================
+    # VULNERABILITY DETAILS
+    # ======================================================
+    if label == "Vulnerability":
+        cve = data.get("id", "N/A")
+        cvss = data.get("cvss", "N/A")
+        cwe = data.get("cwe", "N/A")
+        cpe = data.get("cpe", "N/A")
+        desc = data.get("description", "No description available")
+
+        nvd_url = f"https://nvd.nist.gov/vuln/detail/{cve}" if cve.startswith("CVE") else None
+
+        return html.Div([
+            html.H4("🚨 Vulnerability Details", style={"color": "#EAAA00"}),
+
+            html.P(f"CVE: {cve}", style={"color": "white"}),
+
+            html.P(
+                html.A("View on NVD", href=nvd_url, target="_blank"),
+                style={"color": "#EAAA00"}
+            ) if nvd_url else None,
+
+            html.P(f"CVSS Score: {cvss}", style={"color": "white"}),
+            html.P(f"CWE: {cwe}", style={"color": "white"}),
+            html.P(f"CPE: {cpe}", style={"color": "#bbb"}),
+            html.Hr(),
+            html.P(f"Description:", style={"color": "#EAAA00"}),
+            html.P(desc, style={"color": "white"}),
+        ], style={"padding": "10px"})
+
+    # ======================================================
+    # FALLBACK GENERIC NODE DETAILS
+    # ======================================================
+    return html.Div([
+        html.H4(f"📍 {label} Details", style={"color": "#EAAA00"}),
+        html.Pre(str(data), style={"color": "white", "whiteSpace": "pre-wrap"})
+    ])
+
+
+

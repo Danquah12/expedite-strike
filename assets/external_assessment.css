@@ -1,0 +1,30 @@
+/* Aegis External Assessment — base styles */
+html, body {
+    margin: 0; padding: 0;
+    background: #080c14;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 3px; }
+
+/* Floating progress strip */
+#aegis-floating-strip {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important;
+    z-index: 2147483647 !important;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 24px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    background: linear-gradient(90deg, #080c14 0%, #0d1420 50%, #080c14 100%) !important;
+    border-bottom: 2px solid rgba(0,200,140,0.35) !important;
+    box-shadow: 0 4px 30px rgba(0,200,140,0.2) !important;
+    backdrop-filter: blur(16px);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#aegis-floating-strip.afp-show { display: flex !important; }
+#aegis-floating-strip .afp-pulse { animation: afp-glow 2s ease-in-out infinite; }
+@keyframes afp-glow { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
