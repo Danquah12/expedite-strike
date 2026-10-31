@@ -36,7 +36,9 @@ TRUSTED_SIGNING_AUTHORITY_REGISTRY: Dict[str, Dict[str, str]] = {
     "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01": {
         "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
         "owner_identity": "Expedite Consults Ltd — Autonomous Security Assessment Signing Authority",
-        "custody_profile": "Assessment Keystore (Dev/Lab Profile) | AWS KMS / PKCS#11 HSM (Production Profile)",
+        "custody_profile": "Active Lab Keystore (Pinned Ed25519 Seed in Cyber Range) | Target Production Architecture: AWS KMS / PKCS#11 HSM (Not Deployed in Lab)",
+        "active_deployment_custody_tier": "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
+        "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture — Not Deployed in Lab Assessment)",
         "valid_from_utc": "2026-10-01T00:00:00Z",
         "valid_until_utc": "2027-01-01T00:00:00Z",
         "rotation_policy": "90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
@@ -262,6 +264,12 @@ def verify_exported_bundle_standalone(
         else:
             mismatches.append(f"Remediation record {rfid} hash mismatch (before={b_ok}, after={a_ok}, neg_ctrl={nc_ok})")
 
+    closures_accepted = sum(
+        1 for r in remediation_records if r.get("post_retest_proof_state") == "REMEDIATION_VERIFIED"
+    )
+    closures_rejected = len(remediation_records) - closures_accepted
+    manifest_ver = manifest.get("manifest_version", "EvidenceCore-V3.4")
+
     overall_ok = (
         len(records) > 0
         and record_count_matched
@@ -278,7 +286,8 @@ def verify_exported_bundle_standalone(
 
     return {
         "standalone_verified": overall_ok,
-        "verifier_version": "XStrike-Standalone-Verifier-V3.3",
+        "verifier_version": "XStrike-Standalone-Verifier-V3.4",
+        "manifest_version_verified": manifest_ver,
         "verification_mode": "STANDALONE_PINNED_PUBKEY_AND_EXPORTED_BUNDLE_NO_DB",
         "database_dependency": "NONE (Verified 100% from exported JSON bundle + pinned Ed25519 public key PEM)",
         "assessment_id": assessment_id,
@@ -286,12 +295,22 @@ def verify_exported_bundle_standalone(
         "pinned_public_key_fingerprint_sha256": computed_pubkey_sha256,
         "pinned_public_key_fingerprint_verified": pubkey_fingerprint_verified,
         "signing_key_owner": auth_entry.get("owner_identity", "Expedite Consults Ltd"),
+        "active_deployment_custody_tier": auth_entry.get(
+            "active_deployment_custody_tier",
+            "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
+        ),
+        "enterprise_production_target_architecture": auth_entry.get(
+            "enterprise_production_target_architecture",
+            "AWS KMS / PKCS#11 HSM (Target Architecture — Not Deployed in Lab Assessment)",
+        ),
         "key_custody_and_rotation_policy": f"{auth_entry.get('custody_profile', '')} | {auth_entry.get('rotation_policy', '')}",
         "key_revocation_status": auth_entry.get("revocation_status", "GOOD_NOT_REVOKED"),
         "key_trust_metadata": {
             "key_id": key_id,
             "owner_identity": auth_entry.get("owner_identity", "Expedite Consults Ltd"),
             "custody_profile": auth_entry.get("custody_profile", ""),
+            "active_deployment_custody_tier": auth_entry.get("active_deployment_custody_tier", ""),
+            "enterprise_production_target_architecture": auth_entry.get("enterprise_production_target_architecture", ""),
             "rotation_policy": auth_entry.get("rotation_policy", ""),
             "revocation_status": auth_entry.get("revocation_status", "GOOD_NOT_REVOKED"),
             "trusted_timestamp_token": manifest.get("trusted_timestamp_token", ""),
@@ -322,6 +341,8 @@ def verify_exported_bundle_standalone(
             "substituted_public_key_rejected": substituted_public_key_rejected,
         },
         "remediation_records_verified": f"{rem_verified_count}/{len(remediation_records)}",
+        "remediation_records_integrity_verified": f"{rem_verified_count}/{len(remediation_records)} (Cryptographic Before/After/NegCtrl Hash Integrity)",
+        "remediation_closures_accepted_summary": f"{closures_accepted}/{len(remediation_records)} Verified Closures Accepted ({closures_rejected} Retests Rejected)",
         "mismatches": mismatches,
     }
 

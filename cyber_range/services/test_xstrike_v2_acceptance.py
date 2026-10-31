@@ -220,8 +220,8 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
     def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_21_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 21)
-        self.assertEqual(qa["total_rules"], 21)
+        self.assertEqual(qa["passed_rules"], 23)
+        self.assertEqual(qa["total_rules"], 23)
 
         # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
         tm = self.v2["transition_model"]
@@ -280,7 +280,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
         self.assertIn("EXPEDITE STRIKE V3", html_doc)
-        self.assertIn("21/21 PASSED", html_doc)
+        self.assertIn("23/23 PASSED", html_doc)
 
     def test_v33_ten_formal_regression_tests_reg01_to_reg10(self):
         """
@@ -383,6 +383,45 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
             self.assertEqual(f_sl["severity"], "Medium")
             self.assertEqual(float(f_sl["cvss_score"]), 5.9)
             self.assertFalse(f_sl["exploitability_validation"]["exploitability_claimed"])
+
+        # REG-11 (V3.4 EPIC 01 & 04): Version provenance unity across Manifest, RiskEngine, and Standalone Verifier
+        em = self.v2["evidence_manifest"]
+        self.assertEqual(em["manifest_version"], "EvidenceCore-V3.4")
+        self.assertIn("MANIFEST-XSTRIKE-V3.4-", em["manifest_id"])
+        self.assertEqual(rm["formula_version"], "RiskEngine-V3.4-Calibrated-NonSaturating")
+        self.assertEqual(sv["verifier_version"], "XStrike-Standalone-Verifier-V3.4")
+
+        # REG-12 (V3.4 EPIC 05): Forecast trajectory mathematical reconciliation across SLA table and Quality Gate AC-09
+        sla = rm["sla_projections"]
+        self.assertEqual(rm["forecast_24h_calibrated_score"], sla[2]["calibrated_score"])
+        self.assertEqual(rm["forecast_7d_calibrated_score"], sla[3]["calibrated_score"])
+        self.assertEqual(rm["forecast_30d_calibrated_score"], sla[4]["calibrated_score"])
+        ac09_chk = next(c for c in self.v2["quality_audit"]["checks"] if c["rule_id"] == "AC-09")
+        self.assertIn(f"24h ({sla[2]['calibrated_score']})", ac09_chk["detail"])
+        self.assertIn(f"7d ({sla[3]['calibrated_score']})", ac09_chk["detail"])
+        self.assertIn(f"30d ({sla[4]['calibrated_score']})", ac09_chk["detail"])
+
+        # REG-13 (V3.4 EPIC 02): MITRE semantic validation (zero T1068 on direct-root chains; SUID Nmap precondition state)
+        for ch in self.v2["attack_graph"]["chains"]:
+            if ch["chain_id"] in ("CHAIN-01", "CHAIN-02"):
+                for edge in ch["edges"]:
+                    self.assertNotEqual(edge["technique_id"], "T1068", f"{ch['chain_id']} direct root daemon must not use T1068")
+        for f_ex in [f for f in self.v2["security_findings"] if f["proof_state"] == "EXPLOITABLE"]:
+            self.assertEqual(f_ex["exploitability_validation"]["gate_status"], "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED")
+            self.assertEqual(f_ex["access_scope"]["privesc_lifecycle_state"], "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED")
+
+        # REG-14 (V3.4 EPIC 03): 4-Stage Remediation Lifecycle Gates (CHANGE_APPLIED, SERVICE_RELOADED, CONTROL_EFFECTIVE, REMEDIATION_VERIFIED)
+        self.assertTrue(r05["change_applied"])
+        self.assertFalse(r05["service_reloaded"])
+        self.assertIn("CHANGE_APPLIED_ONLY_SERVICE_NOT_RELOADED", r05["remediation_lifecycle_stage"])
+        self.assertTrue(r04["change_applied"])
+        self.assertTrue(r04["service_reloaded"])
+        self.assertIn("PARTIAL_ONLY", r04["control_effective"])
+
+        # REG-15 (V3.4 EPIC 04): Key custody provenance separation (Lab vs Prod) & Retest Integrity (5/5) vs Closures Accepted (2/5)
+        self.assertIn("LAB_PINNED_ED25519_KEYSTORE", sv["active_deployment_custody_tier"])
+        self.assertIn("Not Deployed in Lab", sv["enterprise_production_target_architecture"])
+        self.assertIn("2/5 Verified Closures Accepted", sv["remediation_closures_accepted_summary"])
 
 
 if __name__ == "__main__":

@@ -1256,9 +1256,9 @@
       },
       "properties": {
         "signedEvidenceManifest": {
-          "manifestId": "MANIFEST-XSTRIKE-V3-20261031-B515B5637E",
+          "manifestId": "MANIFEST-XSTRIKE-V3.4-20261031-B515B5637E",
           "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-          "manifestHmacSha256": "2d36fc4007048dd03f484433887ea596e50b498ac9683c2ed6403adb22ad1c45",
+          "manifestHmacSha256": "56c91e5642caafbb2ad2cd71253b30e3db6d918b0a075b2c3732bcb45a932ac8",
           "recordCount": null
         }
       },
@@ -1292,16 +1292,17 @@
               "authenticated": true,
               "file_access": "READ_CONFIRMED (/etc/shadow read via cat/head; write not executed per RoE)",
               "database_access": "NONE",
-              "privilege_level": "ROOT (uid=0 / gid=0)",
-              "privesc_demonstrated": true,
-              "privesc_lifecycle_state": "PRIVILEGE_TRANSITION_EXECUTED",
+              "privilege_level": "ROOT (uid=0 / gid=0 \u2014 Inherited Directly from Root-Owned Network Service)",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "DIRECT_ROOT_SERVICE_EXECUTION (uid=0 Inherited from Daemon \u2014 T1068 Local PrivEsc Not Applicable)",
+              "root_acquisition_mode": "DIRECT_ROOT_SERVICE_EXECUTION",
               "execution_status": "ROOT_SHELL_EXECUTED",
               "authentication_status": "UNAUTHENTICATED_ROOT_BIND",
               "exploitability_status": "EXPLOIT_CONFIRMED",
               "data_access_status": "SHADOW_HASHES_READ_REDACTED",
               "impact_status": "FULL_SYSTEM_COMPROMISE",
               "evidence_confidence": 99,
-              "access_summary": "Unrestricted root command execution (uid=0) and /etc/shadow READ_CONFIRMED (password hashes redacted; write not executed per RoE)"
+              "access_summary": "DIRECT_ROOT_SERVICE_EXECUTION: Unrestricted root command execution (uid=0 inherited directly from root-owned network daemon; no local T1068 uid transition required) and /etc/shadow READ_CONFIRMED (password hashes redacted; write not executed per RoE)"
             },
             "confidenceModel": {
               "detection_confidence": 99,
@@ -1354,16 +1355,17 @@
               "authenticated": true,
               "file_access": "READ_CONFIRMED (/etc/shadow read via cat/head; write not executed per RoE)",
               "database_access": "NONE",
-              "privilege_level": "ROOT (uid=0 / gid=0)",
-              "privesc_demonstrated": true,
-              "privesc_lifecycle_state": "PRIVILEGE_TRANSITION_EXECUTED",
+              "privilege_level": "ROOT (uid=0 / gid=0 \u2014 Inherited Directly from Root-Owned Network Service)",
+              "privesc_demonstrated": false,
+              "privesc_lifecycle_state": "DIRECT_ROOT_SERVICE_EXECUTION (uid=0 Inherited from Daemon \u2014 T1068 Local PrivEsc Not Applicable)",
+              "root_acquisition_mode": "DIRECT_ROOT_SERVICE_EXECUTION",
               "execution_status": "ROOT_SHELL_EXECUTED",
               "authentication_status": "UNAUTHENTICATED_ROOT_BIND",
               "exploitability_status": "EXPLOIT_CONFIRMED",
               "data_access_status": "SHADOW_HASHES_READ_REDACTED",
               "impact_status": "FULL_SYSTEM_COMPROMISE",
               "evidence_confidence": 99,
-              "access_summary": "Unrestricted root command execution (uid=0) and /etc/shadow READ_CONFIRMED (password hashes redacted; write not executed per RoE)"
+              "access_summary": "DIRECT_ROOT_SERVICE_EXECUTION: Unrestricted root command execution (uid=0 inherited directly from root-owned network daemon; no local T1068 uid transition required) and /etc/shadow READ_CONFIRMED (password hashes redacted; write not executed per RoE)"
             },
             "confidenceModel": {
               "detection_confidence": 99,
@@ -1581,16 +1583,17 @@
               "authenticated": true,
               "file_access": "READ_ONLY (/usr/bin/nmap SUID-root bit verified)",
               "database_access": "NONE",
-              "privilege_level": "LOCAL_ESCALATION_PRECONDITION (uid=1000 -> uid=0 via nmap --interactive)",
+              "privilege_level": "LOCAL_ESCALATION_PRECONDITION (uid=1000 -> uid=0 via nmap --interactive; root transition not executed)",
               "privesc_demonstrated": false,
-              "privesc_lifecycle_state": "TECHNIQUE_VALIDATED",
+              "privesc_lifecycle_state": "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED",
+              "root_acquisition_mode": "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED_NOT_EXECUTED",
               "execution_status": "AUTHENTICATED_ENUMERATION_EXECUTED",
               "authentication_status": "AUTHENTICATED_USER (uid=1000)",
-              "exploitability_status": "PRECONDITION_VERIFIED",
+              "exploitability_status": "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED",
               "data_access_status": "FILESYSTEM_ACL_VERIFIED",
               "impact_status": "LOCAL_ROOT_ESCALATION_READY",
               "evidence_confidence": 95,
-              "access_summary": "Authenticated SSH check confirmed SUID-root bit on /usr/bin/nmap (--interactive !sh technique validated; root transition not executed via SSH)"
+              "access_summary": "PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED: Authenticated SSH check confirmed SUID-root bit on /usr/bin/nmap (--interactive !sh precondition validated; final root transition not executed via SSH)"
             },
             "confidenceModel": {
               "detection_confidence": 96,

@@ -1,6 +1,7 @@
 {
   "standalone_verified": true,
-  "verifier_version": "XStrike-Standalone-Verifier-V3.3",
+  "verifier_version": "XStrike-Standalone-Verifier-V3.4",
+  "manifest_version_verified": "EvidenceCore-V3.4",
   "verification_mode": "STANDALONE_PINNED_PUBKEY_AND_EXPORTED_BUNDLE_NO_DB",
   "database_dependency": "NONE (Verified 100% from exported JSON bundle + pinned Ed25519 public key PEM)",
   "assessment_id": "XSTRIKE-V3-20261031",
@@ -8,15 +9,19 @@
   "pinned_public_key_fingerprint_sha256": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
   "pinned_public_key_fingerprint_verified": true,
   "signing_key_owner": "Expedite Consults Ltd \u2014 Autonomous Security Assessment Signing Authority",
-  "key_custody_and_rotation_policy": "Assessment Keystore (Dev/Lab Profile) | AWS KMS / PKCS#11 HSM (Production Profile) | 90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
+  "active_deployment_custody_tier": "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
+  "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
+  "key_custody_and_rotation_policy": "Active Lab Keystore (Pinned Ed25519 Seed in Cyber Range) | Target Production Architecture: AWS KMS / PKCS#11 HSM (Not Deployed in Lab) | 90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
   "key_revocation_status": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10)",
   "key_trust_metadata": {
     "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
     "owner_identity": "Expedite Consults Ltd \u2014 Autonomous Security Assessment Signing Authority",
-    "custody_profile": "Assessment Keystore (Dev/Lab Profile) | AWS KMS / PKCS#11 HSM (Production Profile)",
+    "custody_profile": "Active Lab Keystore (Pinned Ed25519 Seed in Cyber Range) | Target Production Architecture: AWS KMS / PKCS#11 HSM (Not Deployed in Lab)",
+    "active_deployment_custody_tier": "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
+    "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
     "rotation_policy": "90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
     "revocation_status": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10)",
-    "trusted_timestamp_token": "TST-SHA256-472ECA19E76149D6FC67ED0D (2026-10-31T18:18:38Z)"
+    "trusted_timestamp_token": "TST-SHA256-280200F87962A343C34E64EE (2026-10-31T20:04:21Z)"
   },
   "total_exported_records": 124,
   "record_sha256_verified_count": 124,
@@ -40,6 +45,8 @@
     "substituted_public_key_rejected": true
   },
   "remediation_records_verified": "5/5",
+  "remediation_records_integrity_verified": "5/5 (Cryptographic Before/After/NegCtrl Hash Integrity)",
+  "remediation_closures_accepted_summary": "2/5 Verified Closures Accepted (3 Retests Rejected)",
   "mismatches": [],
   "bundle_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Evidence_Bundle.json",
   "manifest_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Signed_Evidence_Manifest.json",
