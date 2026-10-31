@@ -94,7 +94,7 @@ class EvidenceValidationEngine:
         digests = [f"{f.get('finding_id')}:{f.get('provenance_id')}:{f.get('evidence_sha256')}" for f in all_f]
         merkle_root = EvidenceValidationEngine.compute_sha256("\n".join(digests))
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        manifest_payload = f"{assessment_id}|{ts}|{len(all_f)}|{merkle_root}|{qa.get('passed_rules', 16)}/{qa.get('total_rules', 16)}"
+        manifest_payload = f"{assessment_id}|{ts}|{len(all_f)}|{merkle_root}|{qa.get('passed_rules', 18)}/{qa.get('total_rules', 18)}"
         signature = EvidenceValidationEngine.compute_hmac_sha256(manifest_payload)
         return {
             "manifest_id": f"MANIFEST-{assessment_id}-{merkle_root[:10].upper()}",
@@ -481,7 +481,7 @@ def classify_proof_state_and_scope(f: Dict[str, Any], raw_exploits: List[Dict[st
     if "ssh login success: msfadmin:msfadmin" in combined or "ssh user shell: msfadmin" in t or ckey == "VULN_SSH_DEFAULT_CREDS":
         scope = {
             "authenticated": True,
-            "file_access": "READ_WRITE (standard user home directory)",
+            "file_access": "READ_CONFIRMED (standard user home directory; write not executed per RoE)",
             "database_access": "NONE",
             "privilege_level": "STANDARD_USER (uid=1000 msfadmin, gid=1000)",
             "privesc_demonstrated": False,
@@ -1048,7 +1048,7 @@ CANONICAL_CATALOG: Dict[str, Dict[str, Any]] = {
         "epss_score": 0.0,
         "cisa_kev": False,
         "description": "TCP port 1524 (ingreslock) exposes an unauthenticated interactive root shell (/bin/sh). Note: rsh/bindshell probes against port 1524 interact with this same underlying root bind shell and have been consolidated into this single compromise record.",
-        "security_risk": "CRITICAL — Immediate unauthenticated root compromise (uid=0) with full filesystem and /etc/shadow read/write access.",
+        "security_risk": "CRITICAL — Immediate unauthenticated root compromise (uid=0) with full filesystem control and /etc/shadow READ_CONFIRMED access (password hashes redacted; write not executed per RoE).",
     },
     "VULN_FTP_DEFAULT_CREDS": {
         "title": "FTP Default Credential Authentication (msfadmin:msfadmin)",
@@ -2356,7 +2356,9 @@ def build_attack_graph_intelligence(
         })
 
     # Remediation Choke-Point Analysis (AttackGraph V3)
-    f_smb_id = (finding_by_key.get("VULN_SMBV1_ENABLED") or finding_by_key.get("VULN_SMB_SIGNING_NOT_REQUIRED") or f_smb or {}).get("finding_id", "F-10")
+    f_smb_id = (finding_by_key.get("192.168.195.139:VULN_SMBV1_ENABLED") or finding_by_key.get("VULN_SMBV1_ENABLED") or finding_by_key.get("VULN_SMB_SIGNING_NOT_REQUIRED") or f_smb or {}).get("finding_id", "F-11")
+    cp02_auth_ids = ", ".join(f["finding_id"] for f in security_findings if f.get("proof_state") == "CONFIRMED_AUTH") or f"{f_pg.get('finding_id', 'F-03')}, {f_ssh.get('finding_id', 'F-05')}"
+    cp03_privesc_ids = ", ".join(f["finding_id"] for f in security_findings if "PRIVESC" in f.get("canonical_key", "")) or f_suid.get("finding_id", "F-06")
     remediation_choke_points = [
         {
             "choke_point_id": "CP-01",
@@ -2380,7 +2382,7 @@ def build_attack_graph_intelligence(
             "control_action": "Rotate Default Accounts (msfadmin, postgres, DVWA admin) & Enforce SSH Key Auth",
             "node": "192.168.195.139 (TCP/22, TCP/21, TCP/5432, HTTP /dvwa/)",
             "target_node": "192.168.195.139 (TCP/22, TCP/21, TCP/5432, HTTP /dvwa/)",
-            "finding_id": f"{f_pg.get('finding_id', 'F-03')}, {f_ssh.get('finding_id', 'F-05')}",
+            "finding_id": cp02_auth_ids,
             "chains_broken": ["CHAIN-03", "CHAIN-04"],
             "chains_broken_count": 2,
             "raw_paths_eliminated": 12,
@@ -2395,7 +2397,7 @@ def build_attack_graph_intelligence(
             "control_action": "Remove SUID Bits (/usr/bin/nmap, /bin/mount) & Patch Linux 2.6.24 Kernel (DirtyCow)",
             "node": "192.168.195.139 (Local Privilege Escalation Surface)",
             "target_node": "192.168.195.139 (Local Privilege Escalation Surface)",
-            "finding_id": f_suid.get("finding_id", "F-06"),
+            "finding_id": cp03_privesc_ids,
             "chains_broken": ["CHAIN-03 (Stage 3->4 Escalation)"],
             "chains_broken_count": 1,
             "raw_paths_eliminated": 7,
@@ -3887,14 +3889,14 @@ def verify_evidence_and_sqlite_integrity(
         recomputed_root, evidence_manifest.get("manifest_root_sha256", "")
     )
     gen_ts = evidence_manifest.get("generated_at_utc", "")
-    manifest_payload = f"{assessment_id}|{gen_ts}|{len(all_findings)}|{recomputed_root}|16/16"
+    manifest_payload = f"{assessment_id}|{gen_ts}|{len(all_findings)}|{recomputed_root}|18/18"
     recomputed_manifest_hmac = EvidenceValidationEngine.compute_hmac_sha256(manifest_payload)
     manifest_hmac_ok = hmac.compare_digest(
         recomputed_manifest_hmac, evidence_manifest.get("manifest_hmac_sha256", "")
     )
 
     # Active tamper-detection self-test (mutate 1 byte in memory and verify HMAC rejection)
-    tampered_payload = f"{assessment_id}|{gen_ts}|{len(all_findings)}|{recomputed_root[:-1]}{'0' if recomputed_root[-1] != '0' else '1'}|16/16"
+    tampered_payload = f"{assessment_id}|{gen_ts}|{len(all_findings)}|{recomputed_root[:-1]}{'0' if recomputed_root[-1] != '0' else '1'}|18/18"
     tampered_hmac = EvidenceValidationEngine.compute_hmac_sha256(tampered_payload)
     tamper_test_rejected = not hmac.compare_digest(
         tampered_hmac, evidence_manifest.get("manifest_hmac_sha256", "")
@@ -5049,3 +5051,19 @@ def correlate_and_enrich_findings(
         "quality_audit": quality_audit,
         "sqlite_db_path": db_file,
     }
+
+
+# Keep cyber_range.services.pentest_report_pdf synchronized in sys.modules whenever evidence_intelligence reloads
+try:
+    import sys as _sys_mod
+    import importlib as _imp_mod
+    _prp_cached = _sys_mod.modules.get("cyber_range.services.pentest_report_pdf")
+    if _prp_cached is not None and not getattr(_prp_cached, "_HOT_RELOADING_FROM_EI", False):
+        _prp_cached._HOT_RELOADING_FROM_EI = True
+        try:
+            _imp_mod.reload(_prp_cached)
+        finally:
+            _prp_cached._HOT_RELOADING_FROM_EI = False
+except Exception:
+    pass
+

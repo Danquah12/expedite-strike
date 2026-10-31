@@ -12117,10 +12117,14 @@ def download_pentest_report(n_clicks):
         raise PreventUpdate
     from datetime import datetime
     try:
-        from cyber_range.services.pentest_report_pdf import generate_pdf_report
+        import importlib
+        import cyber_range.services.evidence_intelligence as _ei_mod
+        import cyber_range.services.pentest_report_pdf as _prp_mod
+        importlib.reload(_ei_mod)
+        importlib.reload(_prp_mod)
         from cyber_range.services.auto_pentest_orchestrator import AUTOPENTEST_STATE
         import base64
-        pdf_bytes = generate_pdf_report(AUTOPENTEST_STATE)
+        pdf_bytes = _prp_mod.generate_pdf_report(AUTOPENTEST_STATE)
         filename = f"XStrike_Pentest_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         b64 = base64.b64encode(pdf_bytes).decode()
         return dict(content=b64, filename=filename, type='application/pdf', base64=True)
