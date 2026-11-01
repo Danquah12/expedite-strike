@@ -472,6 +472,58 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(len(v3_arch["v31_multihost_benchmark"].get("seeded_vulnerability_manifest", [])), 4)
         self.assertTrue(bool(v3_arch["v31_multihost_benchmark"].get("scenario_isolation_boundary")))
 
+        # REG-21 (V3.5.1 EPIC 01): Per-record version_provenance on 100% of findings & hot-reload protection on verify_manifest
+        for f in self.v2["security_findings"] + self.v2["recon_findings"]:
+            vp = f.get("version_provenance", {})
+            self.assertEqual(vp.get("verifier_version"), "XStrike-Standalone-Verifier-V3.5")
+            self.assertEqual(vp.get("evidence_core_version"), "EvidenceCore-V3.5")
+
+        # REG-22 (V3.5.1 EPIC 02): 9-Test Structured Certification Ledger (CERT-01..CERT-09) with strict Zero-None Policy & Key Audit Log
+        cert_ledger = sv.get("certification_test_ledger", [])
+        self.assertEqual(len(cert_ledger), 9)
+        for idx, ct in enumerate(cert_ledger, start=1):
+            self.assertEqual(ct["test_id"], f"CERT-0{idx}")
+            self.assertIsNotNone(ct["actual_result"], f"{ct['test_id']} actual_result must never be None")
+            self.assertNotIn("NONE", str(ct["actual_result"]).upper(), f"{ct['test_id']} must not be NONE")
+            self.assertTrue(ct["passed"] is True, f"{ct['test_id']} passed must be True")
+            self.assertEqual(ct["certification_decision"], "CERTIFIED_PASS")
+            self.assertEqual(ct["failure_reason"], "NONE")
+            self.assertTrue(bool(ct.get("evidence_reference")))
+        self.assertEqual(len(sv.get("key_operations_audit_log", [])), 3)
+
+        # REG-23 (V3.5.1 EPIC 03): 3-Layer AttackGraph Architecture & Per-Action Risk-Reduction Attribution
+        three_layers = self.v2["attack_graph"].get("three_layer_architecture", [])
+        self.assertEqual(len(three_layers), 3)
+        self.assertEqual(three_layers[0]["layer_id"], "Layer 1: ENTRY_LAYER")
+        self.assertEqual(three_layers[1]["layer_id"], "Layer 2: PRIVILEGE_AND_MOVEMENT_LAYER")
+        self.assertEqual(three_layers[2]["layer_id"], "Layer 3: IMPACT_LAYER")
+        for edge in self.v2["attack_graph"]["edges"]:
+            self.assertIn(edge.get("graph_layer"), ("Layer 1: ENTRY_LAYER", "Layer 2: PRIVILEGE_AND_MOVEMENT_LAYER", "Layer 3: IMPACT_LAYER"))
+        per_act = rm.get("per_action_risk_attribution", [])
+        self.assertEqual(len(per_act), 5)
+        self.assertEqual(per_act[0]["s_compromise_delta_pts"], -16.0)
+        self.assertEqual(per_act[0]["s_reachability_delta_pts"], -5.0)
+        self.assertLess(per_act[1]["raw_exposure_delta_pts"], 0.0)
+
+        # REG-24 (V3.5.1 EPIC 04): Remediation Work Packages (WP-01..WP-06) & 5-Dimension Root-Cause Matrix
+        wps = self.v2.get("remediation_work_packages", [])
+        self.assertEqual(len(wps), 6)
+        total_wp_findings = sum(w["finding_count"] for w in wps)
+        self.assertEqual(total_wp_findings, len(self.v2["security_findings"]))
+        rc_5d = self.v2.get("root_cause_5d_matrix", [])
+        self.assertGreaterEqual(len(rc_5d), 3)
+        for r5 in rc_5d:
+            self.assertTrue(bool(r5.get("technical_control_failure")))
+            self.assertTrue(bool(r5.get("business_consequence")))
+            self.assertTrue(bool(r5.get("remediation_owner")))
+            self.assertTrue(bool(r5.get("remediation_dependency_and_work_package")))
+
+        # REG-25 (V3.5.1 EPIC 05): Executive Priority Risk View (3 Separated Risk Panels + High-Impact vs Config Hygiene WP-06)
+        exec_prio = self.v2.get("executive_priority_view", {})
+        self.assertEqual(len(exec_prio.get("three_risk_panels", [])), 3)
+        self.assertGreaterEqual(len(exec_prio.get("priority_compromise_and_auth_findings", [])), 6)
+        self.assertIn("WP-06", str(exec_prio.get("config_hygiene_consolidation_summary", "")))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1252,13 +1252,13 @@
         }
       },
       "automationDetails": {
-        "id": "XSTRIKE-V3.5-20261031"
+        "id": "XSTRIKE-V3-ASSESSMENT"
       },
       "properties": {
         "signedEvidenceManifest": {
-          "manifestId": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
+          "manifestId": "MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
           "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-          "manifestHmacSha256": "88673b7ccffc55e05383c989b5bd3bceb43b249760f8e5493486167da3823fe9",
+          "manifestHmacSha256": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
           "recordCount": null
         }
       },

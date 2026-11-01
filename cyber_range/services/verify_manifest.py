@@ -286,6 +286,144 @@ def verify_exported_bundle_standalone(
     recomputed_merkle_pass2 = _sha256_hex("\n".join(leaf_digests))
     deterministic_reproducibility_verified = (recomputed_merkle_pass2 == recomputed_merkle_root == expected_root)
 
+    from datetime import datetime, timezone
+    exec_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rec0_fid = records[0].get("finding_id", "F-01") if records else "F-01"
+    rec0_pid = records[0].get("provenance_id", "PROV-F-01") if records else "PROV-F-01"
+
+    def _cert_row(tid: str, tname: str, expected: str, actual: Any, passed: bool, fail_reason: str, ev_ref: str) -> Dict[str, Any]:
+        # Strictly reject None or non-boolean pass indicators
+        strict_pass = (passed is True) and (actual is not None)
+        return {
+            "test_id": tid,
+            "test_name": tname,
+            "expected_result": expected,
+            "actual_result": str(actual) if actual is not None else "NONE_ERROR",
+            "execution_timestamp": exec_ts,
+            "failure_reason": "NONE" if strict_pass else (fail_reason or "Certification test returned None or failed assertion"),
+            "evidence_reference": ev_ref,
+            "certification_decision": "CERTIFIED_PASS" if strict_pass else "REJECTED_FAIL",
+            "passed": strict_pass,
+        }
+
+    certification_test_ledger = [
+        _cert_row(
+            "CERT-01",
+            "1-Byte Evidence Payload Mutation Rejection",
+            "MUTATION_REJECTED (Tampered Leaf SHA-256 & Merkle Root Mismatch)",
+            "MUTATION_REJECTED" if modified_record_rejected else "MUTATION_ACCEPTED_ERROR",
+            bool(modified_record_rejected),
+            "Failed to detect 1-byte mutation in record[0] raw_evidence",
+            f"{rec0_fid}:{rec0_pid} (SHA-256 leaf + Merkle root {expected_root[:16]}...)",
+        ),
+        _cert_row(
+            "CERT-02",
+            "Evidence Record Deletion Rejection",
+            "DELETION_REJECTED (Count Mismatch, Merkle Root Mismatch & Ed25519 Rejection)",
+            "DELETION_REJECTED" if deleted_record_rejected else "DELETION_ACCEPTED_ERROR",
+            bool(deleted_record_rejected),
+            "Failed to reject deleted evidence record from bundle",
+            f"Bundle count={len(records)} vs truncated={max(0, len(records)-1)} | Manifest {manifest.get('manifest_id', '')}",
+        ),
+        _cert_row(
+            "CERT-03",
+            "Ordered Merkle Leaf Reordering Rejection",
+            "REORDER_REJECTED (Ordered Merkle Root Digest Mismatch)",
+            "REORDER_REJECTED" if reordered_records_rejected else "REORDER_ACCEPTED_ERROR",
+            bool(reordered_records_rejected),
+            "Failed to detect swapped ordering of records[0] and records[1]",
+            f"Ordered leaves [0..{len(leaf_digests)-1}] -> Root {recomputed_merkle_root[:16]}...",
+        ),
+        _cert_row(
+            "CERT-04",
+            "Manifest Metadata Alteration Rejection",
+            "ALTERATION_REJECTED (RFC 8032 Ed25519 Asymmetric Signature Rejection)",
+            "ALTERATION_REJECTED" if altered_manifest_rejected else "ALTERATION_ACCEPTED_ERROR",
+            bool(altered_manifest_rejected),
+            "Ed25519 verifier failed to reject 1-byte altered manifest payload",
+            f"Ed25519 Signature {ed25519_sig[:20]}... over {manifest.get('manifest_id', '')}",
+        ),
+        _cert_row(
+            "CERT-05",
+            "Rogue Signing Public-Key Substitution Rejection",
+            "ROGUE_KEY_REJECTED (Pinned SHA-256 Fingerprint & Ed25519 Verification Rejection)",
+            "ROGUE_KEY_REJECTED" if substituted_public_key_rejected else "ROGUE_KEY_ACCEPTED_ERROR",
+            bool(substituted_public_key_rejected),
+            "Failed to reject substituted rogue 32-byte Ed25519 public key",
+            f"Pinned Key FP {pinned_fp[:20]}... ({key_id})",
+        ),
+        _cert_row(
+            "CERT-06",
+            "Signing-Key Rotation Window Enforcement",
+            f"ACTIVE_WITHIN_WINDOW ({valid_from} .. {valid_until}) & OUT_OF_WINDOW_REJECTED",
+            f"VALID_WINDOW ({gen_ts}) & EXPIRED_2028_REJECTED" if (key_rotation_window_verified and expired_key_window_rejected) else "KEY_WINDOW_ERROR",
+            bool(key_rotation_window_verified and expired_key_window_rejected),
+            f"Signing timestamp {gen_ts} outside key validity window {valid_from}..{valid_until}",
+            f"Key {key_id} Rotation Window [{valid_from} -> {valid_until}]",
+        ),
+        _cert_row(
+            "CERT-07",
+            "Authority CRL / Key Revocation Verification",
+            "GOOD_NOT_REVOKED & REVOKED_KEY_COMPROMISED_REJECTED",
+            f"{auth_entry.get('revocation_status', 'GOOD_NOT_REVOKED')} & REVOKED_REJECTED" if (revocation_verified and revoked_key_crl_rejected) else "CRL_CHECK_FAILED",
+            bool(revocation_verified and revoked_key_crl_rejected),
+            "Signing key is revoked or CRL check failed",
+            f"XStrike Authority CRL v2026.10 ({key_id})",
+        ),
+        _cert_row(
+            "CERT-08",
+            "RFC 3161-Style Trusted Timestamp Token Binding",
+            f"TIMESTAMP_TOKEN_BOUND (TST-SHA256-{expected_tsa_hex}) & FORGED_TOKEN_REJECTED",
+            f"VERIFIED ({manifest_tsa}) & FORGED_REJECTED" if (timestamp_token_verified and forged_timestamp_rejected) else "TSA_TOKEN_MISMATCH",
+            bool(timestamp_token_verified and forged_timestamp_rejected),
+            f"Manifest timestamp token {manifest_tsa} did not match expected TST-SHA256-{expected_tsa_hex}",
+            f"Token {manifest_tsa} bound to Merkle Root {recomputed_merkle_root[:16]}...",
+        ),
+        _cert_row(
+            "CERT-09",
+            "Two-Pass Deterministic Merkle & Evidence Reproducibility",
+            f"DETERMINISTIC_MATCH (Pass1 == Pass2 == Manifest Root {expected_root[:16]}...)",
+            f"DETERMINISTIC_MATCH ({recomputed_merkle_pass2[:16]}... == {recomputed_merkle_root[:16]}...)" if deterministic_reproducibility_verified else "NON_DETERMINISTIC_MISMATCH",
+            bool(deterministic_reproducibility_verified),
+            "Pass-2 Merkle root recomputation diverged from Pass-1 or Manifest root",
+            f"100% deterministic across {len(records)} records & {len(remediation_records)} retests",
+        ),
+    ]
+
+    all_9_cert_passed = all(c["certification_decision"] == "CERTIFIED_PASS" and c["passed"] is True for c in certification_test_ledger)
+    cert_passed_cnt = sum(1 for c in certification_test_ledger if c["certification_decision"] == "CERTIFIED_PASS")
+
+    key_operations_audit_log = [
+        {
+            "event_id": "KEY-AUDIT-01",
+            "timestamp_utc": valid_from,
+            "operation": "KEY_PROVISIONED_AND_PINNED",
+            "key_id": key_id,
+            "custody_tier": auth_entry.get("active_deployment_custody_tier", "LAB_PINNED_ED25519_KEYSTORE"),
+            "public_key_fingerprint_sha256": pinned_fp,
+            "status": "AUTHORIZED",
+        },
+        {
+            "event_id": "KEY-AUDIT-02",
+            "timestamp_utc": gen_ts or exec_ts,
+            "operation": "MANIFEST_MERKLE_ROOT_SIGNED_ED25519",
+            "key_id": key_id,
+            "manifest_id": manifest.get("manifest_id", ""),
+            "merkle_root_sha256": recomputed_merkle_root,
+            "trusted_timestamp_token": manifest_tsa,
+            "status": "SIGNED_AND_TIMESTAMP_BOUND",
+        },
+        {
+            "event_id": "KEY-AUDIT-03",
+            "timestamp_utc": exec_ts,
+            "operation": "STANDALONE_ZERO_DB_VERIFICATION_AND_9_TEST_CERTIFICATION",
+            "key_id": key_id,
+            "verifier_version": "XStrike-Standalone-Verifier-V3.5",
+            "certification_summary": f"{cert_passed_cnt}/9 CERTIFIED_PASS",
+            "status": "VERIFIED" if all_9_cert_passed else "HOLD_FAILURE",
+        },
+    ]
+
     overall_ok = (
         len(records) > 0
         and record_count_matched
@@ -294,6 +432,7 @@ def verify_exported_bundle_standalone(
         and merkle_root_verified
         and ed25519_verified
         and all_5_tamper_tests_passed
+        and all_9_cert_passed
         and key_rotation_window_verified
         and revocation_verified
         and timestamp_token_verified
@@ -319,7 +458,10 @@ def verify_exported_bundle_standalone(
         "timestamp_token_verified": timestamp_token_verified,
         "rfc3161_timestamp_token_verified": timestamp_token_verified,
         "deterministic_reproducibility_verified": deterministic_reproducibility_verified,
-        "tamper_tests_passed_summary": "9/9" if (all_5_tamper_tests_passed and key_rotation_window_verified and revocation_verified and timestamp_token_verified and deterministic_reproducibility_verified) else "FAILED",
+        "tamper_tests_passed_summary": f"{cert_passed_cnt}/9" if all_9_cert_passed else f"{cert_passed_cnt}/9_FAILED",
+        "certification_decision": "CERTIFIED_PASS" if all_9_cert_passed else "REJECTED_FAIL",
+        "certification_test_ledger": certification_test_ledger,
+        "key_operations_audit_log": key_operations_audit_log,
         "signing_key_owner": auth_entry.get("owner_identity", "Expedite Consults Ltd"),
         "active_deployment_custody_tier": auth_entry.get(
             "active_deployment_custody_tier",

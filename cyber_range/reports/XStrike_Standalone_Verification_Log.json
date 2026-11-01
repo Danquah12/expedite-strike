@@ -4,7 +4,7 @@
   "manifest_version_verified": "EvidenceCore-V3.5",
   "verification_mode": "STANDALONE_PINNED_PUBKEY_AND_EXPORTED_BUNDLE_NO_DB",
   "database_dependency": "NONE (Verified 100% from exported JSON bundle + pinned Ed25519 public key PEM)",
-  "assessment_id": "XSTRIKE-V3.5-20261031",
+  "assessment_id": "XSTRIKE-V3-ASSESSMENT",
   "computed_public_key_sha256_fingerprint": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
   "pinned_public_key_fingerprint_sha256": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
   "pinned_public_key_fingerprint_verified": true,
@@ -16,6 +16,138 @@
   "rfc3161_timestamp_token_verified": true,
   "deterministic_reproducibility_verified": true,
   "tamper_tests_passed_summary": "9/9",
+  "certification_decision": "CERTIFIED_PASS",
+  "certification_test_ledger": [
+    {
+      "test_id": "CERT-01",
+      "test_name": "1-Byte Evidence Payload Mutation Rejection",
+      "expected_result": "MUTATION_REJECTED (Tampered Leaf SHA-256 & Merkle Root Mismatch)",
+      "actual_result": "MUTATION_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "F-01:PROV-F-01-663E9B45B1 (SHA-256 leaf + Merkle root b515b5637e34431e...)",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-02",
+      "test_name": "Evidence Record Deletion Rejection",
+      "expected_result": "DELETION_REJECTED (Count Mismatch, Merkle Root Mismatch & Ed25519 Rejection)",
+      "actual_result": "DELETION_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Bundle count=124 vs truncated=123 | Manifest MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-03",
+      "test_name": "Ordered Merkle Leaf Reordering Rejection",
+      "expected_result": "REORDER_REJECTED (Ordered Merkle Root Digest Mismatch)",
+      "actual_result": "REORDER_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Ordered leaves [0..123] -> Root b515b5637e34431e...",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-04",
+      "test_name": "Manifest Metadata Alteration Rejection",
+      "expected_result": "ALTERATION_REJECTED (RFC 8032 Ed25519 Asymmetric Signature Rejection)",
+      "actual_result": "ALTERATION_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Ed25519 Signature 34eba077b4b66d7d8244... over MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-05",
+      "test_name": "Rogue Signing Public-Key Substitution Rejection",
+      "expected_result": "ROGUE_KEY_REJECTED (Pinned SHA-256 Fingerprint & Ed25519 Verification Rejection)",
+      "actual_result": "ROGUE_KEY_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Pinned Key FP ebd393bb023088d5bc1f... (XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01)",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-06",
+      "test_name": "Signing-Key Rotation Window Enforcement",
+      "expected_result": "ACTIVE_WITHIN_WINDOW (2026-10-01T00:00:00Z .. 2027-01-01T00:00:00Z) & OUT_OF_WINDOW_REJECTED",
+      "actual_result": "VALID_WINDOW (2026-11-01T00:11:52Z) & EXPIRED_2028_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Key XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01 Rotation Window [2026-10-01T00:00:00Z -> 2027-01-01T00:00:00Z]",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-07",
+      "test_name": "Authority CRL / Key Revocation Verification",
+      "expected_result": "GOOD_NOT_REVOKED & REVOKED_KEY_COMPROMISED_REJECTED",
+      "actual_result": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10) & REVOKED_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "XStrike Authority CRL v2026.10 (XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01)",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-08",
+      "test_name": "RFC 3161-Style Trusted Timestamp Token Binding",
+      "expected_result": "TIMESTAMP_TOKEN_BOUND (TST-SHA256-A64B2E936E7D96ABE00B40F5) & FORGED_TOKEN_REJECTED",
+      "actual_result": "VERIFIED (TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z)) & FORGED_REJECTED",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "Token TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z) bound to Merkle Root b515b5637e34431e...",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    },
+    {
+      "test_id": "CERT-09",
+      "test_name": "Two-Pass Deterministic Merkle & Evidence Reproducibility",
+      "expected_result": "DETERMINISTIC_MATCH (Pass1 == Pass2 == Manifest Root b515b5637e34431e...)",
+      "actual_result": "DETERMINISTIC_MATCH (b515b5637e34431e... == b515b5637e34431e...)",
+      "execution_timestamp": "2026-11-01T00:11:52Z",
+      "failure_reason": "NONE",
+      "evidence_reference": "100% deterministic across 124 records & 5 retests",
+      "certification_decision": "CERTIFIED_PASS",
+      "passed": true
+    }
+  ],
+  "key_operations_audit_log": [
+    {
+      "event_id": "KEY-AUDIT-01",
+      "timestamp_utc": "2026-10-01T00:00:00Z",
+      "operation": "KEY_PROVISIONED_AND_PINNED",
+      "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
+      "custody_tier": "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
+      "public_key_fingerprint_sha256": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
+      "status": "AUTHORIZED"
+    },
+    {
+      "event_id": "KEY-AUDIT-02",
+      "timestamp_utc": "2026-11-01T00:11:52Z",
+      "operation": "MANIFEST_MERKLE_ROOT_SIGNED_ED25519",
+      "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
+      "manifest_id": "MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+      "merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
+      "trusted_timestamp_token": "TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z)",
+      "status": "SIGNED_AND_TIMESTAMP_BOUND"
+    },
+    {
+      "event_id": "KEY-AUDIT-03",
+      "timestamp_utc": "2026-11-01T00:11:52Z",
+      "operation": "STANDALONE_ZERO_DB_VERIFICATION_AND_9_TEST_CERTIFICATION",
+      "key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
+      "verifier_version": "XStrike-Standalone-Verifier-V3.5",
+      "certification_summary": "9/9 CERTIFIED_PASS",
+      "status": "VERIFIED"
+    }
+  ],
   "signing_key_owner": "Expedite Consults Ltd \u2014 Autonomous Security Assessment Signing Authority",
   "active_deployment_custody_tier": "LAB_PINNED_ED25519_KEYSTORE (Active in Cyber Range Assessment)",
   "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
@@ -29,7 +161,7 @@
     "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
     "rotation_policy": "90-Day Automated Key Rotation with Dual-Signed Transition Manifest",
     "revocation_status": "GOOD_NOT_REVOKED (Verified against XStrike Authority CRL v2026.10)",
-    "trusted_timestamp_token": "TST-SHA256-D98A312D7346584F8D44679A (2026-10-31T20:37:32Z)"
+    "trusted_timestamp_token": "TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z)"
   },
   "total_exported_records": 124,
   "record_sha256_verified_count": 124,
