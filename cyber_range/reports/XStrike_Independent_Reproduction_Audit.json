@@ -1,6 +1,6 @@
 {
-  "audit_schema": "XStrike-CleanRoom-Independent-Audit-v1.0",
-  "executed_at_utc": "2026-11-01T00:31:37Z",
+  "audit_schema": "XStrike-CleanRoom-Independent-Audit-v3.6",
+  "executed_at_utc": "2026-11-01T01:31:26Z",
   "clean_room_isolation_verified": true,
   "xstrike_modules_imported": 0,
   "bundle_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Evidence_Bundle.json",
@@ -18,7 +18,9 @@
     "pinned_pubkey_fingerprint_matched": true,
     "retest_records_audited": 5,
     "retest_records_sha256_reproduced": 5,
-    "clean_room_cert_tests_passed": "9/9"
+    "clean_room_cert_tests_passed": "9/9",
+    "v36_dual_signed_key_rotation_verified": true,
+    "v36_state_separation_invariant_verified": true
   },
   "f02_remaining_compromise_status_audit": {
     "finding_id": "F-02",

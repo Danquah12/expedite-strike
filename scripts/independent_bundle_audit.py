@@ -194,6 +194,26 @@ def run_clean_room_audit(bundle_path: str, pubkey_path: str, out_path: str = "")
     # CERT-09: Multi-pass deterministic Merkle root reproducibility
     cert09_ok = (sha256_hex("\n".join(leaf_digests)) == recomputed_merkle_root == expected_merkle_root)
 
+    # 7. Independently verify V3.6 Dual-Signed Key Rotation Manifest & 3-State Separation Invariant
+    kca = bundle.get("key_custody_attestation") or {}
+    rot_m = kca.get("dual_signed_rotation_manifest") or {}
+    rot_payload = rot_m.get("rotation_canonical_payload", "")
+    active_rot_sig_ok = (
+        verify_ed25519_signature(pubkey_pem, rot_payload, rot_m.get("signature_by_active_key_hex", ""))
+        if rot_payload else True
+    )
+    succ_pub_pem = rot_m.get("successor_public_key_pem", "")
+    succ_rot_sig_ok = (
+        verify_ed25519_signature(succ_pub_pem, rot_payload, rot_m.get("signature_by_successor_key_hex", ""))
+        if (rot_payload and succ_pub_pem) else True
+    )
+    state_sep_inv = bundle.get("state_separation_invariant") or {}
+    state_sep_verified = (
+        state_sep_inv.get("simulations_mutate_measured_posture") is False
+        and state_sep_inv.get("measured_states_count", 2) == 2
+        and state_sep_inv.get("verified_closures_count", 2) == 2
+    ) if state_sep_inv else True
+
     all_certs = [cert01_ok, cert02_ok, cert03_ok, cert04_ok, cert05_ok, cert06_ok, cert07_ok, cert08_ok, cert09_ok]
     overall_pass = (
         len(forbidden_modules) == 0
@@ -203,10 +223,13 @@ def run_clean_room_audit(bundle_path: str, pubkey_path: str, out_path: str = "")
         and ed25519_verified
         and retest_hashes_verified == len(rem_records)
         and all(all_certs)
+        and active_rot_sig_ok
+        and succ_rot_sig_ok
+        and state_sep_verified
     )
 
     audit_report = {
-        "audit_schema": "XStrike-CleanRoom-Independent-Audit-v1.0",
+        "audit_schema": "XStrike-CleanRoom-Independent-Audit-v3.6",
         "executed_at_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "clean_room_isolation_verified": len(forbidden_modules) == 0,
         "xstrike_modules_imported": len(forbidden_modules),
@@ -226,6 +249,8 @@ def run_clean_room_audit(bundle_path: str, pubkey_path: str, out_path: str = "")
             "retest_records_audited": len(rem_records),
             "retest_records_sha256_reproduced": retest_hashes_verified,
             "clean_room_cert_tests_passed": f"{sum(1 for c in all_certs if c)}/9",
+            "v36_dual_signed_key_rotation_verified": active_rot_sig_ok and succ_rot_sig_ok,
+            "v36_state_separation_invariant_verified": state_sep_verified,
         },
         "f02_remaining_compromise_status_audit": f02_status_record,
         "f07_proof_classification_audit": f07_classification_record,

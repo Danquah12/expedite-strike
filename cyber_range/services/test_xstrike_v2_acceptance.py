@@ -220,8 +220,8 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
     def test_ac13_to_ac18_manifest_sarif_transition_reconciliation_and_25_rule_quality_gate(self):
         qa = self.v2["quality_audit"]
         self.assertTrue(qa["passed"], f"Failed rules: {[c for c in qa['checks'] if not c['passed']]}")
-        self.assertEqual(qa["passed_rules"], 25)
-        self.assertEqual(qa["total_rules"], 25)
+        self.assertEqual(qa["passed_rules"], 26)
+        self.assertEqual(qa["total_rules"], 26)
 
         # AC-17: Verify Dynamic Transition Model has zero stale hardcoded IDs
         tm = self.v2["transition_model"]
@@ -280,7 +280,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreater(len(pdf_bytes), 100000)
         html_doc = prp.generate_html_report(self.raw_state)
         self.assertIn("EXPEDITE STRIKE V3.5", html_doc)
-        self.assertIn("25/25 PASSED", html_doc)
+        self.assertIn("26/26 PASSED", html_doc)
 
     def test_v33_ten_formal_regression_tests_reg01_to_reg10(self):
         """
@@ -527,7 +527,7 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         # REG-26 (V4.0 ARAPME): F-02 Remediation Status Confirmation, F-07 Proof Classification Review & 6-Stage Autonomous Remediation Engine
         are = self.v2.get("autonomous_remediation_engine", {})
         self.assertEqual(len(are.get("six_stage_pipeline_summary", [])), 6)
-        self.assertEqual(len(are.get("attack_path_state_transitions", [])), 4)
+        self.assertEqual(len(are.get("attack_path_state_transitions", [])), 5)
         f02_conf = are.get("f02_remediation_status_confirmation", {})
         self.assertEqual(f02_conf.get("finding_id"), "F-02")
         self.assertEqual(f02_conf.get("t1_current_proof_state"), "CONFIRMED_COMPROMISE")
@@ -539,6 +539,39 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertEqual(f_dvwa["proof_state"], "VALIDATED")
         self.assertEqual(f_dvwa["mitre_execution_state"], "TECHNIQUE_VALIDATED")
         self.assertIn("FORM_RESPONSE_HEURISTIC_VALIDATED", f_dvwa["access_scope"]["authentication_status"])
+
+        # REG-27 (V3.6 Priority 1): Strict State Separation Invariant (Measured Security States vs Verified Closures vs Isolated Simulations)
+        ms_list = are.get("measured_security_states", [])
+        sim_list = are.get("projected_remediation_simulations", [])
+        cl_list = are.get("verified_closure_ledger", [])
+        self.assertEqual(len(ms_list), 2)
+        self.assertTrue(all(m["state_class"] == "MEASURED_SECURITY_STATE" and m["mutates_measured_posture"] is True for m in ms_list))
+        self.assertEqual(len(sim_list), 3)
+        self.assertTrue(all(s["state_class"] == "PROJECTED_REMEDIATION_SIMULATION" and s["mutates_measured_posture"] is False for s in sim_list))
+        self.assertEqual(sum(1 for c in cl_list if c["seven_gate_passed"] is True and c["state_class"] == "VERIFIED_CLOSURE_STATE"), 2)
+        self.assertEqual(sum(1 for c in cl_list if c["seven_gate_passed"] is False and c["state_class"] == "UNVERIFIED_OR_HELD_REMEDIATION_STATE"), 4)
+
+        # REG-28 (V3.6 Priority 2): AttackGraph & RiskEngine Integration with Strictly Verified State Transitions
+        chains_by_id = {c["chain_id"]: c for c in self.v2["attack_graph"]["chains"]}
+        self.assertEqual(chains_by_id["CHAIN-02"]["t0_baseline_state"], "CONFIRMED_EXECUTED")
+        self.assertEqual(chains_by_id["CHAIN-02"]["t1_post_retest_state"], "MITIGATED_VERIFIED_CLOSED_AT_T1")
+        self.assertEqual(chains_by_id["CHAIN-01"]["t0_baseline_state"], "CONFIRMED_EXECUTED")
+        self.assertEqual(chains_by_id["CHAIN-01"]["t1_post_retest_state"], "CONFIRMED_EXECUTED")
+
+        # REG-29 (V3.6 Priority 3): Production PKCS#8 AES-256 Encrypted Key Envelope & Dual-Signed Key Rotation Manifest
+        kca = are.get("key_custody_attestation", {})
+        self.assertTrue(kca.get("envelope_roundtrip_verified"))
+        self.assertTrue(str(kca.get("pkcs8_encrypted_pem_header", "")).startswith("-----BEGIN ENCRYPTED PRIVATE KEY-----"))
+        rot_m = kca.get("dual_signed_rotation_manifest", {})
+        self.assertEqual(rot_m.get("rotation_manifest_id"), "KEY-ROTATION-MANIFEST-V3.6")
+        self.assertTrue(rot_m.get("dual_signature_verified"))
+
+        # REG-30 (V3.6 Schema): 11-Table SQLite Schema Persistence Verification
+        sq_cnt = self.v2["integrity_verification"].get("sqlite_table_counts", {})
+        self.assertEqual(sq_cnt.get("v36_remediation_work_packages"), 6)
+        self.assertEqual(sq_cnt.get("v36_change_executions"), 6)
+        self.assertEqual(sq_cnt.get("v36_state_transitions"), 5)
+        self.assertEqual(sq_cnt.get("v36_keystore_audit_log"), 2)
 
 
 if __name__ == "__main__":

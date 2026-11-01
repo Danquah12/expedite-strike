@@ -1258,7 +1258,7 @@
         "signedEvidenceManifest": {
           "manifestId": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
           "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-          "manifestHmacSha256": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
+          "manifestHmacSha256": "3a589dd2f1e049e740e376b5bd2aa665234ac963a914f2b606be6e17df033ced",
           "recordCount": null
         }
       },
