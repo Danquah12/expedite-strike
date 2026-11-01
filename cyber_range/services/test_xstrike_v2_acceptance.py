@@ -524,6 +524,22 @@ class TestXStrikeV3Acceptance(unittest.TestCase):
         self.assertGreaterEqual(len(exec_prio.get("priority_compromise_and_auth_findings", [])), 6)
         self.assertIn("WP-06", str(exec_prio.get("config_hygiene_consolidation_summary", "")))
 
+        # REG-26 (V4.0 ARAPME): F-02 Remediation Status Confirmation, F-07 Proof Classification Review & 6-Stage Autonomous Remediation Engine
+        are = self.v2.get("autonomous_remediation_engine", {})
+        self.assertEqual(len(are.get("six_stage_pipeline_summary", [])), 6)
+        self.assertEqual(len(are.get("attack_path_state_transitions", [])), 4)
+        f02_conf = are.get("f02_remediation_status_confirmation", {})
+        self.assertEqual(f02_conf.get("finding_id"), "F-02")
+        self.assertEqual(f02_conf.get("t1_current_proof_state"), "CONFIRMED_COMPROMISE")
+        self.assertFalse(f02_conf.get("remediation_verified"))
+        f07_aud = are.get("f07_proof_classification_audit", {})
+        self.assertEqual(f07_aud.get("assigned_proof_state"), "VALIDATED")
+        self.assertEqual(f07_aud.get("rejected_higher_state"), "CONFIRMED_AUTH")
+        f_dvwa = next(f for f in self.v2["security_findings"] if f["canonical_key"] == "VULN_DVWA_DEFAULT_CREDS")
+        self.assertEqual(f_dvwa["proof_state"], "VALIDATED")
+        self.assertEqual(f_dvwa["mitre_execution_state"], "TECHNIQUE_VALIDATED")
+        self.assertIn("FORM_RESPONSE_HEURISTIC_VALIDATED", f_dvwa["access_scope"]["authentication_status"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

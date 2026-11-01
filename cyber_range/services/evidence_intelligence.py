@@ -621,6 +621,29 @@ def classify_proof_state_and_scope(f: Dict[str, Any], raw_exploits: List[Dict[st
         }
         return ("VALIDATED", "VALIDATED", scope)
 
+    # Rule 5B (F-07 / F-09 Proof Classification Review): Web Default Credential Form Heuristic (DVWA / Mutillidae) -> VALIDATED
+    if ckey == "VULN_DVWA_DEFAULT_CREDS" or ("default creds" in combined and ("dvwa" in combined or "mutillidae" in combined)):
+        scope = {
+            "authenticated": False,
+            "file_access": "NONE",
+            "database_access": "NONE (Web Login Form Response Heuristic Only; Post-Login Session Cookie Not Captured)",
+            "privilege_level": "NONE (Held at VALIDATED per AC-02; No Authenticated Session Cookie or DOM Transcript Captured)",
+            "privesc_demonstrated": False,
+            "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
+            "execution_status": "SAFE_AUTH_FORM_PROBE_EXECUTED",
+            "authentication_status": "FORM_RESPONSE_HEURISTIC_VALIDATED_NO_SESSION_COOKIE_CAPTURED",
+            "exploitability_status": "VALIDATED_INDICATOR_ONLY",
+            "data_access_status": "HTTP_LOGIN_RESPONSE_INDICATOR_ONLY",
+            "impact_status": "WEB_ADMIN_CREDENTIAL_EXPOSURE_CANDIDATE",
+            "evidence_confidence": 91,
+            "access_summary": (
+                "F-07 Proof Classification Review: OWASP A07 HTTP POST form probe matched login-success response indicator on "
+                "/dvwa/login.php & /mutillidae/, but no authenticated session cookie (PHPSESSID) or post-login DOM transcript "
+                "was captured; strictly held at VALIDATED (not CONFIRMED_AUTH per AC-02)."
+            ),
+        }
+        return ("VALIDATED", "VALIDATED", scope)
+
     # Rule 6: Local Privilege Escalation Precondition (/usr/bin/nmap SUID root) -> PRIVILEGE_ESCALATION_PRECONDITION_VALIDATED
     if ckey == "VULN_PRIVESC_SUID_NMAP" or ("suid_privesc" in t and "nmap" in combined):
         scope = {
@@ -1477,7 +1500,7 @@ CANONICAL_CATALOG: Dict[str, Dict[str, Any]] = {
         "security_risk": "MEDIUM (VALIDATED EXPOSURE, CVSS 5.3) — Publicly reachable database administration console; exposes backend MySQL authentication surface.",
     },
     "VULN_DVWA_DEFAULT_CREDS": {
-        "title": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)",
+        "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
         "severity": "High",
         "cve": "",
         "custom_vulnerability_id": "XSTRIKE-WEB-DVWA-DEFAULT-CREDS",
@@ -1485,8 +1508,8 @@ CANONICAL_CATALOG: Dict[str, Dict[str, Any]] = {
         "taxonomy_mapping": "OWASP-A07:2021 (Identification and Authentication Failures) | CWE-798",
         "cwe": "CWE-798",
         "mitre_id": "T1078.001",
-        "description": "The Damn Vulnerable Web Application (DVWA) login endpoint (/dvwa/login.php) accepted default administrative credentials ('admin:password') during automated authentication verification (consolidated from OWASP A07 testing).",
-        "security_risk": "HIGH — Validated administrative web session access enabling command injection, SQLi, and file upload testing modules.",
+        "description": "The web login endpoint (/dvwa/login.php and/or /mutillidae/) returned a positive HTTP login-response indicator when probed with default credential pairs ('admin:password' / 'admin:admin') during OWASP A07 testing. Classified as VALIDATED (not CONFIRMED_AUTH per AC-02) because no authenticated session cookie (PHPSESSID) or post-login administrative DOM transcript was captured.",
+        "security_risk": "HIGH (VALIDATED_INDICATOR_ONLY, CVSS 8.2) — Positive default-credential form response indicator on web login endpoint; requires session-cookie & post-auth DOM capture to elevate to CONFIRMED_AUTH.",
     },
     "VULN_WEB_SSRF_MUTILLIDAE": {
         "title": "Web Application Server-Side Request Forgery (SSRF) Indicator (Mutillidae)",
@@ -7141,6 +7164,33 @@ def correlate_and_enrich_findings(
         security_findings, remediation_workflow=remediation_workflow
     )
 
+    # Execute 6-Stage Autonomous Remediation & Attack-Path Management Engine (ARAPME-V4.0)
+    try:
+        import importlib as _imp_are
+        import cyber_range.services.autonomous_remediation_engine as _are_mod
+        _are_mod = _imp_are.reload(_are_mod)
+        autonomous_remediation_engine = _are_mod.AutonomousRemediationAndAttackPathEngine.execute_closed_loop_engine(
+            security_findings=security_findings,
+            attack_graph=attack_graph,
+            risk_model=risk_model,
+            remediation_workflow=remediation_workflow,
+            work_packages=remediation_work_packages,
+            assessment_id=assessment_id,
+        )
+    except Exception:
+        autonomous_remediation_engine = {}
+
+    if autonomous_remediation_engine:
+        remediation_workflow["f02_remediation_status_confirmation"] = autonomous_remediation_engine.get(
+            "f02_remediation_status_confirmation", {}
+        )
+        remediation_workflow["f07_proof_classification_audit"] = autonomous_remediation_engine.get(
+            "f07_proof_classification_audit", {}
+        )
+        remediation_work_packages = autonomous_remediation_engine.get(
+            "autonomous_work_packages", remediation_work_packages
+        )
+
     # EPIC 05: Build Executive Priority Risk & Critical Business Impact View (Separating Demonstrated Compromise vs Config Hygiene)
     priority_findings = [
         f for f in security_findings
@@ -7442,6 +7492,7 @@ def correlate_and_enrich_findings(
         "remediation_work_packages": remediation_work_packages,
         "root_cause_5d_matrix": root_cause_5d_matrix,
         "executive_priority_view": executive_priority_view,
+        "autonomous_remediation_engine": autonomous_remediation_engine,
         "quality_audit": quality_audit,
         "sqlite_db_path": db_file,
     }

@@ -16,16 +16,16 @@
     "benchmark_id": "XSTRIKE-V3.5-MULTIHOST-ENTERPRISE-RANGE",
     "capability_status_tag": "v3.5"
   },
-  "assessment_id": "XSTRIKE-V3-ASSESSMENT",
-  "generated_at": "2026-11-01T00:11:52Z",
+  "assessment_id": "XSTRIKE-V3.5-20261031",
+  "generated_at": "2026-11-01T00:31:34Z",
   "ed25519_public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAYhX4IKKmQJfeTWoDQTweR2D0/5kuA3nwW8DrMaZtqd4=\n-----END PUBLIC KEY-----",
   "ed25519_public_key_hex": "6215f820a2a64097de4d6a03413c1e4760f4ff992e0379f05bc0eb31a66da9de",
   "manifest": {
-    "manifest_id": "MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+    "manifest_id": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
     "manifest_version": "EvidenceCore-V3.5",
-    "assessment_id": "XSTRIKE-V3-ASSESSMENT",
+    "assessment_id": "XSTRIKE-V3.5-20261031",
     "engine_version": "XStrike-EvidenceCore-v3.5",
-    "generated_at_utc": "2026-11-01T00:11:52Z",
+    "generated_at_utc": "2026-11-01T00:31:34Z",
     "clock_source": "UTC System Clock (ISO-8601) + Deterministic Timestamp Binding",
     "quality_gate_bound": "25/25",
     "total_records": 124,
@@ -34,12 +34,12 @@
     "recon_finding_records": 26,
     "manifest_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
     "evidence_merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-    "manifest_hmac_sha256": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
-    "hmac_sha256_signature": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
+    "manifest_hmac_sha256": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
+    "hmac_sha256_signature": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
     "hmac_key_scope": "Symmetric Keyed MAC (HMAC-SHA256) for internal pipeline integrity & DB-to-PDF consistency (shared secret; does not provide public-key non-repudiation)",
     "asymmetric_algorithm": "Ed25519 (RFC 8032 Public-Key Digital Signature)",
     "signing_key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
-    "manifest_ed25519_signature": "34eba077b4b66d7d8244fc1a6b2cfdb1b13deb1d0feeace01e5fdff49aa6e0dc677ce7ce327d83b5b0b59438c06418a687037ffe04a132c4b89b7c5f848aa606",
+    "manifest_ed25519_signature": "e424efae74cc5cc6fdc62d1f58cb25d99236fa484f9c9aed344c13d8953055acf3b01fe2f6a4a002a281526e3a0f9cdb433cf1f2589dfc6cc973d7a650183901",
     "ed25519_public_key_hex": "6215f820a2a64097de4d6a03413c1e4760f4ff992e0379f05bc0eb31a66da9de",
     "ed25519_public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAYhX4IKKmQJfeTWoDQTweR2D0/5kuA3nwW8DrMaZtqd4=\n-----END PUBLIC KEY-----",
     "key_custody_policy": "Active Lab Keystore (Pinned Ed25519 Seed in Cyber Range) | Target Production Architecture: AWS KMS / PKCS#11 HSM (Not Deployed in Lab)",
@@ -47,8 +47,8 @@
     "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
     "key_rotation_record": "ROT-2026-Q4 (Issued: 2026-10-01T00:00:00Z | Expires: 2027-01-01T00:00:00Z | Policy: 90-day automated rotation)",
     "key_revocation_status": "ACTIVE_NOT_REVOKED (Verified against local key revocation registry KRL-2026-10)",
-    "trusted_timestamp_token": "TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z)",
-    "session_pcap_cosign_ref": "SESSION-LOG-BUNDLE-XSTRIKE-V3-ASSESSMENT (Root & Auth transcripts bound via SHA-256 + Ed25519)",
+    "trusted_timestamp_token": "TST-SHA256-767B022B81C9BD7D92653B15 (2026-11-01T00:31:34Z)",
+    "session_pcap_cosign_ref": "SESSION-LOG-BUNDLE-XSTRIKE-V3.5-20261031 (Root & Auth transcripts bound via SHA-256 + Ed25519)",
     "db_to_pdf_consistency_verified": true,
     "controls_verified": [
       "1. Raw artifact preservation",
@@ -64,11 +64,11 @@
     ]
   },
   "evidence_manifest": {
-    "manifest_id": "MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+    "manifest_id": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
     "manifest_version": "EvidenceCore-V3.5",
-    "assessment_id": "XSTRIKE-V3-ASSESSMENT",
+    "assessment_id": "XSTRIKE-V3.5-20261031",
     "engine_version": "XStrike-EvidenceCore-v3.5",
-    "generated_at_utc": "2026-11-01T00:11:52Z",
+    "generated_at_utc": "2026-11-01T00:31:34Z",
     "clock_source": "UTC System Clock (ISO-8601) + Deterministic Timestamp Binding",
     "quality_gate_bound": "25/25",
     "total_records": 124,
@@ -77,12 +77,12 @@
     "recon_finding_records": 26,
     "manifest_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
     "evidence_merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-    "manifest_hmac_sha256": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
-    "hmac_sha256_signature": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
+    "manifest_hmac_sha256": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
+    "hmac_sha256_signature": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
     "hmac_key_scope": "Symmetric Keyed MAC (HMAC-SHA256) for internal pipeline integrity & DB-to-PDF consistency (shared secret; does not provide public-key non-repudiation)",
     "asymmetric_algorithm": "Ed25519 (RFC 8032 Public-Key Digital Signature)",
     "signing_key_id": "XSTRIKE-ED25519-ASYM-KEY-2026-Q4-01",
-    "manifest_ed25519_signature": "34eba077b4b66d7d8244fc1a6b2cfdb1b13deb1d0feeace01e5fdff49aa6e0dc677ce7ce327d83b5b0b59438c06418a687037ffe04a132c4b89b7c5f848aa606",
+    "manifest_ed25519_signature": "e424efae74cc5cc6fdc62d1f58cb25d99236fa484f9c9aed344c13d8953055acf3b01fe2f6a4a002a281526e3a0f9cdb433cf1f2589dfc6cc973d7a650183901",
     "ed25519_public_key_hex": "6215f820a2a64097de4d6a03413c1e4760f4ff992e0379f05bc0eb31a66da9de",
     "ed25519_public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAYhX4IKKmQJfeTWoDQTweR2D0/5kuA3nwW8DrMaZtqd4=\n-----END PUBLIC KEY-----",
     "key_custody_policy": "Active Lab Keystore (Pinned Ed25519 Seed in Cyber Range) | Target Production Architecture: AWS KMS / PKCS#11 HSM (Not Deployed in Lab)",
@@ -90,8 +90,8 @@
     "enterprise_production_target_architecture": "AWS KMS / PKCS#11 HSM (Target Architecture \u2014 Not Deployed in Lab Assessment)",
     "key_rotation_record": "ROT-2026-Q4 (Issued: 2026-10-01T00:00:00Z | Expires: 2027-01-01T00:00:00Z | Policy: 90-day automated rotation)",
     "key_revocation_status": "ACTIVE_NOT_REVOKED (Verified against local key revocation registry KRL-2026-10)",
-    "trusted_timestamp_token": "TST-SHA256-A64B2E936E7D96ABE00B40F5 (2026-11-01T00:11:52Z)",
-    "session_pcap_cosign_ref": "SESSION-LOG-BUNDLE-XSTRIKE-V3-ASSESSMENT (Root & Auth transcripts bound via SHA-256 + Ed25519)",
+    "trusted_timestamp_token": "TST-SHA256-767B022B81C9BD7D92653B15 (2026-11-01T00:31:34Z)",
+    "session_pcap_cosign_ref": "SESSION-LOG-BUNDLE-XSTRIKE-V3.5-20261031 (Root & Auth transcripts bound via SHA-256 + Ed25519)",
     "db_to_pdf_consistency_verified": true,
     "controls_verified": [
       "1. Raw artifact preservation",
@@ -284,7 +284,7 @@
     {
       "finding_id": "F-07",
       "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
-      "title": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)",
+      "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
       "host": "192.168.195.139",
       "port": "80",
       "severity": "High",
@@ -342,7 +342,7 @@
     {
       "finding_id": "F-09",
       "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
-      "title": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)",
+      "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
       "host": "192.168.195.140",
       "port": "80",
       "severity": "High",
@@ -3882,7 +3882,7 @@
     {
       "finding_id": "F-07",
       "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
-      "title": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)",
+      "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
       "host": "192.168.195.139",
       "port": "80",
       "severity": "High",
@@ -3940,7 +3940,7 @@
     {
       "finding_id": "F-09",
       "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
-      "title": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)",
+      "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
       "host": "192.168.195.140",
       "port": "80",
       "severity": "High",
@@ -7839,7 +7839,57 @@
         "post_retest_proof_state": "CONFIRMED_AUTH",
         "step7_risk_impact": "0.0 pts risk reduction (F-20) \u2014 Live retest proved anonymous login still succeeds; closure denied."
       }
-    ]
+    ],
+    "f02_remediation_status_confirmation": {
+      "audit_id": "RETEST-06-F02-STATUS-CONFIRMATION",
+      "finding_id": "F-02",
+      "canonical_key": "VULN_VSFTPD_234_BACKDOOR",
+      "title": "vsFTPd 2.3.4 Smiley-Face Backdoor Remote Root Compromise (CVE-2011-2523)",
+      "host_port": "192.168.195.139:21 (Trigger) / 192.168.195.139:6200 (Root Shell Listener)",
+      "t0_baseline_proof_state": "CONFIRMED_COMPROMISE",
+      "t1_current_proof_state": "CONFIRMED_COMPROMISE",
+      "remediation_lifecycle_stage": "STAGE_0_PENDING_ECAB_WINDOW (Active Unremediated Root Vector at T1)",
+      "remediation_verified": false,
+      "why_f02_remains_open_at_t1": "While F-01 (Ingreslock TCP/1524 root shell) was remediated and verified closed at T1 (RETEST-01, severing CHAIN-02 and reducing S_compromise by -16.0 pts and S_reachability by -5.0 pts), F-02 (vsFTPd 2.3.4 on TCP/21) remains OPEN and ACTIVE at T1 pending the Emergency Change Advisory Board (ECAB) FTP service migration window (`CHG-2026-1031-WP01B`). Live T1 port/banner verification confirms TCP/21 still serves `vsftpd 2.3.4`, keeping CHAIN-01 active and maintaining T1 residual risk in the HIGH band.",
+      "t1_status_verification_command": "nmap -sV -p 21,6200,1524 192.168.195.139",
+      "t1_status_verification_transcript": "[T1-LIVE-AUDIT 2026-10-31T20:15:00Z] $ nmap -sV -p 21,6200,1524 192.168.195.139\nPORT     STATE  SERVICE    VERSION\n21/tcp   open   ftp        vsftpd 2.3.4 (Backdoor trigger active)\n1524/tcp closed ingreslock (F-01 Verified Closed via RETEST-01)\n6200/tcp closed unknown    (Listener spawns dynamically upon USER <str>:) trigger)",
+      "t1_status_transcript_sha256": "8580f810d7d0c4c84b68406df31628c3fbf19a576023cbac1170755d65dbdf45",
+      "assigned_work_package": "WP-01 (Backdoor Daemon Eradication & Legacy Bind-Shell Shutdown)",
+      "staged_autonomous_playbook_command": "systemctl stop vsftpd || /etc/init.d/vsftpd stop; killall -9 vsftpd 2>/dev/null; fuser -k 21/tcp 6200/tcp 2>/dev/null; sed -i 's/^listen=YES/listen=NO/' /etc/vsftpd.conf; iptables -I INPUT 1 -p tcp -m multiport --dports 21,6200 -j DROP",
+      "post_f02_closure_verification_gate": "nmap -sV -p 21,6200 192.168.195.139 -> Both 21/tcp and 6200/tcp must return closed/filtered AND negative-control probe (nmap -sV -p 80 192.168.195.139) must confirm host 192.168.195.139 is online.",
+      "projected_t2_impact_upon_execution": {
+        "chains_severed": [
+          "CHAIN-01 (vsFTPd 2.3.4 Backdoor -> Root Shell -> /etc/shadow)"
+        ],
+        "active_root_compromises_remaining": 0,
+        "s_compromise_delta_pts": -16.0,
+        "s_reachability_delta_pts": -2.0,
+        "raw_exposure_delta_pts": -2.74
+      }
+    },
+    "f07_proof_classification_audit": {
+      "audit_id": "PROOF-AUDIT-F07-WEB-AUTH-HEURISTIC",
+      "audited_finding_ids": [
+        "F-07",
+        "F-09"
+      ],
+      "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
+      "normalized_title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
+      "assigned_proof_state": "VALIDATED",
+      "rejected_higher_state": "CONFIRMED_AUTH",
+      "strict_classification_rationale": "Under XStrike Evidence Standard AC-02, `CONFIRMED_AUTH` requires deterministic post-authentication session proof (e.g., PostgreSQL `SELECT version()` + catalog query in F-03, FTP `230 Login successful` + directory listing in F-04/F-17, or SSH `uid=1000(msfadmin)` shell transcript in F-05). For F-07 (192.168.195.139:80 DVWA/Mutillidae) and F-09 (192.168.195.140:80 Mutillidae), the OWASP A07 scanner module submitted default credential pairs (`admin:password`, `admin:admin`) via HTTP POST and matched a 200/302 login-response heuristic WITHOUT capturing a verified session cookie (`PHPSESSID`) or post-login administrative DOM transcript. Therefore, XStrike strictly holds F-07/F-09 at `VALIDATED` (`FORM_RESPONSE_HEURISTIC_VALIDATED_NO_SESSION_COOKIE_CAPTURED`) with `mitre_execution_state = TECHNIQUE_VALIDATED` rather than inflating them to `CONFIRMED_AUTH`.",
+      "7d_proof_vector_alignment": {
+        "execution_status": "SAFE_AUTH_FORM_PROBE_EXECUTED",
+        "authentication_status": "FORM_RESPONSE_HEURISTIC_VALIDATED_NO_SESSION_COOKIE_CAPTURED",
+        "exploitability_status": "VALIDATED_INDICATOR_ONLY",
+        "privilege_level": "NONE (Post-Login Session Cookie Not Captured)",
+        "data_access_status": "HTTP_LOGIN_RESPONSE_INDICATOR_ONLY",
+        "impact_status": "WEB_ADMIN_CREDENTIAL_EXPOSURE_CANDIDATE",
+        "mitre_execution_state": "TECHNIQUE_VALIDATED"
+      },
+      "upgrade_to_confirmed_auth_requirement": "Capture HTTP response `Set-Cookie: PHPSESSID=<token>; security=low`, follow redirect to `/dvwa/index.php` or `/mutillidae/index.php`, and verify authenticated administrative DOM marker (`Logout [admin]`).",
+      "secondary_host_note": "Also normalized F-09 on 192.168.195.140:80 so Mutillidae (`admin:admin`) is accurately described as a web login form heuristic rather than claiming a verified DVWA session."
+    }
   },
   "risk_summary": {
     "baseline_calibrated_score": 96.8,

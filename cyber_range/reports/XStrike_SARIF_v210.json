@@ -139,10 +139,10 @@
               "id": "XSTRIKE-WEB-DVWA-DEFAULT-CREDS",
               "name": "VULN_DVWA_DEFAULT_CREDS",
               "shortDescription": {
-                "text": "DVWA Web Application Default Administrative Credentials Accepted (admin:password)"
+                "text": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)"
               },
               "fullDescription": {
-                "text": "The Damn Vulnerable Web Application (DVWA) login endpoint (/dvwa/login.php) accepted default administrative credentials ('admin:password') during automated authentication verification (consolidated from OWASP A07 testing)."
+                "text": "The web login endpoint (/dvwa/login.php and/or /mutillidae/) returned a positive HTTP login-response indicator when probed with default credential pairs ('admin:password' / 'admin:admin') during OWASP A07 testing. Classified as VALIDATED (not CONFIRMED_AUTH per AC-02) because no authenticated session cookie (PHPSESSID) or post-login administrative DOM transcript was captured."
               },
               "help": {
                 "text": "Immediate: Disable or unpublish the `/dvwa/` training application from the web root (`mv /var/www/dvwa /root/dvwa.disabled`) or rotate the `admin` password in the DVWA MySQL `users` table.\nShort-Term: Restrict access to `/dvwa/` via Apache IP allowlisting (`Require ip 127.0.0.1`) if used in a controlled lab.\nVerification: Submit `username=admin&password=password` to `/dvwa/login.php` and verify authentication fails or returns HTTP 403/404. [Target Endpoint: `192.168.195.139:80`]"
@@ -1252,13 +1252,13 @@
         }
       },
       "automationDetails": {
-        "id": "XSTRIKE-V3-ASSESSMENT"
+        "id": "XSTRIKE-V3.5-20261031"
       },
       "properties": {
         "signedEvidenceManifest": {
-          "manifestId": "MANIFEST-XSTRIKE-V3.5-ASSESSMENT-B515B5637E",
+          "manifestId": "MANIFEST-XSTRIKE-V3.5-20261031-B515B5637E",
           "rootDigestSha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
-          "manifestHmacSha256": "135e1680f4d76d7a8979b35b41c417d20d8781677a84c9d5cac359fc38befe4f",
+          "manifestHmacSha256": "f86f8829e170aa2561af2896b6ec1a174fb0079263b9e213331037aaf51e0f2e",
           "recordCount": null
         }
       },
@@ -1614,7 +1614,7 @@
           "ruleId": "XSTRIKE-WEB-DVWA-DEFAULT-CREDS",
           "level": "error",
           "message": {
-            "text": "[F-07] DVWA Web Application Default Administrative Credentials Accepted (admin:password) \u2014 ProofState=VALIDATED | CVSS=8.2 | EvidenceConf=95%"
+            "text": "[F-07] Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint) \u2014 ProofState=VALIDATED | CVSS=8.2 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -1638,17 +1638,17 @@
             "accessScope": {
               "authenticated": false,
               "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
+              "database_access": "NONE (Web Login Form Response Heuristic Only; Post-Login Session Cookie Not Captured)",
+              "privilege_level": "NONE (Held at VALIDATED per AC-02; No Authenticated Session Cookie or DOM Transcript Captured)",
               "privesc_demonstrated": false,
               "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+              "execution_status": "SAFE_AUTH_FORM_PROBE_EXECUTED",
+              "authentication_status": "FORM_RESPONSE_HEURISTIC_VALIDATED_NO_SESSION_COOKIE_CAPTURED",
+              "exploitability_status": "VALIDATED_INDICATOR_ONLY",
+              "data_access_status": "HTTP_LOGIN_RESPONSE_INDICATOR_ONLY",
+              "impact_status": "WEB_ADMIN_CREDENTIAL_EXPOSURE_CANDIDATE",
+              "evidence_confidence": 91,
+              "access_summary": "F-07 Proof Classification Review: OWASP A07 HTTP POST form probe matched login-success response indicator on /dvwa/login.php & /mutillidae/, but no authenticated session cookie (PHPSESSID) or post-login DOM transcript was captured; strictly held at VALIDATED (not CONFIRMED_AUTH per AC-02)."
             },
             "confidenceModel": {
               "detection_confidence": 96,
@@ -1724,7 +1724,7 @@
           "ruleId": "XSTRIKE-WEB-DVWA-DEFAULT-CREDS",
           "level": "error",
           "message": {
-            "text": "[F-09] DVWA Web Application Default Administrative Credentials Accepted (admin:password) \u2014 ProofState=VALIDATED | CVSS=8.2 | EvidenceConf=95%"
+            "text": "[F-09] Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint) \u2014 ProofState=VALIDATED | CVSS=8.2 | EvidenceConf=95%"
           },
           "locations": [
             {
@@ -1748,17 +1748,17 @@
             "accessScope": {
               "authenticated": false,
               "file_access": "NONE",
-              "database_access": "NONE",
-              "privilege_level": "NONE",
+              "database_access": "NONE (Web Login Form Response Heuristic Only; Post-Login Session Cookie Not Captured)",
+              "privilege_level": "NONE (Held at VALIDATED per AC-02; No Authenticated Session Cookie or DOM Transcript Captured)",
               "privesc_demonstrated": false,
               "privesc_lifecycle_state": "NOT_APPLICABLE_NON_PRIVESC",
-              "execution_status": "SAFE_PROBE_EXECUTED",
-              "authentication_status": "UNAUTHENTICATED_PROBE",
-              "exploitability_status": "CONFIGURATION_WEAKNESS",
-              "data_access_status": "METADATA_OR_HEADERS_ONLY",
-              "impact_status": "DEFENSE_IN_DEPTH_DEGRADATION",
-              "evidence_confidence": 94,
-              "access_summary": "Technical configuration, protocol flag, or HTTP response header/cookie directly validated"
+              "execution_status": "SAFE_AUTH_FORM_PROBE_EXECUTED",
+              "authentication_status": "FORM_RESPONSE_HEURISTIC_VALIDATED_NO_SESSION_COOKIE_CAPTURED",
+              "exploitability_status": "VALIDATED_INDICATOR_ONLY",
+              "data_access_status": "HTTP_LOGIN_RESPONSE_INDICATOR_ONLY",
+              "impact_status": "WEB_ADMIN_CREDENTIAL_EXPOSURE_CANDIDATE",
+              "evidence_confidence": 91,
+              "access_summary": "F-07 Proof Classification Review: OWASP A07 HTTP POST form probe matched login-success response indicator on /dvwa/login.php & /mutillidae/, but no authenticated session cookie (PHPSESSID) or post-login DOM transcript was captured; strictly held at VALIDATED (not CONFIRMED_AUTH per AC-02)."
             },
             "confidenceModel": {
               "detection_confidence": 96,

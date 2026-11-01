@@ -1,0 +1,92 @@
+{
+  "audit_schema": "XStrike-CleanRoom-Independent-Audit-v1.0",
+  "executed_at_utc": "2026-11-01T00:31:37Z",
+  "clean_room_isolation_verified": true,
+  "xstrike_modules_imported": 0,
+  "bundle_path": "D:\\XPedite-strike\\cyber_range\\reports\\XStrike_Evidence_Bundle.json",
+  "pubkey_path": "D:\\XPedite-strike\\cyber_range\\reports\\ed25519_pub.pem",
+  "overall_independent_reproduction_passed": true,
+  "cryptographic_reproduction": {
+    "total_records_audited": 124,
+    "records_sha256_reproduced": 124,
+    "record_failures": [],
+    "recomputed_merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
+    "manifest_merkle_root_sha256": "b515b5637e34431eebfa474b795680334297f1ea03030ae0d1975ec51a34a20f",
+    "merkle_root_exact_match": true,
+    "ed25519_signature_verified": true,
+    "computed_pubkey_sha256_fingerprint": "ebd393bb023088d5bc1fd0c055925a17706ac04f846f58449567e488083aaa29",
+    "pinned_pubkey_fingerprint_matched": true,
+    "retest_records_audited": 5,
+    "retest_records_sha256_reproduced": 5,
+    "clean_room_cert_tests_passed": "9/9"
+  },
+  "f02_remaining_compromise_status_audit": {
+    "finding_id": "F-02",
+    "canonical_key": "VULN_VSFTPD_234_BACKDOOR",
+    "title": "vsFTPd 2.3.4 Smiley-Face Backdoor Remote Root Compromise (CVE-2011-2523)",
+    "host_port": "192.168.195.139:21",
+    "t0_proof_state": "CONFIRMED_COMPROMISE",
+    "t1_post_retest_proof_state": "CONFIRMED_COMPROMISE",
+    "remediation_verified": false,
+    "evidence_sha256_verified": true,
+    "evidence_sha256": "c08e97d1e2e2e1bd5705fb00226bb33ccd3ed3c393fa8ca9b006f43dac45d071"
+  },
+  "f07_proof_classification_audit": {
+    "finding_id": "F-07",
+    "canonical_key": "VULN_DVWA_DEFAULT_CREDS",
+    "title": "Web Application Default Credential Form Heuristic (DVWA / Mutillidae Login Endpoint)",
+    "host_port": "192.168.195.139:80",
+    "proof_state": "VALIDATED",
+    "mitre_id": "T1078.001",
+    "mitre_execution_state": "TECHNIQUE_VALIDATED",
+    "evidence_sha256_verified": true,
+    "evidence_sha256": "74c5e09c19d63fc80a79e18d4196c7dcf67a2d4e0f14f662e8da88935e51b09c"
+  },
+  "remediation_retest_audit": [
+    {
+      "retest_id": "RETEST-01",
+      "finding_id": "F-01",
+      "retest_outcome_state": "REMEDIATION_VERIFIED",
+      "post_retest_proof_state": "REMEDIATION_VERIFIED",
+      "before_sha256_verified": true,
+      "after_sha256_verified": true,
+      "negative_control_sha256_verified": true
+    },
+    {
+      "retest_id": "RETEST-02",
+      "finding_id": "F-71",
+      "retest_outcome_state": "REMEDIATION_VERIFIED",
+      "post_retest_proof_state": "REMEDIATION_VERIFIED",
+      "before_sha256_verified": true,
+      "after_sha256_verified": true,
+      "negative_control_sha256_verified": true
+    },
+    {
+      "retest_id": "RETEST-03-NEG-CTRL",
+      "finding_id": "F-59",
+      "retest_outcome_state": "REMEDIATION_INCONCLUSIVE",
+      "post_retest_proof_state": "OBSERVED",
+      "before_sha256_verified": true,
+      "after_sha256_verified": true,
+      "negative_control_sha256_verified": true
+    },
+    {
+      "retest_id": "RETEST-04-PARTIAL",
+      "finding_id": "F-77",
+      "retest_outcome_state": "PARTIALLY_REMEDIATED_NOT_CLOSED",
+      "post_retest_proof_state": "VALIDATED",
+      "before_sha256_verified": true,
+      "after_sha256_verified": true,
+      "negative_control_sha256_verified": true
+    },
+    {
+      "retest_id": "RETEST-05-FAILED",
+      "finding_id": "F-20",
+      "retest_outcome_state": "RETEST_FAILED_STILL_VULNERABLE",
+      "post_retest_proof_state": "CONFIRMED_AUTH",
+      "before_sha256_verified": true,
+      "after_sha256_verified": true,
+      "negative_control_sha256_verified": true
+    }
+  ]
+}
